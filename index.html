@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;450;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      window.BACKEND_URL = 'https://phonejaya.vercel.app';
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Geist', 'system-ui', 'sans-serif'],
+                        mono: ['Geist Mono', 'monospace'],
+                    },
+                    colors: {
+                        sidebar: '#0B0B0D',
+                        'sidebar-hover': '#18181B',
+                        'sidebar-border': '#202020',
+                    },
+                    keyframes: {
+                        fadeUp: { from: { opacity: 0, transform: 'translateY(10px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+                        fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+                        shimmer: { '0%': { backgroundPosition: '200% 0' }, '100%': { backgroundPosition: '-200% 0' } },
+                        spin: { to: { transform: 'rotate(360deg)' } },
+                        toastIn: { from: { opacity: 0, transform: 'translateX(110%)' }, to: { opacity: 1, transform: 'translateX(0)' } },
+                        pulse: { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.4 } },
+                    },
+                    animation: {
+                        'fade-up': 'fadeUp 0.22s cubic-bezier(0.16,1,0.3,1)',
+                        'fade-in': 'fadeIn 0.15s ease-out',
+                        shimmer: 'shimmer 1.5s ease infinite',
+                        spin: 'spin 0.7s linear infinite',
+                        toast: 'toastIn 0.3s cubic-bezier(0.16,1,0.3,1)',
+                        pulse: 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Geist', system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 99px; }
+
+        /* ── SIDEBAR ── */
+        .sidebar-width { width: 260px; min-width: 260px; }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.8125rem;
+            font-weight: 450;
+            color: #000;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+            letter-spacing: -0.01em;
+        }
+        .nav-link:hover {
+            background: #EDEDED;
+            color: #000;
+        }
+        .nav-link.active {
+            background: #fff;
+            color: #000;
+            font-weight: 500;
+        }
+        
+        .nav-link.active .icon-container {
+            background-color: #4FD1C5;
+            color: #fff; 
+        }
+
+        .nav-link.active svg { color: #fff; }
+        .nav-link:not(.active) svg {
+            color: #4FD1C5 !important;
+        }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 18px;
+            border-radius: 12px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s ease;
+            font-family: inherit;
+            white-space: nowrap;
+            letter-spacing: -0.01em;
+            height: 38px;
+        }
+        .dark .btn-primary { background: #fafafa; color: #09090b; }
+        .dark .btn-primary:hover { background: #e4e4e7; box-shadow: 0 0 0 1px #27272a; transform: translateY(-0.5px); }
+        
+        html:not(.dark) .btn-primary {
+            background: linear-gradient(to bottom left, #313860, #151928);
+            color: #fafafa;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        html:not(.dark) .btn-primary:hover {
+            background: linear-gradient(to bottom left, #414a7d, #1a1f32);
+            transform: translateY(-0.5px);
+        }
+
+        .dark .btn-ghost {
+            background: transparent;
+            color: #71717a;
+            border: 1px solid #27272a;
+        }
+        .dark .btn-ghost:hover { background: #18181b; color: #e4e4e7; border-color: #3f3f46; }
+        html:not(.dark) .btn-ghost {
+            background: transparent;
+            color: #71717a;
+            border: 1px solid #e4e4e7;
+        }
+        html:not(.dark) .btn-ghost:hover { background: #f4f4f5; color: #18181b; }
+
+        .dark .btn-success { background: #16a34a; color: #fff; }
+        .dark .btn-success:hover { background: #15803d; }
+        html:not(.dark) .btn-success { background: #16a34a; color: #fff; }
+
+        /* ── TABLE ── */
+        .tbl-row { border-bottom: 1px solid; transition: background 0.08s; }
+        .dark .tbl-row { border-color: #18181b; }
+        .dark .tbl-row:hover { background: #18181b; }
+        html:not(.dark) .tbl-row { border-color: #f4f4f5; }
+        html:not(.dark) .tbl-row:hover { background: #fafafa; }
+        .tbl-row:last-child { border-bottom: none; }
+
+        /* ── BADGES ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-size: 0.6875rem;
+            font-weight: 500;
+            border: 1px solid;
+            letter-spacing: 0.01em;
+        }
+        .badge-tersedia { background: rgba(16,185,129,0.08); color: #10b981; border-color: rgba(16,185,129,0.18); }
+        .badge-sold     { background: rgba(239,68,68,0.08);   color: #ef4444; border-color: rgba(239,68,68,0.18); }
+        .badge-booking  { background: rgba(245,158,11,0.08);  color: #f59e0b; border-color: rgba(245,158,11,0.18); }
+        .badge-service  { background: rgba(99,102,241,0.08);  color: #818cf8; border-color: rgba(99,102,241,0.18); }
+        .badge-masuk    { background: rgba(113,113,122,0.08); color: #a1a1aa; border-color: rgba(113,113,122,0.18); }
+        .badge-diagnosa { background: rgba(249,115,22,0.08);  color: #fb923c; border-color: rgba(249,115,22,0.18); }
+        .badge-proses   { background: rgba(59,130,246,0.08);  color: #60a5fa; border-color: rgba(59,130,246,0.18); }
+        .badge-selesai  { background: rgba(16,185,129,0.08);  color: #34d399; border-color: rgba(16,185,129,0.18); }
+        .badge-diambil  { background: rgba(113,113,122,0.08); color: #71717a; border-color: rgba(113,113,122,0.18); }
+
+        /* ── SKELETON ── */
+        .dark .skeleton {
+            background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease infinite;
+            border-radius: 10px;
+        }
+        html:not(.dark) .skeleton {
+            background: linear-gradient(90deg, #f4f4f5 25%, #e4e4e7 50%, #f4f4f5 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease infinite;
+            border-radius: 10px;
+        }
+
+        .spinner {
+            width: 13px; height: 13px;
+            border: 1.5px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.65s linear infinite;
+            display: inline-block; flex-shrink: 0;
+        }
+
+        .toast { animation: toast 0.3s cubic-bezier(0.16,1,0.3,1); }
+
+        .modal-bg {
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .sidebar-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+
+        /* ── FILTER TABS ── */
+        .filter-tab {
+            padding: 5px 14px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 450;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: transparent;
+            transition: all 0.1s;
+            font-family: inherit;
+        }
+        .dark .filter-tab { color: #71717a; }
+        .dark .filter-tab:hover { background: #18181b; color: #d4d4d8; border-color: #27272a; }
+        .dark .filter-tab.active { background: #27272a; color: #fafafa; border-color: #3f3f46; }
+        html:not(.dark) .filter-tab { color: #71717a; }
+        html:not(.dark) .filter-tab:hover { background: #f4f4f5; color: #18181b; }
+        html:not(.dark) .filter-tab.active { background: #18181b; color: #fafafa; }
+
+        /* ── PROGRESS ── */
+        .progress-track {
+            height: 3px; border-radius: 99px; overflow: hidden;
+        }
+        .dark .progress-track { background: #27272a; }
+        html:not(.dark) .progress-track { background: #e4e4e7; }
+        .progress-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+
+        .battery-track { width: 32px; height: 3px; border-radius: 99px; overflow: hidden; display: inline-block; }
+        .dark .battery-track { background: #27272a; }
+        html:not(.dark) .battery-track { background: #e4e4e7; }
+
+        /* ── SVC CARD ── */
+        .svc-card {
+            border-radius: 14px;
+            padding: 18px;
+            transition: border-color 0.15s;
+        }
+        .dark .svc-card { border: 1px solid #27272a; background: #111113; }
+        .dark .svc-card:hover { border-color: #3f3f46; }
+        html:not(.dark) .svc-card { border: 1px solid #e4e4e7; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        html:not(.dark) .svc-card:hover { border-color: #d4d4d8; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+        .label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
+        }
+        .dark .label { color: #a1a1aa; }
+        html:not(.dark) .label { color: #71717a; }
+
+        .divider { border: none; }
+        .dark .divider { border-top: 1px solid #27272a; }
+        html:not(.dark) .divider { border-top: 1px solid #f4f4f5; }
+
+        select {
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px !important;
+        }
+
+        .hamburger { display: none; }
+        @media (max-width: 768px) { .hamburger { display: flex; } }
+
+        /* ── CARD SURFACE ── */
+        .card {
+            border-radius: 16px;
+            transition: box-shadow 0.2s ease;
+        }
+        .dark .card {
+            background: #111113;
+            border: 1px solid #1c1c1f;
+        }
+        html:not(.dark) .card {
+            background: #ffffff;
+            border: 1px solid #e4e4e7;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        html:not(.dark) .card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        }
+
+        /* ── STAT CARD ── */
+        .stat-card {
+            border-radius: 16px;
+            padding: 20px 22px;
+        }
+        .dark .stat-card { 
+            background: #111113; 
+            border: 1px 
+            solid #1c1c1f; 
+        }
+        html:not(.dark) .stat-card {
+            background: #FFFFFF;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        /* ── BODY THEMES ── */
+        .dark body, body.dark-body { background: #09090b; color: #e4e4e7; }
+        html:not(.dark) body { background: #F4F7FE; color: #18181b; }
+
+        /* ── HEADER ── */
+        .dark .app-header { background: rgba(9,9,11,0.85); border-color: #1c1c1f; }
+        html:not(.dark) .app-header { background: rgba(250,250,251,0.9); border-color: #e4e4e7; }
+
+        /* ── SIDEBAR SKIN ── */
+        #app-sidebar {
+          background: #F8F9FA;
+            /* background: linear-gradient(to bottom left, #151928,  #313860); */
+        }
+
+        /* ── MOBILE TOPBAR ── */
+        .dark #mobile-topbar { background: #09090b; border-color: #1c1c1f; }
+        html:not(.dark) #mobile-topbar { background: #fafafb; border-color: #e4e4e7; }
+
+        /* ── MAIN BG ── */
+        .dark #page-app { background: #09090b; }
+        html:not(.dark) #page-app { background: #fafafb; }
+
+        /* ── LOGIN BG ── */
+        .dark #page-login { background: #09090b; }
+        html:not(.dark) #page-login { background: #fafafb; }
+
+        /* ── MODAL ── */
+        .dark #modal .modal-inner { background: #111113; border: 1px solid #27272a; }
+        html:not(.dark) #modal .modal-inner {
+            background: #fff;
+            border: 1px solid #e4e4e7;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.12);
+        }
+
+        /* ── TABLE HEADER ── */
+        .dark .tbl-head { color: #52525b; border-color: #1c1c1f; }
+        html:not(.dark) .tbl-head { color: #a1a1aa; border-color: #f4f4f5; }
+
+        /* ── TABLE WRAP ── */
+        .dark .table-wrap { background: #111113; border: 1px solid #1c1c1f; }
+        html:not(.dark) .table-wrap {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        /* ── SECTION PANELS ── */
+        .dark .panel { background: #111113; border: 1px solid #1c1c1f; }
+        html:not(.dark) .panel {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        /* ── TOAST SKIN ── */
+        .dark .toast-success { background: #111113; border-color: rgba(16,185,129,0.2); color: #34d399; }
+        .dark .toast-error   { background: #111113; border-color: rgba(239,68,68,0.2);  color: #f87171; }
+        .dark .toast-info    { background: #111113; border-color: rgba(99,102,241,0.2); color: #818cf8; }
+        html:not(.dark) .toast-success { background: #fff; border-color: rgba(16,185,129,0.3); color: #059669; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        html:not(.dark) .toast-error   { background: #fff; border-color: rgba(239,68,68,0.3);  color: #dc2626; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        html:not(.dark) .toast-info    { background: #fff; border-color: rgba(99,102,241,0.3); color: #6366f1; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+
+        /* ── THEME TOGGLE ── */
+        .theme-toggle {
+            width: 34px; height: 34px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            background: transparent;
+            transition: all 0.15s;
+            border: 1px solid #27272a;
+            color: #52525b;
+        }
+        .theme-toggle:hover { background: #18181b; color: #e4e4e7; }
+
+        /* ── ICON DOTS ── */
+        .stat-icon {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* ── DIVIDER LINE ── */
+        .dark .border-divider { border-color: #1c1c1f; }
+        html:not(.dark) .border-divider { border-color: #f4f4f5; }
+
+        /* ── LOG ROW ── */
+        .dark .log-row:hover { background: #111113; }
+        html:not(.dark) .log-row:hover { background: #fafafa; }
+
+        /* ── SEARCH INPUT WRAPPER ── */
+        .search-wrap { position: relative; }
+        .search-icon {
+            position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+            color: #52525b; pointer-events: none;
+        }
+        .search-field { padding-left: 40px !important; }
+
+        /* ── PAGE TRANSITIONS ── */
+        #view-container { transition: opacity 0.1s ease; }
+    </style>
+</head>
+
+<body class="min-h-screen transition-colors duration-200">
+
+    <!-- TOAST -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- MODAL -->
+    <div id="modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 modal-bg" onclick="closeModal(event)">
+        <div class="modal-inner w-full max-w-md rounded-2xl animate-fade-up max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div id="modal-body" class="p-6"></div>
+        </div>
+    </div>
+
+    <!-- MOBILE SIDEBAR OVERLAY -->
+    <div id="sidebar-overlay" class="hidden fixed inset-0 z-40 sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+    <!-- ═══ LOGIN ═══ -->
+    <div id="page-login" class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-sm">
+            <!-- Brand -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center gap-2 mb-3">
+                    <span class="text-base font-semibold tracking-tight dark:text-white text-gray-900">Welcome!</span>
+                </div>
+            </div>
+            <div class="panel rounded-2xl p-7">
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <label class="label">Name</label>
+                        <input id="login-user" class="bg-gray-100 dark:bg-[#18181B] p-2 rounded-xl outline-none  border-[1.5px] border-transparent w-full focus:border-[#4FD1C5] placeholder:text-sm placeholder:text-gray-500 dark:placeholder:text-gray-400" placeholder="Masukkan username" onkeydown="if(event.key==='Enter')doLogin()">
+                    </div>
+                    <div>
+                        <label class="label">Password</label>
+                        <input id="login-pass" type="password" class="bg-gray-100 dark:bg-[#18181B] p-2 rounded-xl outline-none  border-[1.5px] border-transparent w-full focus:border-[#4FD1C5] placeholder:text-sm placeholder:text-gray-500 dark:placeholder:text-gray-400" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()">
+                    </div>
+                    <div id="login-error" class="hidden text-xs text-red-400 bg-red-500/8 rounded-xl px-3.5 py-2.5 border border-red-500/15"></div>
+                    <button id="login-btn" onclick="doLogin()" class="btn btn-primary w-full" style="height:44px;font-size:0.875rem;border-radius:14px;">Masuk</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ APP ═══ -->
+    <div id="page-app" class="hidden min-h-screen">
+
+        <!-- Mobile Topbar -->
+        <div id="mobile-topbar" class="md:hidden fixed top-0 left-0 right-0 z-30 border-b px-4 h-12 flex items-center justify-between">
+            <button class="hamburger items-center justify-center w-8 h-8 rounded-lg dark:text-zinc-400 text-zinc-500 dark:hover:bg-zinc-800 hover:bg-zinc-100 transition-colors" onclick="openMobileSidebar()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <span class="text-sm font-semibold tracking-tight text-white">JAYAPONA</span>
+        </div>
+
+        <!-- SIDEBAR -->
+        <aside id="app-sidebar" class="sidebar-width fixed top-0 left-0 h-screen z-40 flex flex-col md:translate-x-0 -translate-x-full transition-transform duration-200">
+
+            <!-- User card -->
+            <div class="px-3 pt-4 pb-2 flex-shrink-0">
+                <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl">
+                    <div id="avatar" class="rounded-full flex items-center justify-center text-xs font-semibold text-[#4FD1C5] flex-shrink-0 overflow-hidden">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div id="user-name" class="text-xs font-medium text-black truncate"></div>
+                        <div id="user-role-label" class="text-[10px] text-zinc-500 capitalize"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nav label -->
+            <div class="px-5 pt-4 pb-1.5">
+                <span class="text-sm font-semibold text-black tracking-widest">Menu</span>
+            </div>
+
+            <!-- Nav -->
+            <nav id="sidebar-nav" class="flex-1 px-3 py-1 space-y-0.5 overflow-y-auto"></nav>
+
+            <!-- Bottom -->
+            <div class="px-3 pb-4 pt-2 space-y-0.5 flex-shrink-0">
+                <button onclick="toggleTheme()" class="nav-link w-full">
+                    <svg class="w-3.5 h-3.5 hidden dark:block flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                    <svg class="w-3.5 h-3.5 block dark:hidden flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    <span id="theme-label">Light Mode</span>
+                </button>
+                <button onclick="doLogout()" class="nav-link w-full text-black hover:text-red-500">
+                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    Keluar
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="md:ml-[260px] min-h-screen flex flex-col">
+
+            <!-- Header -->
+            <header class="app-header sticky top-0 md:top-0 top-12 z-20 backdrop-blur-md px-6 h-[60px] flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-3 min-w-0">
+                    <h1 id="page-title" class="text-base font-semibold dark:text-zinc-100 text-zinc-800 truncate tracking-tight"></h1>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <div id="view-container" class="flex-1 p-6 md:p-8 pt-6 mt-12 md:mt-0"></div>
+        </main>
+    </div>
+
+    <!-- API CLIENT -->
+    <script src="main.js"></script>
+    <script src="svg.js"></script>
+
+    <!-- APP LOGIC -->
+    <script>
+        'use strict';
+
+        // ── THEME ──
+        function initTheme() {
+            const saved = localStorage.getItem('jyp_theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDark = saved ? saved === 'dark' : prefersDark;
+            document.documentElement.classList.toggle('dark', isDark);
+            updateThemeLabel(isDark);
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('jyp_theme', isDark ? 'dark' : 'light');
+            updateThemeLabel(isDark);
+        }
+
+        function updateThemeLabel(isDark) {
+            const el = document.getElementById('theme-label');
+            if (el) el.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+        }
+        initTheme();
+
+        // ── MOBILE SIDEBAR ──
+        function openMobileSidebar() {
+            document.getElementById('app-sidebar').classList.remove('-translate-x-full');
+            document.getElementById('sidebar-overlay').classList.remove('hidden');
+        }
+
+        function closeMobileSidebar() {
+            document.getElementById('app-sidebar').classList.add('-translate-x-full');
+            document.getElementById('sidebar-overlay').classList.add('hidden');
+        }
+
+        // ── STATE ──
+        const STATE = { user: null, currentPage: '' };
+        const rp = n => 'Rp\u202f' + Number(n || 0).toLocaleString('id-ID');
+
+        // ── BADGE HELPERS ──
+        function badge(status) {
+            const map = { Tersedia: 'badge-tersedia', Sold: 'badge-sold', Booking: 'badge-booking', Service: 'badge-service' };
+            return `<span class="badge ${map[status]||'badge-service'}">${status}</span>`;
+        }
+
+        function badgeService(status) {
+            const map = { Masuk: 'badge-masuk', Diagnosa: 'badge-diagnosa', Proses: 'badge-proses', Selesai: 'badge-selesai', Diambil: 'badge-diambil' };
+            return `<span class="badge ${map[status]||'badge-masuk'}">${status}</span>`;
+        }
+
+        function batteryBar(pct) {
+            const c = pct >= 80 ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-400' : 'bg-red-500';
+            return `<div class="flex items-center gap-2">
+                <div class="battery-track"><div class="progress-fill ${c}" style="width:${pct}%"></div></div>
+                <span class="text-[11px] dark:text-zinc-400 text-zinc-500">${pct}%</span>
+            </div>`;
+        }
+
+        let input = `bg-gray-100 dark:bg-[#18181B] p-2 rounded-xl outline-none  border-[1.5px] border-transparent w-full focus:border-[#4FD1C5] placeholder:text-sm placeholder:text-gray-500 dark:placeholder:text-gray-400`
+        
+        // ── TOAST ──
+        function showToast(msg, type = 'success') {
+            const icons = {
+                success: `<svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`,
+                error:   `<svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`,
+                info:    `<svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+            };
+            const el = document.createElement('div');
+            el.className = `toast pointer-events-auto flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-xs font-medium max-w-xs toast-${type||'success'}`;
+            el.innerHTML = `${icons[type]||icons.info}<span>${msg}</span>`;
+            document.getElementById('toast-container').appendChild(el);
+            setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.2s'; setTimeout(() => el.remove(), 200); }, 3200);
+        }
+
+        // ── MODAL ──
+        function openModal(html) {
+            document.getElementById('modal-body').innerHTML = html;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal(e) {
+            if (!e || e.target === document.getElementById('modal'))
+                document.getElementById('modal').classList.add('hidden');
+        }
+
+        function closeModalBtn() { document.getElementById('modal').classList.add('hidden'); }
+
+        function modalHeader(title, sub = '') {
+            return `<div class="flex items-start justify-between mb-5">
+                <div>
+                  <h3 class="text-sm font-semibold dark:text-zinc-100 text-zinc-900 tracking-tight">${title}</h3>
+                  ${sub ? `<p class="text-xs dark:text-zinc-500 text-zinc-400 mt-0.5">${sub}</p>` : ''}
+                </div>
+                <button onclick="closeModalBtn()" class="w-7 h-7 rounded-lg flex items-center justify-center dark:text-zinc-500 text-zinc-400 dark:hover:bg-zinc-800 hover:bg-zinc-100 transition-colors flex-shrink-0 -mr-1 -mt-0.5">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>`;
+        }
+
+        // ── LOADING ──
+        function setLoading(c, rows = 4) {
+            c.innerHTML = `<div class="space-y-3">${Array(rows).fill('<div class="skeleton h-10 w-full"></div>').join('')}</div>`;
+        }
+
+        function emptyState(msg, icon = '📭') {
+            return `<div class="flex flex-col items-center justify-center py-16 text-center">
+                <div class="w-12 h-12 rounded-2xl dark:bg-zinc-800/50 bg-zinc-100 flex items-center justify-center mb-3 text-2xl">${icon}</div>
+                <p class="text-sm dark:text-zinc-500 text-zinc-400 font-medium">${msg}</p>
+            </div>`;
+        }
+
+        function errorState(msg, fn = '') {
+            return `<div class="flex flex-col items-center justify-center py-16 text-center">
+                <div class="w-11 h-11 rounded-2xl bg-red-500/8 flex items-center justify-center mb-3">
+                  <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+                <p class="text-sm font-medium dark:text-zinc-200 text-zinc-700 mb-1">Gagal memuat data</p>
+                <p class="text-xs dark:text-zinc-500 text-zinc-400 mb-4 max-w-[200px]">${msg}</p>
+                ${fn ? `<button onclick="${fn}" class="btn btn-ghost text-xs">Coba lagi</button>` : ''}
+            </div>`;
+        }
+
+        // ── SHARED UI COMPONENTS ──
+        function statCard(label, value, sub, accent) {
+            const icons  = { blue: tersediaSvg, green: stokSvg, red: modalSvg, up: upSvg, profit: keuntunganSvg, down: downSvg, orange: keranjangSvg, purple: walletSvg };
+            return `<div class="stat-card hover:-translate-y-0.5 transition-all duration-200 cursor-default">
+                <div class="flex items-start justify-between mb-4">
+                  <div class="stat-icon bg-[#4FD1C5]">
+                    ${icons[accent]||icons.mono}
+                  </div>
+                </div>
+                <p class="text-2xl font-bold text-black dark:text-white tracking-tight leading-none mb-1.5">${value}</p>
+                <p class="text-xs dark:text-zinc-500 text-zinc-400">${label}</p>
+                <p class="text-[11px] dark:text-zinc-600 text-zinc-300 mt-0.5">${sub}</p>
+            </div>`;
+        }
+
+        function finRow(label, val, cls) {
+            return `<div class="flex items-center justify-between py-3 border-b border-divider last:border-0">
+                <span class="text-sm dark:text-zinc-400 text-zinc-500">${label}</span>
+                <span class="text-sm font-semibold ${cls}">${val}</span>
+            </div>`;
+        }
+
+        function statusBar(label, n, total) {
+            const pct = total ? Math.round(n / total * 100) : 0;
+            return `<div>
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-xs dark:text-zinc-400 text-zinc-600">${label}</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-medium dark:text-zinc-300 text-zinc-700">${n}</span>
+                    <span class="text-[10px] dark:text-zinc-600 text-zinc-400">${pct}%</span>
+                  </div>
+                </div>
+                <div class="progress-track"><div class="progress-fill bg-[#4FD1C5]" style="width:${pct}%"></div></div>
+            </div>`;
+        }
+
+        // ── AUTH ──
+        async function doLogin() {
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value.trim();
+            const err = document.getElementById('login-error');
+            const btn = document.getElementById('login-btn');
+            if (!u || !p) { err.textContent = 'Username dan password wajib diisi.'; err.classList.remove('hidden'); return; }
+            btn.innerHTML = `<span class="spinner"></span> Memproses...`;
+            btn.disabled = true;
+            err.classList.add('hidden');
+            try {
+                const res = await API.auth.login(u, p);
+                Token.set(res.access_token);
+                STATE.user = res.user;
+                showApp();
+            } catch (e) {
+                err.textContent = e.message || 'Login gagal.';
+                err.classList.remove('hidden');
+            } finally { btn.innerHTML = 'Masuk'; btn.disabled = false; }
+        }
+
+        function doLogout() {
+            Token.clear(); STATE.user = null;
+            document.getElementById('page-app').classList.add('hidden');
+            document.getElementById('page-login').classList.remove('hidden');
+            document.getElementById('login-user').value = '';
+            document.getElementById('login-pass').value = '';
+            closeMobileSidebar();
+        }
+
+        // ── NAV CONFIG ──
+        const NAV = {
+            owner: [
+                { page: 'dashboard',    label: 'Dashboard',       d: dashboardSvg },
+                { page: 'stok',         label: 'Manajemen Stok',  d: stokSvg1 },
+                { page: 'transaksi',    label: 'Transaksi',       d: transaksiSvg },
+                { page: 'laporan',      label: 'Laporan',         d: laporanSvg },
+                { page: 'service',      label: 'Data Service',    d: settingSvg },
+                { page: 'karyawan',     label: 'Karyawan',        d: karyawanSvg },
+                { page: 'log',          label: 'Log Aktivitas',   d: logSvg },
+            ],
+            kasir: [
+                { page: 'stok-kasir',       label: 'Cek Stok',         d: stokSvg2 },
+                { page: 'input-transaksi',  label: 'Input Transaksi',  d:  transaksiSvg2 },
+                { page: 'tambah-unit',      label: 'Tambah Unit',      d: tambahSvg },
+                { page: 'customers',        label: 'Data Customer',    d: clientSvg },
+            ],
+            teknisi: [
+                { page: 'service-list',  label: 'Data Service',  d: settingSvg },
+                { page: 'input-service', label: 'Input Service', d: tambahSvg },
+            ],
+        };
+
+        const PAGE_META = {
+            'dashboard':       ['Dashboard'],
+            'stok':            ['Manajemen Stok'],
+            'transaksi':       ['Transaksi'],
+            'laporan':         ['Laporan Keuangan'],
+            'service':         ['Data Service'],
+            'karyawan':        ['Karyawan'],
+            'log':             ['Log Aktivitas'],
+            'stok-kasir':      ['Cek Stok'],
+            'input-transaksi': ['Input Transaksi'],
+            'tambah-unit':     ['Tambah Unit'],
+            'customers':       ['Data Customer'],
+            'service-list':    ['Data Service'],
+            'input-service':   ['Input Service'],
+        };
+
+        // ── SHOW APP ──
+        function showApp() {
+            document.getElementById('page-login').classList.add('hidden');
+            document.getElementById('page-app').classList.remove('hidden');
+
+            const { user } = STATE;
+            document.getElementById('user-name').textContent = user.name;
+            document.getElementById('user-role-label').textContent = user.role;
+            
+            const first = { owner: 'dashboard', kasir: 'stok-kasir', teknisi: 'service-list' };
+            const activePage = first[user.role] || 'dashboard';
+
+            const items = NAV[user.role] || [];
+            document.getElementById('sidebar-nav').innerHTML = items.map(n =>
+                `<button class="nav-link" onclick="navigate('${n.page}'); closeMobileSidebar();">
+                  <div class="icon-container p-2 bg-white rounded-xl">
+                   ${n.d}
+                   </div>
+                  ${n.label}
+                </button>`
+            ).join('');
+
+            const ava = document.getElementById("avatar");
+            ava.innerHTML = avatarSvg
+
+            navigate(activePage);
+        }
+
+        // ── ROUTER ──
+        const VIEWS = {
+            'dashboard':       renderDashboard,
+            'stok':            renderStok,
+            'transaksi':       renderTransaksi,
+            'laporan':         renderLaporan,
+            'service':         renderServiceOwner,
+            'karyawan':        renderKaryawan,
+            'log':             renderLog,
+            'stok-kasir':      renderStokKasir,
+            'input-transaksi': renderInputTransaksi,
+            'tambah-unit':     renderTambahUnit,
+            'customers':       renderCustomers,
+            'service-list':    renderServiceTeknisi,
+            'input-service':   renderInputService,
+        };
+
+        function navigate(page) {
+            STATE.currentPage = page;
+            document.querySelectorAll('.nav-link').forEach(el => {
+                el.classList.toggle('active', el.getAttribute('onclick')?.includes(`navigate('${page}')`));
+            });
+            const [title] = PAGE_META[page];
+            document.getElementById('page-title').textContent = title;
+            const c = document.getElementById('view-container');
+            c.className = 'flex-1 p-6 md:p-8 pt-6 mt-12 md:mt-0 animate-fade-up';
+            c.innerHTML = '';
+            VIEWS[page]?.();
+        }
+
+        // ═══ VIEW: DASHBOARD ═══
+        async function renderDashboard() {
+            const c = document.getElementById('view-container');
+            setLoading(c, 6);
+            try {
+                const res = await API.dashboard.stats();
+                const { unit, keuangan: keu, recent_transaksi: trx } = res.data;
+
+                c.innerHTML = `<div class="space-y-6">
+
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      ${statCard('Total Unit',    unit.total,           'unit tercatat',      'blue')}
+                      ${statCard('Stok Tersedia', unit.tersedia,        'unit siap jual',     'green')}
+                      ${statCard('Total Terjual', unit.sold,            'unit berhasil sold', 'orange')}
+                      ${statCard('Gross Profit',  rp(keu.total_profit), 'keuntungan bersih',  'purple')}
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      <div class="lg:col-span-2 panel rounded-2xl p-6">
+                        <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Ringkasan Keuangan</p>
+                        <div class="divide-y dark:divide-zinc-800 divide-zinc-100">
+                          ${finRow('Profit Hari Ini',  rp(keu.profit_harian), 'text-[#4FD1C5]')}
+                          ${finRow('Total Revenue',    rp(keu.total_revenue), 'text-[#4FD1C5]')}
+                          ${finRow('Total Modal',      rp(keu.total_modal), 'text-[#4FD1C5]')}
+                          ${finRow('Gross Profit',     rp(keu.total_profit), 'text-[#4FD1C5]')}
+                        </div>
+                      </div>
+
+                      <div class="panel rounded-2xl p-6">
+                        <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Status Unit</p>
+                        <div class="space-y-4">
+                          ${statusBar('Tersedia', unit.tersedia, unit.total)}
+                          ${statusBar('Sold',     unit.sold,     unit.total)}
+                          ${statusBar('Booking',  unit.booking,  unit.total)}
+                          ${statusBar('Service',  unit.service,  unit.total)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="table-wrap rounded-2xl overflow-hidden">
+                      <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
+                        <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Transaksi Terbaru</p>
+                        <button onclick="navigate('transaksi')" class="text-xs dark:text-zinc-500 text-zinc-400 dark:hover:text-zinc-300 hover:text-zinc-600 transition-colors">Lihat semua</button>
+                      </div>
+                      <div class="overflow-x-auto">
+                        <table class="w-full text-xs">
+                          <thead>
+                            <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+                              <th class="px-6 py-3.5 font-medium">ID</th>
+                              <th class="px-6 py-3.5 font-medium">Unit</th>
+                              <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Kasir</th>
+                              <th class="px-6 py-3.5 font-medium">Harga Jual</th>
+                              <th class="px-6 py-3.5 font-medium">Profit</th>
+                              <th class="px-6 py-3.5 font-medium hidden md:table-cell">Waktu</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${trx.length ? trx.map(t=>`<tr class="tbl-row">
+                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${t.trx_id}</td>
+                              <td class="px-6 py-4 font-medium dark:text-zinc-100 text-zinc-800 max-w-[160px] truncate">${t.unit_label}</td>
+                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
+                              <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
+                              <td class="px-6 py-4 font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
+                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell text-[11px]">${t.waktu}</td>
+                            </tr>`).join('') : `<tr><td colspan="6">${emptyState('Belum ada transaksi')}</td></tr>`}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                </div>`;
+            } catch (e) { c.innerHTML = errorState(e.message, 'renderDashboard()'); }
+        }
+
+        // ═══ VIEW: STOK ═══
+        let _stokFilter = 'Semua';
+
+        async function renderStok() {
+            const c = document.getElementById('view-container');
+            const statuses = ['Semua', 'Tersedia', 'Sold', 'Booking', 'Service'];
+            c.innerHTML = `<div class="space-y-5">
+                <div class="flex flex-wrap gap-2 items-center justify-between">
+                  <div class="flex gap-1.5 flex-wrap" id="stok-filter-btns">
+                    ${statuses.map((s,i)=>`<button onclick="filterStok('${s}')" class="filter-tab ${i===0?'active':''}">${s}</button>`).join('')}
+                  </div>
+                  <button onclick="modalTambahUnitForm()" class="btn btn-primary">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7.5 3.28149V11.719" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M11.7187 7.50025H3.28125" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Tambah Unit
+                  </button>
+                </div>
+                <div id="stok-table-wrap">${Array(4).fill('<div class="skeleton h-12 w-full mb-2"></div>').join('')}</div>
+            </div>`;
+            await loadStokTable('Semua');
+        }
+
+        async function filterStok(status) {
+            _stokFilter = status;
+            document.querySelectorAll('.filter-tab').forEach(b => {
+                b.classList.toggle('active', b.textContent.trim() === status);
+            });
+            await loadStokTable(status);
+        }
+
+        async function loadStokTable(filter) {
+            const wrap = document.getElementById('stok-table-wrap');
+            if (!wrap) return;
+            wrap.innerHTML = Array(4).fill('<div class="skeleton h-12 w-full mb-2"></div>').join('');
+            try {
+                const params = filter !== 'Semua' ? { status: filter } : {};
+                const units = (await API.units.list(params)).data;
+                wrap.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                      <thead>
+                        <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+                          <th class="px-5 py-3.5 font-medium">ID Produk</th>
+                          <th class="px-5 py-3.5 font-medium">Perangkat</th>
+                          <th class="px-5 py-3.5 font-medium hidden lg:table-cell">Storage</th>
+                          <th class="px-5 py-3.5 font-medium hidden xl:table-cell">IMEI</th>
+                          <th class="px-5 py-3.5 font-medium hidden md:table-cell">Modal</th>
+                          <th class="px-5 py-3.5 font-medium">Jual</th>
+                          <th class="px-5 py-3.5 font-medium hidden sm:table-cell">Battery</th>
+                          <th class="px-5 py-3.5 font-medium">Status</th>
+                          <th class="px-5 py-3.5 font-medium"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${units.length ? units.map(u=>`<tr class="tbl-row">
+                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${u.unit_id}</td>
+                          <td class="px-5 py-4">
+                            <div class="font-medium dark:text-zinc-100 text-zinc-800">${u.merk} ${u.tipe}</div>
+                            <div class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-0.5">${u.kondisi} · ${u.warna}</div>
+                          </td>
+                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell">${u.storage}</td>
+                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden xl:table-cell text-[11px]">${u.imei}</td>
+                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(u.harga_modal)}</td>
+                          <td class="px-5 py-4 font-semibold text-[#4FD1C5]">${rp(u.harga_jual)}</td>
+                          <td class="px-5 py-4 hidden sm:table-cell">${batteryBar(u.battery)}</td>
+                          <td class="px-5 py-4">${badge(u.status)}</td>
+                          <td class="px-5 py-4">
+                            <button onclick="modalEditUnit('${u.unit_id}')" class="btn btn-ghost" style="height:30px;padding:0 12px;font-size:0.6875rem;">Edit</button>
+                          </td>
+                        </tr>`).join('') : `<tr><td colspan="9">${emptyState('Tidak ada unit untuk filter ini')}</td></tr>`}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="px-5 py-3.5 border-t border-divider">
+                    <span class="text-[11px] dark:text-zinc-500 text-zinc-400">${units.length} unit ditampilkan</span>
+                  </div>
+                </div>`;
+            } catch (e) { wrap.innerHTML = errorState(e.message, `filterStok('${filter}')`); }
+        }
+
+        function _unitFormFields() {
+            const fld = (id, label, type = 'text', placeholder = '', extra = '') =>
+                `<div><label class="label">${label}</label><input id="${id}" type="${type}" class="${input}" placeholder="${placeholder}" ${extra}/></div>`;
+            return `
+              <div class="grid grid-cols-2 gap-3">
+                <div><label class="label">Kategori</label>
+                  <select id="u-kat" class="${input}">
+                    <option value="IP">iPhone</option><option value="AI">Android</option>
+                    <option value="TB">Tablet</option><option value="AC">Accessories</option><option value="SP">Sparepart</option>
+                  </select></div>
+                <div><label class="label">Kondisi</label>
+                  <select id="u-kondisi-kode" class="${input}">
+                    <option value="BN">Normal</option><option value="MN">Minus</option>
+                    <option value="EX">Ex Inter</option><option value="RJ">Reject</option>
+                  </select></div>
+                ${fld('u-merk','Merk','text','Apple / Samsung...')}
+                ${fld('u-tipe','Tipe','text','iPhone 15 Pro...')}
+                ${fld('u-storage','Storage','text','128GB')}
+                ${fld('u-warna','Warna','text','Black Titanium')}
+                ${fld('u-imei','IMEI','text','15 digit IMEI')}
+                ${fld('u-battery','Battery %','number','100','min="0" max="100"')}
+                ${fld('u-modal','Harga Modal','number','0','min="0"')}
+                ${fld('u-jual','Harga Jual','number','0','min="0"')}
+              </div>
+              <div class="mt-3"><label class="label">Catatan</label>
+                <textarea id="u-catatan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea></div>`;
+        }
+
+        function modalTambahUnitForm() {
+            openModal(`${modalHeader('Tambah Unit HP')}
+                ${_unitFormFields()}
+                <button id="btn-simpan-unit" onclick="simpanUnit(false)" class="btn btn-primary w-full mt-5">Simpan Unit</button>`);
+        }
+
+        async function simpanUnit(isKasirPage = false) {
+            const btn = document.getElementById('btn-simpan-unit');
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.disabled = true;
+            try {
+                await API.units.create({
+                    kat_kode: document.getElementById('u-kat').value,
+                    kondisi_kode: document.getElementById('u-kondisi-kode').value,
+                    merk: document.getElementById('u-merk').value,
+                    tipe: document.getElementById('u-tipe').value,
+                    storage: document.getElementById('u-storage').value || '-',
+                    warna: document.getElementById('u-warna').value || '-',
+                    imei: document.getElementById('u-imei').value || '-',
+                    harga_modal: parseInt(document.getElementById('u-modal').value) || 0,
+                    harga_jual: parseInt(document.getElementById('u-jual').value) || 0,
+                    battery: parseInt(document.getElementById('u-battery').value) || 100,
+                    catatan: document.getElementById('u-catatan').value,
+                });
+                closeModalBtn();
+                showToast('Unit berhasil ditambahkan');
+                if (isKasirPage) renderTambahUnit();
+                else await loadStokTable(_stokFilter);
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Unit'; btn.disabled = false; }
+        }
+
+        async function modalEditUnit(unit_id) {
+            openModal(`${modalHeader('Edit Unit', unit_id)}
+                <div class="grid grid-cols-2 gap-3">
+                  <div><label class="label">Harga Modal</label><input id="e-modal" type="number" class="${input}" placeholder="0"/></div>
+                  <div><label class="label">Harga Jual</label><input id="e-jual" type="number" class="${input}" placeholder="0"/></div>
+                  <div><label class="label">Battery %</label><input id="e-battery" type="number" class="${input}" placeholder="100"/></div>
+                  <div><label class="label">Status</label>
+                    <select id="e-status" class="${input}">
+                      <option>Tersedia</option><option>Sold</option><option>Booking</option><option>Service</option>
+                    </select></div>
+                </div>
+                <div class="mt-3"><label class="label">Catatan</label><textarea id="e-catatan" rows="2" class="${input} resize-none" style="height:auto;"></textarea></div>
+                <button id="btn-update-unit" onclick="updateUnit('${unit_id}')" class="btn btn-primary w-full mt-5">Update Unit</button>`);
+        }
+
+        async function updateUnit(unit_id) {
+            const btn = document.getElementById('btn-update-unit');
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.disabled = true;
+            try {
+                const b = {};
+                const m = document.getElementById('e-modal').value;
+                const j = document.getElementById('e-jual').value;
+                const bat = document.getElementById('e-battery').value;
+                if (m) b.harga_modal = parseInt(m);
+                if (j) b.harga_jual = parseInt(j);
+                if (bat) b.battery = parseInt(bat);
+                b.status = document.getElementById('e-status').value;
+                b.catatan = document.getElementById('e-catatan').value;
+                await API.units.update(unit_id, b);
+                closeModalBtn();
+                showToast('Unit berhasil diupdate');
+                await loadStokTable(_stokFilter);
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Update Unit'; btn.disabled = false; }
+        }
+
+        // ═══ VIEW: TRANSAKSI ═══
+        async function renderTransaksi() {
+            const c = document.getElementById('view-container');
+            setLoading(c, 5);
+            try {
+                const list = (await API.transaksi.list()).data;
+                const totalProfit = list.reduce((s, t) => s + (t.profit || 0), 0);
+                c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+                  <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
+                    <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Semua Transaksi</p>
+                    <span class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} transaksi</span>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                      <thead>
+                        <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+                          <th class="px-6 py-3.5 font-medium">ID Trx</th>
+                          <th class="px-6 py-3.5 font-medium">Unit</th>
+                          <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Kasir</th>
+                          <th class="px-6 py-3.5 font-medium">Harga Jual</th>
+                          <th class="px-6 py-3.5 font-medium hidden md:table-cell">Modal</th>
+                          <th class="px-6 py-3.5 font-medium">Profit</th>
+                          <th class="px-6 py-3.5 font-medium hidden lg:table-cell">Waktu</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${list.length ? list.map(t=>`<tr class="tbl-row">
+                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${t.trx_id}</td>
+                          <td class="px-6 py-4">
+                            <div class="font-medium dark:text-zinc-100 text-zinc-800">${t.unit_label}</div>
+                            <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${t.unit_id}</div>
+                          </td>
+                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
+                          <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
+                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(t.harga_modal)}</td>
+                          <td class="px-6 py-4 font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
+                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${t.waktu}</td>
+                        </tr>`).join('') : `<tr><td colspan="7">${emptyState('Belum ada transaksi')}</td></tr>`}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="px-6 py-4 border-t border-divider flex justify-between items-center">
+                    <span class="text-xs dark:text-zinc-500 text-zinc-400">Total Profit</span>
+                    <span class="text-sm font-bold text-[#4FD1C5]">${rp(totalProfit)}</span>
+                  </div>
+                </div>`;
+            } catch (e) { c.innerHTML = errorState(e.message, 'renderTransaksi()'); }
+        }
+
+        // ═══ VIEW: LAPORAN ═══
+        async function renderLaporan() {
+            const c = document.getElementById('view-container');
+            setLoading(c, 4);
+            try {
+                const [sRes, tRes] = await Promise.all([API.dashboard.stats(), API.transaksi.list()]);
+                const keu = sRes.data.keuangan;
+                const list = tRes.data;
+                c.innerHTML = `<div class="space-y-6">
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                   ${statCard('Total Revenue', rp(keu.total_revenue), 'bulan ini', keu.total_revenue >= 0 ? 'up' : 'down')}
+                    ${statCard('Total Modal',   rp(keu.total_modal),   'harga beli',        'red')}
+                    ${statCard('Gross Profit',  rp(keu.total_profit),  'keuntungan bersih', 'profit')}
+                  </div>
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="panel rounded-2xl p-6">
+                      <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Breakdown Keuangan</p>
+                      <div class="divide-y dark:divide-zinc-800 divide-zinc-100">
+                        ${finRow('Total Penjualan (Revenue)', rp(keu.total_revenue), 'text-[#4FD1C5]')}
+                        ${finRow('Total Harga Modal',         rp(keu.total_modal),   'text-[#4FD1C5]')}
+                        ${finRow('Gross Profit',              rp(keu.total_profit),  'text-[#4FD1C5]')}
+                      </div>
+                    </div>
+                    <div class="panel rounded-2xl p-6">
+                      <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Profit per Transaksi</p>
+                      <div class="space-y-0 max-h-64 overflow-y-auto -mr-2 pr-2">
+                        ${list.length ? list.map(t=>`<div class="flex justify-between items-center py-3 border-b border-divider last:border-0">
+                          <div>
+                            <div class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${t.unit_label}</div>
+                            <div class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-0.5">${t.waktu}</div>
+                          </div>
+                          <span class="text-xs font-semibold text-[#4FD1C5]">${rp(t.profit)}</span>
+                        </div>`).join('') : emptyState('Belum ada transaksi')}
+                      </div>
+                    </div>
+                  </div>
+                </div>`;
+            } catch (e) { c.innerHTML = errorState(e.message, 'renderLaporan()'); }
+        }
+
+        // ═══ VIEW: SERVICE (OWNER) ═══
+        async function renderServiceOwner() {
+            const c = document.getElementById('view-container');
+            setLoading(c, 4);
+            try {
+                const list = (await API.service.list()).data;
+                c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+                  <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
+                    <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Semua Data Service</p>
+                    <span class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} tiket</span>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                      <thead>
+                        <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+                          <th class="px-6 py-3.5 font-medium">ID</th>
+                          <th class="px-6 py-3.5 font-medium">Customer</th>
+                          <th class="px-6 py-3.5 font-medium">Perangkat</th>
+                          <th class="px-6 py-3.5 font-medium hidden md:table-cell">Keluhan</th>
+                          <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Teknisi</th>
+                          <th class="px-6 py-3.5 font-medium">Estimasi</th>
+                          <th class="px-6 py-3.5 font-medium">Status</th>
+                          <th class="px-6 py-3.5 font-medium hidden lg:table-cell">Tgl Masuk</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${list.length ? list.map(s=>`<tr class="tbl-row">
+                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${s.service_id}</td>
+                          <td class="px-6 py-4">
+                            <div class="font-medium dark:text-zinc-100 text-zinc-800">${s.nama_customer}</div>
+                            <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${s.kontak_customer}</div>
+                          </td>
+                          <td class="px-6 py-4 font-medium dark:text-zinc-300 text-zinc-600">${s.merk} ${s.tipe}</td>
+                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 max-w-[140px] truncate hidden md:table-cell">${s.keluhan}</td>
+                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${s.teknisi||'—'}</td>
+                          <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(s.estimasi_biaya)}</td>
+                          <td class="px-6 py-4">${badgeService(s.status)}</td>
+                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${s.created_at}</td>
+                        </tr>`).join('') : `<tr><td colspan="8">${emptyState('Belum ada data service','🔧')}</td></tr>`}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>`;
+            } catch (e) { c.innerHTML = errorState(e.message, 'renderServiceOwner()'); }
+        }
+
+        // ═══ VIEW: KARYAWAN ═══
+        async function renderKaryawan() {
+            const c = document.getElementById('view-container');
+            setLoading(c, 3);
+            try {
+                const list = (await API.karyawan.list()).data;
+                const roleColors = {
+                    Kasir: 'bg-blue-500/8 text-blue-400 border border-blue-500/15',
+                    Teknisi: 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
+                    Admin: 'bg-violet-500/8 text-violet-400 border border-violet-500/15'
+                };
+                c.innerHTML = `<div class="space-y-5">
+                  <div class="flex justify-end">
+                    <button onclick="modalTambahKaryawan()" class="btn btn-primary">
+                       <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7.5 3.28149V11.719" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M11.7187 7.50025H3.28125" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                       </svg>
+                      Tambah Karyawan
+                    </button>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${list.length ? list.map(k=>`<div class="panel rounded-2xl p-5 hover:-translate-y-0.5 transition-all duration-200">
+                      <div class="flex items-start gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-xl dark:bg-zinc-800 bg-zinc-100 flex items-center justify-center text-sm font-bold dark:text-zinc-300 text-zinc-600 flex-shrink-0">${k.nama[0]}</div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 truncate tracking-tight">${k.nama}</div>
+                          <span class="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium ${roleColors[k.jabatan]||'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'}">${k.jabatan}</span>
+                        </div>
+                        <span class="badge ${k.aktif?'badge-tersedia':'badge-sold'}">${k.aktif?'Aktif':'Nonaktif'}</span>
+                      </div>
+                      <hr class="divider mb-4"/>
+                      <div class="space-y-2.5 text-xs">
+                        <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Bergabung</span><span class="dark:text-zinc-300 text-zinc-600">${k.bergabung}</span></div>
+                        <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Gaji Pokok</span><span class="font-semibold text-[#4FD1C5]">${rp(k.gaji)}</span></div>
+                      </div>
+                    </div>`).join('') : `<div class="col-span-3">${emptyState('Belum ada karyawan','👤')}</div>`}
+                  </div>
+                </div>`;
+            } catch (e) { c.innerHTML = errorState(e.message, 'renderKaryawan()'); }
+        }
+
+        function modalTambahKaryawan() {
+            openModal(`${modalHeader('Tambah Karyawan')}
+                <div class="space-y-3">
+                  <div><label class="label">Nama Lengkap</label><input id="k-nama" type="text" class="${input}"/></div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div><label class="label">Username</label><input id="k-user" type="text" class="${input}"/></div>
+                    <div><label class="label">Jabatan</label>
+                      <select id="k-jabatan" class="${input}">
+                        <option value="Kasir">Kasir</option><option value="Teknisi">Teknisi</option><option value="Admin">Admin</option>
+                      </select></div>
+                  </div>
+                  <div><label class="label">Gaji Pokok</label><input id="k-gaji" type="number" min="0" class="${input}" placeholder="3500000"/></div>
+                </div>
+                <button id="btn-simpan-karyawan" onclick="simpanKaryawan()" class="btn btn-primary w-full mt-5">Simpan Karyawan</button>`);
+        }
+
+        async function simpanKaryawan() {
+            const btn = document.getElementById('btn-simpan-karyawan');
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.disabled = true;
+            try {
+                await API.karyawan.create({
+                    nama: document.getElementById('k-nama').value,
+                    username: document.getElementById('k-user').value,
+                    jabatan: document.getElementById('k-jabatan').value,
+                    gaji: parseInt(document.getElementById('k-gaji').value) || 0,
+                });
+                closeModalBtn(); showToast('Karyawan berhasil ditambahkan'); await renderKaryawan();
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Karyawan'; btn.disabled = false; }
+        }
+
+        // ═══ VIEW: LOG ═══
+        async function renderLog() {
+            const c = document.getElementById('view-container');
+            setLoading(c, 6);
+            try {
+                const list = (await API.log.list()).data;
+                const actionColors = {
+                    'Input Transaksi': 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
+                    'Tambah Unit':     'bg-blue-500/8 text-blue-400 border border-blue-500/15',
+                    'Edit Unit':       'bg-amber-500/8 text-amber-400 border border-amber-500/15',
+                    'Tambah Karyawan': 'bg-violet-500/8 text-violet-400 border border-violet-500/15',
+                    'Input Service':   'bg-orange-500/8 text-orange-400 border border-orange-500/15',
+                    'Update Service':  'bg-orange-500/8 text-orange-400 border border-orange-500/15',
+                };
+                c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+                  <div class="px-6 py-4 border-b border-divider">
+                    <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Sistem</p>
+                  </div>
+                  <div>
+                    ${list.length ? list.map(l=>`<div class="log-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">
+                      <div class="w-1.5 h-1.5 rounded-full dark:bg-zinc-600 bg-zinc-300 mt-2 flex-shrink-0"></div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2.5 flex-wrap">
+                          <span class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${l.user}</span>
+                          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${actionColors[l.aksi]||'dark:bg-zinc-800 bg-zinc-100 dark:text-zinc-500 text-zinc-400'}">${l.aksi}</span>
+                        </div>
+                        <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">${l.detail}</p>
+                      </div>
+                      <span class="text-[10px] dark:text-zinc-600 text-zinc-400 whitespace-nowrap flex-shrink-0">${l.waktu}</span>
+                    </div>`).join('') : emptyState('Belum ada log aktivitas')}
+                  </div>
+                </div>`;
+            } catch (e) { c.innerHTML = errorState(e.message, 'renderLog()'); }
+        }
+
+        // ═══ VIEW: STOK KASIR ═══
+        let _stokKasirCache = [];
+
+        async function renderStokKasir() {
+            const c = document.getElementById('view-container');
+            c.innerHTML = `<div class="space-y-5">
+                <div class="search-wrap">
+                  <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                  <input id="search-stok" type="text" placeholder="Cari merk, tipe, ID, IMEI..."
+                    class="${input} search-field" oninput="filterStokKasir(this.value)"/>
+                </div>
+                <div id="stok-kasir-table">${Array(4).fill('<div class="skeleton h-12 w-full mb-2"></div>').join('')}</div>
+            </div>`;
+            await loadStokKasirTable('');
+        }
+
+        async function loadStokKasirTable(q) {
+            const wrap = document.getElementById('stok-kasir-table');
+            if (!wrap) return;
+            try {
+                if (!_stokKasirCache.length || !q) {
+                    _stokKasirCache = (await API.units.list({ status: 'Tersedia', cabang: STATE.user.cabang })).data;
+                }
+                const units = q ? _stokKasirCache.filter(u =>
+                    `${u.merk} ${u.tipe} ${u.unit_id} ${u.imei}`.toLowerCase().includes(q.toLowerCase())
+                ) : _stokKasirCache;
+
+                wrap.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                      <thead>
+                        <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+                          <th class="px-5 py-3.5 font-medium">ID</th>
+                          <th class="px-5 py-3.5 font-medium">Perangkat</th>
+                          <th class="px-5 py-3.5 font-medium hidden md:table-cell">Spesifikasi</th>
+                          <th class="px-5 py-3.5 font-medium hidden lg:table-cell">IMEI</th>
+                          <th class="px-5 py-3.5 font-medium">Harga Jual</th>
+                          <th class="px-5 py-3.5 font-medium hidden sm:table-cell">Battery</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${units.length ? units.map(u=>`<tr class="tbl-row">
+                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${u.unit_id}</td>
+                          <td class="px-5 py-4">
+                            <div class="font-medium dark:text-zinc-100 text-zinc-800">${u.merk}</div>
+                            <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${u.tipe}</div>
+                          </td>
+                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${u.storage} · ${u.warna}<br/><span class="text-[10px]">${u.kondisi}</span></td>
+                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${u.imei}</td>
+                          <td class="px-5 py-4 font-semibold text-[#4FD1C5]">${rp(u.harga_jual)}</td>
+                          <td class="px-5 py-4 hidden sm:table-cell">${batteryBar(u.battery)}</td>
+                        </tr>`).join('') : `<tr><td colspan="6">${emptyState('Tidak ada unit tersedia','📦')}</td></tr>`}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="px-5 py-3.5 border-t border-divider">
+                    <span class="text-[11px] dark:text-zinc-500 text-zinc-400">${units.length} unit tersedia</span>
+                  </div>
+                </div>`;
+            } catch (e) { wrap.innerHTML = errorState(e.message, 'renderStokKasir()'); }
+        }
+
+        function filterStokKasir(q) { loadStokKasirTable(q); }
+
+        // ═══ VIEW: INPUT TRANSAKSI ═══
+        async function renderInputTransaksi() {
+            const c = document.getElementById('view-container');
+            let units = [];
+            try { units = (await API.units.list({ status: 'Tersedia', cabang: STATE.user.cabang })).data; } catch {}
+
+            c.innerHTML = `<div class="max-w-lg">
+                <div class="panel rounded-2xl p-7">
+                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-6">Form Input Penjualan</p>
+                  <div class="space-y-4">
+                    <div>
+                      <label class="label">ID Produk <span class="text-red-400">*</span></label>
+                      <div class="flex gap-2">
+                        <input id="trx-unit-id" type="text" class="${input} flex-1" placeholder="JYP-IP-BN-001"
+                          oninput="previewUnitById(this.value,${JSON.stringify(units).replace(/"/g,'&quot;')})"/>
+                        <button onclick="modalPilihUnit(${JSON.stringify(units).replace(/"/g,'&quot;')})" class="btn btn-ghost flex-shrink-0">Pilih</button>
+                      </div>
+                    </div>
+                    <div id="unit-preview" class="hidden panel rounded-xl p-4 border-divider">
+                      <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-2.5">Preview Unit</p>
+                      <div id="unit-preview-content"></div>
+                    </div>
+                    <div>
+                      <label class="label">Verifikasi IMEI <span class="text-red-400">*</span></label>
+                      <input id="trx-imei" type="text" class="${input}" placeholder="Masukkan IMEI unit"/>
+                    </div>
+                    <div>
+                      <label class="label">Catatan</label>
+                      <textarea id="trx-catatan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea>
+                    </div>
+                    <button id="btn-konfirmasi" onclick="konfirmasiTransaksi()" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">
+                      Konfirmasi Penjualan
+                    </button>
+                  </div>
+                </div>
+            </div>`;
+        }
+
+        function previewUnitById(id, units) {
+            const u = units.find(x => x.unit_id === id);
+            const prev = document.getElementById('unit-preview');
+            const cont = document.getElementById('unit-preview-content');
+            if (u) {
+                prev.classList.remove('hidden');
+                cont.innerHTML = `<div class="flex justify-between items-start">
+                    <div>
+                      <span class="text-sm font-medium dark:text-zinc-100 text-zinc-800">${u.merk} ${u.tipe}</span>
+                      <span class="text-xs dark:text-zinc-500 text-zinc-400 ml-2">${u.storage} · ${u.warna}</span>
+                      <div class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-0.5">${u.imei}</div>
+                    </div>
+                    <span class="text-sm font-bold text-[#4FD1C5]">${rp(u.harga_jual)}</span>
+                </div>`;
+            } else { prev.classList.add('hidden'); }
+        }
+
+        function modalPilihUnit(units) {
+            openModal(`${modalHeader('Pilih Unit')}
+                <div class="space-y-2 max-h-72 overflow-y-auto -mx-1 px-1">
+                  ${units.length ? units.map(u=>`
+                  <div onclick="pilihUnit('${u.unit_id}')" class="flex justify-between items-center p-4 rounded-xl border dark:border-zinc-800 border-zinc-100 dark:hover:border-zinc-700 hover:border-zinc-200 cursor-pointer transition-all dark:hover:bg-zinc-800/50 hover:bg-zinc-50">
+                    <div>
+                      <div class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-0.5">${u.unit_id}</div>
+                      <div class="text-sm font-medium dark:text-zinc-100 text-zinc-800">${u.merk} ${u.tipe}</div>
+                      <div class="text-[11px] dark:text-zinc-500 text-zinc-400">${u.storage} · ${u.kondisi}</div>
+                    </div>
+                    <span class="text-sm font-bold text-[#4FD1C5]">${rp(u.harga_jual)}</span>
+                  </div>`).join('') : emptyState('Tidak ada unit tersedia','📦')}
+                </div>`);
+        }
+
+        function pilihUnit(id) {
+            document.getElementById('trx-unit-id').value = id;
+            document.getElementById('trx-unit-id').dispatchEvent(new Event('input'));
+            closeModalBtn();
+        }
+
+        async function konfirmasiTransaksi() {
+            const unit_id = document.getElementById('trx-unit-id').value.trim();
+            const imei = document.getElementById('trx-imei').value.trim();
+            const catatan = document.getElementById('trx-catatan').value;
+            const btn = document.getElementById('btn-konfirmasi');
+            if (!unit_id || !imei) { showToast('ID Produk dan IMEI wajib diisi', 'error'); return; }
+            btn.innerHTML = `<span class="spinner"></span> Memproses...`;
+            btn.disabled = true;
+            try {
+                const res = await API.transaksi.create({ unit_id, imei, catatan });
+                showToast(`✓ ${res.data.trx_id} berhasil dicatat`, 'success');
+                _stokKasirCache = [];
+                navigate('stok-kasir');
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Konfirmasi Penjualan'; btn.disabled = false; }
+        }
+
+        // ═══ VIEW: TAMBAH UNIT (KASIR) ═══
+        async function renderTambahUnit() {
+            const c = document.getElementById('view-container');
+            c.innerHTML = `<div class="max-w-xl">
+                <div class="panel rounded-2xl p-7">
+                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-6">Form Tambah Unit / Barang Masuk</p>
+                  ${_unitFormFields()}
+                  <button id="btn-simpan-unit" onclick="simpanUnit(true)" class="btn btn-primary w-full mt-5">Simpan Unit</button>
+                </div>
+            </div>`;
+        }
+
+        // ═══ VIEW: CUSTOMERS ═══
+        async function renderCustomers() {
+            const c = document.getElementById('view-container');
+            setLoading(c, 3);
+            try {
+                const list = (await API.customers.list({ cabang: STATE.user.cabang })).data;
+                c.innerHTML = `<div class="space-y-5">
+                  <div class="flex gap-3">
+                    <div class="search-wrap flex-1">
+                      <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                      </svg>
+                      <input type="text" placeholder="Cari nama / kontak..." class="${input} search-field" oninput="searchCustomer(this.value)"/>
+                    </div>
+                    <button onclick="modalTambahCustomer()" class="btn btn-primary flex-shrink-0">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                      Tambah
+                    </button>
+                  </div>
+                  <div id="customer-list" class="table-wrap rounded-2xl overflow-hidden">
+                    ${renderCustomerTable(list)}
+                  </div>
+                </div>`;
+                window._allCustomers = list;
+            } catch (e) { c.innerHTML = errorState(e.message, 'renderCustomers()'); }
+        }
+
+        function renderCustomerTable(list) {
+            if (!list.length) return emptyState('Belum ada customer', '👥');
+            return `<div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                  <thead>
+                    <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+                      <th class="px-6 py-3.5 font-medium">Nama</th>
+                      <th class="px-6 py-3.5 font-medium">Kontak</th>
+                      <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Bergabung</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${list.map(cu=>`<tr class="tbl-row">
+                      <td class="px-6 py-4 font-medium dark:text-zinc-100 text-zinc-800">${cu.nama}</td>
+                      <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400">${cu.kontak}</td>
+                      <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell text-[11px]">${cu.created_at}</td>
+                    </tr>`).join('')}
+                  </tbody>
+                </table>
+              </div>
+              <div class="px-6 py-3.5 border-t border-divider">
+                <span class="text-[11px] dark:text-zinc-500 text-zinc-400">${list.length} customer</span>
+              </div>`;
+        }
+
+        function searchCustomer(q) {
+            const filtered = q ? window._allCustomers.filter(c => `${c.nama} ${c.kontak}`.toLowerCase().includes(q.toLowerCase())) : window._allCustomers;
+            document.getElementById('customer-list').innerHTML = renderCustomerTable(filtered);
+        }
+
+        function modalTambahCustomer() {
+            openModal(`${modalHeader('Tambah Customer')}
+                <div class="space-y-3">
+                  <div><label class="label">Nama Lengkap</label><input id="cu-nama" type="text" class="${input}" placeholder="Nama lengkap"/></div>
+                  <div><label class="label">Kontak (HP / Email)</label><input id="cu-kontak" type="text" class="${input}" placeholder="08xxxxxxxxxx"/></div>
+                </div>
+                <button id="btn-simpan-cu" onclick="simpanCustomer()" class="btn btn-primary w-full mt-5">Simpan Customer</button>`);
+        }
+
+        async function simpanCustomer() {
+            const btn = document.getElementById('btn-simpan-cu');
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.disabled = true;
+            try {
+                await API.customers.create({ nama: document.getElementById('cu-nama').value, kontak: document.getElementById('cu-kontak').value, cabang: STATE.user.cabang });
+                closeModalBtn(); showToast('Customer berhasil ditambahkan'); await renderCustomers();
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Customer'; btn.disabled = false; }
+        }
+
+        // ═══ VIEW: SERVICE TEKNISI ═══
+        async function renderServiceTeknisi() {
+            const c = document.getElementById('view-container');
+            setLoading(c, 4);
+            try {
+                const list = (await API.service.list({ cabang: STATE.user.cabang })).data;
+                c.innerHTML = `<div class="space-y-5">
+                  <div class="flex gap-1.5 flex-wrap" id="svc-filter-btns">
+                    ${['Semua','Masuk','Diagnosa','Proses','Selesai','Diambil'].map((s,i)=>
+                      `<button onclick="filterServiceTeknisi('${s}')" class="filter-tab ${i===0?'active':''}">${s}</button>`).join('')}
+                  </div>
+                  <div id="svc-list">${renderServiceList(list)}</div>
+                </div>`;
+                window._allService = list;
+            } catch (e) { c.innerHTML = errorState(e.message, 'renderServiceTeknisi()'); }
+        }
+
+        function filterServiceTeknisi(status) {
+            document.querySelectorAll('#svc-filter-btns .filter-tab').forEach(b => {
+                b.classList.toggle('active', b.textContent.trim() === status);
+            });
+            const filtered = status === 'Semua' ? window._allService : window._allService.filter(s => s.status === status);
+            document.getElementById('svc-list').innerHTML = renderServiceList(filtered);
+        }
+
+        function renderServiceList(list) {
+            if (!list.length) return `<div class="table-wrap rounded-2xl py-2">${emptyState('Tidak ada tiket service', settingSvg)}</div>`;
+            return `<div class="space-y-3">` + list.map(s => `<div class="svc-card">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                      <span class="text-[10px] dark:text-zinc-500 text-zinc-400">${s.service_id}</span>
+                      ${badgeService(s.status)}
+                    </div>
+                    <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 tracking-tight">${s.merk} ${s.tipe}</p>
+                    <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-0.5">
+                      <span class="font-medium dark:text-zinc-300 text-zinc-600">${s.nama_customer}</span>
+                      <span class="dark:text-zinc-600 text-zinc-300"> · </span>${s.kontak_customer}
+                    </p>
+                    <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-0.5">${s.keluhan}</p>
+                    ${s.catatan_kerusakan ? `<p class="text-[11px] dark:text-zinc-600 text-zinc-400 mt-0.5 italic">${s.catatan_kerusakan}</p>` : ''}
+                    <div class="flex items-center gap-3 mt-2.5 text-[11px] dark:text-zinc-500 text-zinc-400">
+                      <span>Estimasi: <span class="font-medium dark:text-zinc-300 text-zinc-600">${rp(s.estimasi_biaya)}</span></span>
+                      <span class="dark:text-zinc-700 text-zinc-300">·</span>
+                      <span>${s.created_at}</span>
+                    </div>
+                  </div>
+                  <button onclick="modalUpdateService('${s.service_id}')" class="btn btn-ghost flex-shrink-0" style="height:32px;padding:0 12px;font-size:0.6875rem;">Update</button>
+                </div>
+                ${s.foto_urls && s.foto_urls.length ? `<div class="flex gap-2 mt-3 flex-wrap pt-3 border-t border-divider">
+                  ${s.foto_urls.map(p=>`<img src="${p}" class="w-14 h-14 rounded-xl object-cover border dark:border-zinc-800 border-zinc-200 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${p}')"/>`).join('')}
+                </div>` : ''}
+            </div>`).join('') + `</div>`;
+        }
+
+        async function modalUpdateService(service_id) {
+            const svc = (await API.service.get(service_id)).data;
+            openModal(`${modalHeader('Update Service', `${svc.service_id} · ${svc.merk} ${svc.tipe}`)}
+                <div class="space-y-3">
+                  <div><label class="label">Status Pengerjaan</label>
+                    <select id="svc-status" class="${input}">
+                      ${['Masuk','Diagnosa','Proses','Selesai','Diambil'].map(st=>`<option ${svc.status===st?'selected':''}>${st}</option>`).join('')}
+                    </select></div>
+                  <div><label class="label">Catatan Kerusakan</label>
+                    <textarea id="svc-catatan" rows="3" class="${input} resize-none" style="height:auto;">${svc.catatan_kerusakan||''}</textarea></div>
+                  <div><label class="label">Estimasi Biaya (Rp)</label>
+                    <input id="svc-estimasi" type="number" min="0" value="${svc.estimasi_biaya||0}" class="${input}"/></div>
+                  <div>
+                    <label class="label">Upload Foto</label>
+                    <div class="border border-dashed dark:border-zinc-700 border-zinc-200 rounded-xl p-4 text-center cursor-pointer dark:hover:border-zinc-600 hover:border-zinc-300 transition-colors" onclick="document.getElementById('svc-foto-input').click()">
+                      <input id="svc-foto-input" type="file" accept="image/*" class="hidden" onchange="uploadFotoService('${service_id}',this)"/>
+                      <p class="text-xs dark:text-zinc-500 text-zinc-400">Klik untuk upload foto kondisi barang</p>
+                    </div>
+                    ${svc.foto_urls && svc.foto_urls.length ? `<div class="flex gap-2 mt-2 flex-wrap">${svc.foto_urls.map(p=>`<img src="${p}" class="w-14 h-14 rounded-xl object-cover dark:border dark:border-zinc-800"/>`).join('')}</div>` : ''}
+                  </div>
+                </div>
+                <button id="btn-update-svc" onclick="updateService('${service_id}')" class="btn btn-primary w-full mt-5">Update Service</button>`);
+        }
+
+        async function uploadFotoService(service_id, input) {
+            const file = input.files[0];
+            if (!file) return;
+            showToast('Mengupload foto...', 'info');
+            try {
+                await API.service.uploadFoto(service_id, file);
+                showToast('Foto berhasil diupload');
+                closeModalBtn();
+                await modalUpdateService(service_id);
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        async function updateService(service_id) {
+            const btn = document.getElementById('btn-update-svc');
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.disabled = true;
+            try {
+                await API.service.update(service_id, {
+                    status: document.getElementById('svc-status').value,
+                    catatan_kerusakan: document.getElementById('svc-catatan').value,
+                    estimasi_biaya: parseInt(document.getElementById('svc-estimasi').value) || 0,
+                });
+                closeModalBtn(); showToast('Service berhasil diupdate'); await renderServiceTeknisi();
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Update Service'; btn.disabled = false; }
+        }
+
+        // ═══ VIEW: INPUT SERVICE ═══
+        async function renderInputService() {
+            const c = document.getElementById('view-container');
+            c.innerHTML = `<div class="max-w-lg">
+                <div class="panel rounded-2xl p-7">
+                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-6">Form Input Service Baru</p>
+                  <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                      <div class="col-span-2"><label class="label">Nama Customer <span class="text-red-400">*</span></label>
+                        <input id="svc-nama-cu" type="text" class="${input}" placeholder="Nama lengkap customer"/></div>
+                      <div class="col-span-2"><label class="label">Kontak Customer</label>
+                        <input id="svc-kontak-cu" type="text" class="${input}" placeholder="08xxxxxxxxxx"/></div>
+                      <div><label class="label">Merk HP <span class="text-red-400">*</span></label>
+                        <input id="svc-merk" type="text" class="${input}" placeholder="Samsung / iPhone..."/></div>
+                      <div><label class="label">Tipe HP <span class="text-red-400">*</span></label>
+                        <input id="svc-tipe" type="text" class="${input}" placeholder="Galaxy A54..."/></div>
+                    </div>
+                    <div><label class="label">Keluhan <span class="text-red-400">*</span></label>
+                      <textarea id="svc-keluhan" rows="3" class="${input} resize-none" style="height:auto;" placeholder="Deskripsikan keluhan customer..."></textarea></div>
+                    <div><label class="label">Catatan Kerusakan Awal</label>
+                      <textarea id="svc-catatan-awal" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea></div>
+                    <div><label class="label">Estimasi Biaya (Rp)</label>
+                      <input id="svc-est" type="number" min="0" class="${input}" placeholder="0"/></div>
+                    <button id="btn-input-svc" onclick="inputService()" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">Input Service</button>
+                  </div>
+                </div>
+            </div>`;
+        }
+
+        async function inputService() {
+            const btn = document.getElementById('btn-input-svc');
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.disabled = true;
+            try {
+                const res = await API.service.create({
+                    nama_customer: document.getElementById('svc-nama-cu').value,
+                    kontak_customer: document.getElementById('svc-kontak-cu').value,
+                    merk: document.getElementById('svc-merk').value,
+                    tipe: document.getElementById('svc-tipe').value,
+                    keluhan: document.getElementById('svc-keluhan').value,
+                    catatan_kerusakan: document.getElementById('svc-catatan-awal').value,
+                    estimasi_biaya: parseInt(document.getElementById('svc-est').value) || 0,
+                    cabang: STATE.user.cabang,
+                });
+                showToast(`✓ ${res.data.service_id} berhasil dicatat`, 'success');
+                navigate('service-list');
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Input Service'; btn.disabled = false; }
+        }
+
+        // ═══ INIT ═══
+        (async () => {
+            const token = Token.get();
+            if (token) {
+                try {
+                    const res = await API.auth.me();
+                    STATE.user = res.data;
+                    showApp();
+                } catch { Token.clear(); }
+            }
+        })();
+    </script>
+</body>
+</html>

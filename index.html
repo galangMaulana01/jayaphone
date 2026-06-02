@@ -168,10 +168,12 @@
         .badge-booking  { background: rgba(245,158,11,0.08);  color: #f59e0b; border-color: rgba(245,158,11,0.18); }
         .badge-service  { background: rgba(99,102,241,0.08);  color: #818cf8; border-color: rgba(99,102,241,0.18); }
         .badge-masuk    { background: rgba(113,113,122,0.08); color: #a1a1aa; border-color: rgba(113,113,122,0.18); }
-        .badge-diagnosa { background: rgba(249,115,22,0.08);  color: #fb923c; border-color: rgba(249,115,22,0.18); }
         .badge-proses   { background: rgba(59,130,246,0.08);  color: #60a5fa; border-color: rgba(59,130,246,0.18); }
         .badge-selesai  { background: rgba(16,185,129,0.08);  color: #34d399; border-color: rgba(16,185,129,0.18); }
-        .badge-diambil  { background: rgba(113,113,122,0.08); color: #71717a; border-color: rgba(113,113,122,0.18); }
+        /* Approved = unit sudah disetujui kasir, masuk stok */
+        .badge-diambil  { background: rgba(79,209,197,0.08);  color: #4FD1C5; border-color: rgba(79,209,197,0.18); }
+        /* Ditolak = unit tidak bisa diperbaiki */
+        .badge-ditolak  { background: rgba(239,68,68,0.08);   color: #ef4444; border-color: rgba(239,68,68,0.18); }
 
         /* ── SKELETON ── */
         .dark .skeleton {
@@ -563,7 +565,14 @@
         }
 
         function badgeService(status) {
-            const map = { Masuk: 'badge-masuk', Diagnosa: 'badge-diagnosa', Proses: 'badge-proses', Selesai: 'badge-selesai', Diambil: 'badge-diambil' };
+            // Status resmi backend: Antrian, Proses, Selesai, Approved, Ditolak
+            const map = {
+                Antrian:  'badge-masuk',
+                Proses:   'badge-proses',
+                Selesai:  'badge-selesai',
+                Approved: 'badge-diambil',
+                Ditolak:  'badge-sold',
+            };
             return `<span class="badge ${map[status]||'badge-masuk'}">${status}</span>`;
         }
 
@@ -708,23 +717,25 @@
         // ── NAV CONFIG ──
         const NAV = {
             owner: [
-                { page: 'dashboard',    label: 'Dashboard',       d: dashboardSvg },
-                { page: 'stok',         label: 'Manajemen Stok',  d: stokSvg1 },
-                { page: 'transaksi',    label: 'Transaksi',       d: transaksiSvg },
-                { page: 'laporan',      label: 'Laporan',         d: laporanSvg },
-                { page: 'service',      label: 'Data Service',    d: settingSvg },
-                { page: 'karyawan',     label: 'Karyawan',        d: karyawanSvg },
-                { page: 'log',          label: 'Log Aktivitas',   d: logSvg },
+                { page: 'dashboard',         label: 'Dashboard',         d: dashboardSvg },
+                { page: 'stok',              label: 'Manajemen Stok',    d: stokSvg1 },
+                { page: 'transaksi',         label: 'Transaksi',         d: transaksiSvg },
+                { page: 'laporan',           label: 'Laporan',           d: laporanSvg },
+                { page: 'service',           label: 'Data Service',      d: settingSvg },
+                { page: 'approval-repair',   label: 'Approval Repair',   d: settingSvg },
+                { page: 'karyawan',          label: 'Karyawan',          d: karyawanSvg },
+                { page: 'log',               label: 'Log Aktivitas',     d: logSvg },
             ],
             kasir: [
-                { page: 'stok-kasir',       label: 'Cek Stok',         d: stokSvg2 },
-                { page: 'input-transaksi',  label: 'Input Transaksi',  d:  transaksiSvg2 },
-                { page: 'tambah-unit',      label: 'Tambah Unit',      d: tambahSvg },
-                { page: 'customers',        label: 'Data Customer',    d: clientSvg },
+                { page: 'stok-kasir',        label: 'Cek Stok',          d: stokSvg2 },
+                { page: 'input-transaksi',   label: 'Input Transaksi',   d: transaksiSvg2 },
+                { page: 'tambah-unit',       label: 'Tambah Unit',       d: tambahSvg },
+                { page: 'approval-repair',   label: 'Approval Repair',   d: settingSvg },
+                { page: 'customers',         label: 'Data Customer',     d: clientSvg },
             ],
             teknisi: [
-                { page: 'service-list',  label: 'Data Service',  d: settingSvg },
-                { page: 'input-service', label: 'Input Service', d: tambahSvg },
+                // Teknisi hanya bisa lihat service dan update status Antrian→Proses→Selesai
+                { page: 'service-list', label: 'Data Service', d: settingSvg },
             ],
         };
 
@@ -734,6 +745,7 @@
             'transaksi':       ['Transaksi'],
             'laporan':         ['Laporan Keuangan'],
             'service':         ['Data Service'],
+            'approval-repair': ['Approval Repair'],
             'karyawan':        ['Karyawan'],
             'log':             ['Log Aktivitas'],
             'stok-kasir':      ['Cek Stok'],
@@ -741,8 +753,8 @@
             'tambah-unit':     ['Tambah Unit'],
             'customers':       ['Data Customer'],
             'service-list':    ['Data Service'],
-            'input-service':   ['Input Service'],
         };
+
 
         // ── SHOW APP ──
         function showApp() {
@@ -779,6 +791,7 @@
             'transaksi':       renderTransaksi,
             'laporan':         renderLaporan,
             'service':         renderServiceOwner,
+            'approval-repair': renderApprovalRepair,
             'karyawan':        renderKaryawan,
             'log':             renderLog,
             'stok-kasir':      renderStokKasir,
@@ -786,7 +799,7 @@
             'tambah-unit':     renderTambahUnit,
             'customers':       renderCustomers,
             'service-list':    renderServiceTeknisi,
-            'input-service':   renderInputService,
+            // input-service DIHAPUS: service dibuat otomatis oleh backend saat unit kondisi_hp=Repair
         };
 
         function navigate(page) {
@@ -927,7 +940,7 @@
                           <th class="px-5 py-3.5 font-medium">Jual</th>
                           <th class="px-5 py-3.5 font-medium hidden sm:table-cell">Battery</th>
                           <th class="px-5 py-3.5 font-medium">Status</th>
-                          <th class="px-5 py-3.5 font-medium"></th>
+                          <th class="px-5 py-3.5 font-medium">Kondisi HP</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -944,7 +957,8 @@
                           <td class="px-5 py-4 hidden sm:table-cell">${batteryBar(u.battery)}</td>
                           <td class="px-5 py-4">${badge(u.status)}</td>
                           <td class="px-5 py-4">
-                            <button onclick="modalEditUnit('${u.unit_id}')" class="btn btn-ghost" style="height:30px;padding:0 12px;font-size:0.6875rem;">Edit</button>
+                            <span class="text-[11px] ${u.kondisi_hp==='Repair'?'text-amber-400':'dark:text-zinc-500 text-zinc-400'}">${u.kondisi_hp}</span>
+                            ${u.service_id ? `<div class="text-[10px] dark:text-zinc-600 text-zinc-400">${u.service_id}</div>` : ''}
                           </td>
                         </tr>`).join('') : `<tr><td colspan="9">${emptyState('Tidak ada unit untuk filter ini')}</td></tr>`}
                       </tbody>
@@ -967,22 +981,51 @@
                     <option value="IP">iPhone</option><option value="AI">Android</option>
                     <option value="TB">Tablet</option><option value="AC">Accessories</option><option value="SP">Sparepart</option>
                   </select></div>
-                <div><label class="label">Kondisi</label>
+                <div><label class="label">Kondisi Fisik</label>
                   <select id="u-kondisi-kode" class="${input}">
                     <option value="BN">Normal</option><option value="MN">Minus</option>
                     <option value="EX">Ex Inter</option><option value="RJ">Reject</option>
                   </select></div>
-                ${fld('u-merk','Merk','text','Apple / Samsung...')}
-                ${fld('u-tipe','Tipe','text','iPhone 15 Pro...')}
+                <div class="col-span-2">
+                  <label class="label">Kondisi HP <span class="text-red-400">*</span></label>
+                  <select id="u-kondisi-hp" class="${input}" onchange="toggleKeluhanField(this.value)">
+                    <option value="Mulus">Mulus — langsung masuk stok jual</option>
+                    <option value="Repair">Repair — masuk antrian service teknisi</option>
+                  </select>
+                  <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">Backend akan menentukan status unit secara otomatis berdasarkan kondisi ini.</p>
+                </div>
+                ${fld('u-merk','Merk <span class="text-red-400">*</span>','text','Apple / Samsung...')}
+                ${fld('u-tipe','Tipe <span class="text-red-400">*</span>','text','iPhone 15 Pro...')}
                 ${fld('u-storage','Storage','text','128GB')}
                 ${fld('u-warna','Warna','text','Black Titanium')}
                 ${fld('u-imei','IMEI','text','15 digit IMEI')}
                 ${fld('u-battery','Battery %','number','100','min="0" max="100"')}
                 ${fld('u-modal','Harga Modal','number','0','min="0"')}
-                ${fld('u-jual','Harga Jual','number','0','min="0"')}
+              </div>
+              <!-- Harga jual hanya untuk kondisi Mulus; Repair diisi kasir setelah approval -->
+              <div id="wrap-harga-jual" class="mt-3">
+                <label class="label">Harga Jual <span class="text-[11px] dark:text-zinc-500 text-zinc-400">(hanya jika Mulus)</span></label>
+                <input id="u-jual" type="number" min="0" class="${input}" placeholder="0"/>
+              </div>
+              <!-- Keluhan wajib diisi jika kondisi_hp = Repair -->
+              <div id="wrap-keluhan" class="mt-3 hidden">
+                <label class="label">Keluhan <span class="text-red-400">*</span> <span class="text-[11px] dark:text-zinc-500 text-zinc-400">(wajib jika Repair)</span></label>
+                <textarea id="u-keluhan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Deskripsikan kerusakan / keluhan..."></textarea>
               </div>
               <div class="mt-3"><label class="label">Catatan</label>
                 <textarea id="u-catatan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea></div>`;
+        }
+
+        function toggleKeluhanField(kondisi_hp) {
+            const wrapJual    = document.getElementById('wrap-harga-jual');
+            const wrapKeluhan = document.getElementById('wrap-keluhan');
+            if (kondisi_hp === 'Repair') {
+                wrapKeluhan.classList.remove('hidden');
+                wrapJual.classList.add('hidden');
+            } else {
+                wrapKeluhan.classList.add('hidden');
+                wrapJual.classList.remove('hidden');
+            }
         }
 
         function modalTambahUnitForm() {
@@ -993,63 +1036,49 @@
 
         async function simpanUnit(isKasirPage = false) {
             const btn = document.getElementById('btn-simpan-unit');
+            const kondisi_hp = document.getElementById('u-kondisi-hp').value;
+            const keluhan    = document.getElementById('u-keluhan')?.value?.trim() || '';
+            const merk       = document.getElementById('u-merk').value.trim();
+            const tipe       = document.getElementById('u-tipe').value.trim();
+
+            if (!merk || !tipe) { showToast('Merk dan Tipe wajib diisi', 'error'); return; }
+            if (kondisi_hp === 'Repair' && !keluhan) {
+                showToast('Keluhan wajib diisi untuk unit Repair', 'error');
+                return;
+            }
+
             btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
             btn.disabled = true;
             try {
-                await API.units.create({
-                    kat_kode: document.getElementById('u-kat').value,
+                const payload = {
+                    kat_kode:     document.getElementById('u-kat').value,
                     kondisi_kode: document.getElementById('u-kondisi-kode').value,
-                    merk: document.getElementById('u-merk').value,
-                    tipe: document.getElementById('u-tipe').value,
-                    storage: document.getElementById('u-storage').value || '-',
-                    warna: document.getElementById('u-warna').value || '-',
-                    imei: document.getElementById('u-imei').value || '-',
-                    harga_modal: parseInt(document.getElementById('u-modal').value) || 0,
-                    harga_jual: parseInt(document.getElementById('u-jual').value) || 0,
-                    battery: parseInt(document.getElementById('u-battery').value) || 100,
-                    catatan: document.getElementById('u-catatan').value,
-                });
+                    kondisi_hp,   // "Mulus" | "Repair" — backend yang tentukan status
+                    merk,
+                    tipe,
+                    storage:      document.getElementById('u-storage').value || '-',
+                    warna:        document.getElementById('u-warna').value || '-',
+                    imei:         document.getElementById('u-imei').value || '-',
+                    harga_modal:  parseInt(document.getElementById('u-modal').value) || 0,
+                    battery:      parseInt(document.getElementById('u-battery').value) || 100,
+                    catatan:      document.getElementById('u-catatan').value,
+                    cabang:       STATE.user.cabang || 'JYP',
+                };
+                // harga_jual hanya relevan untuk Mulus; Repair diisi nanti via approve-repair
+                if (kondisi_hp === 'Mulus') {
+                    payload.harga_jual = parseInt(document.getElementById('u-jual').value) || 0;
+                }
+                // keluhan wajib dan dikirim untuk Repair
+                if (kondisi_hp === 'Repair') {
+                    payload.keluhan = keluhan;
+                }
+
+                const res = await API.units.create(payload);
                 closeModalBtn();
-                showToast('Unit berhasil ditambahkan');
+                showToast(res.message || 'Unit berhasil ditambahkan');
                 if (isKasirPage) renderTambahUnit();
                 else await loadStokTable(_stokFilter);
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Unit'; btn.disabled = false; }
-        }
-
-        async function modalEditUnit(unit_id) {
-            openModal(`${modalHeader('Edit Unit', unit_id)}
-                <div class="grid grid-cols-2 gap-3">
-                  <div><label class="label">Harga Modal</label><input id="e-modal" type="number" class="${input}" placeholder="0"/></div>
-                  <div><label class="label">Harga Jual</label><input id="e-jual" type="number" class="${input}" placeholder="0"/></div>
-                  <div><label class="label">Battery %</label><input id="e-battery" type="number" class="${input}" placeholder="100"/></div>
-                  <div><label class="label">Status</label>
-                    <select id="e-status" class="${input}">
-                      <option>Tersedia</option><option>Sold</option><option>Booking</option><option>Service</option>
-                    </select></div>
-                </div>
-                <div class="mt-3"><label class="label">Catatan</label><textarea id="e-catatan" rows="2" class="${input} resize-none" style="height:auto;"></textarea></div>
-                <button id="btn-update-unit" onclick="updateUnit('${unit_id}')" class="btn btn-primary w-full mt-5">Update Unit</button>`);
-        }
-
-        async function updateUnit(unit_id) {
-            const btn = document.getElementById('btn-update-unit');
-            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
-            btn.disabled = true;
-            try {
-                const b = {};
-                const m = document.getElementById('e-modal').value;
-                const j = document.getElementById('e-jual').value;
-                const bat = document.getElementById('e-battery').value;
-                if (m) b.harga_modal = parseInt(m);
-                if (j) b.harga_jual = parseInt(j);
-                if (bat) b.battery = parseInt(bat);
-                b.status = document.getElementById('e-status').value;
-                b.catatan = document.getElementById('e-catatan').value;
-                await API.units.update(unit_id, b);
-                closeModalBtn();
-                showToast('Unit berhasil diupdate');
-                await loadStokTable(_stokFilter);
-            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Update Unit'; btn.disabled = false; }
         }
 
         // ═══ VIEW: TRANSAKSI ═══
@@ -1157,29 +1186,31 @@
                       <thead>
                         <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
                           <th class="px-6 py-3.5 font-medium">ID</th>
-                          <th class="px-6 py-3.5 font-medium">Customer</th>
-                          <th class="px-6 py-3.5 font-medium">Perangkat</th>
+                          <th class="px-6 py-3.5 font-medium">Unit</th>
                           <th class="px-6 py-3.5 font-medium hidden md:table-cell">Keluhan</th>
                           <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Teknisi</th>
-                          <th class="px-6 py-3.5 font-medium">Estimasi</th>
                           <th class="px-6 py-3.5 font-medium">Status</th>
                           <th class="px-6 py-3.5 font-medium hidden lg:table-cell">Tgl Masuk</th>
+                          <th class="px-6 py-3.5 font-medium">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
                         ${list.length ? list.map(s=>`<tr class="tbl-row">
                           <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${s.service_id}</td>
                           <td class="px-6 py-4">
-                            <div class="font-medium dark:text-zinc-100 text-zinc-800">${s.nama_customer}</div>
-                            <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${s.kontak_customer}</div>
+                            <div class="font-medium dark:text-zinc-100 text-zinc-800">${s.unit_label}</div>
+                            <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${s.unit_id}</div>
                           </td>
-                          <td class="px-6 py-4 font-medium dark:text-zinc-300 text-zinc-600">${s.merk} ${s.tipe}</td>
                           <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 max-w-[140px] truncate hidden md:table-cell">${s.keluhan}</td>
                           <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${s.teknisi||'—'}</td>
-                          <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(s.estimasi_biaya)}</td>
                           <td class="px-6 py-4">${badgeService(s.status)}</td>
                           <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${s.created_at}</td>
-                        </tr>`).join('') : `<tr><td colspan="8">${emptyState('Belum ada data service','🔧')}</td></tr>`}
+                          <td class="px-6 py-4">
+                            ${s.status === 'Selesai'
+                              ? `<button onclick="modalApproveRepair('${s.unit_id}','${s.service_id}')" class="btn btn-success" style="height:28px;padding:0 12px;font-size:0.6875rem;">Approve</button>`
+                              : `<span class="text-[11px] dark:text-zinc-600 text-zinc-300">—</span>`}
+                          </td>
+                        </tr>`).join('') : `<tr><td colspan="7">${emptyState('Belum ada data service','🔧')}</td></tr>`}
                       </tbody>
                     </table>
                   </div>
@@ -1267,12 +1298,11 @@
             try {
                 const list = (await API.log.list()).data;
                 const actionColors = {
-                    'Input Transaksi': 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
-                    'Tambah Unit':     'bg-blue-500/8 text-blue-400 border border-blue-500/15',
-                    'Edit Unit':       'bg-amber-500/8 text-amber-400 border border-amber-500/15',
-                    'Tambah Karyawan': 'bg-violet-500/8 text-violet-400 border border-violet-500/15',
-                    'Input Service':   'bg-orange-500/8 text-orange-400 border border-orange-500/15',
-                    'Update Service':  'bg-orange-500/8 text-orange-400 border border-orange-500/15',
+                    'Input Transaksi':  'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
+                    'Tambah Unit':      'bg-blue-500/8 text-blue-400 border border-blue-500/15',
+                    'Approve Repair':   'bg-teal-500/8 text-teal-400 border border-teal-500/15',
+                    'Tambah Karyawan':  'bg-violet-500/8 text-violet-400 border border-violet-500/15',
+                    'Update Service':   'bg-orange-500/8 text-orange-400 border border-orange-500/15',
                 };
                 c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
                   <div class="px-6 py-4 border-b border-divider">
@@ -1547,9 +1577,10 @@
             setLoading(c, 4);
             try {
                 const list = (await API.service.list({ cabang: STATE.user.cabang })).data;
+                // Status resmi backend: Antrian, Proses, Selesai, Approved, Ditolak
                 c.innerHTML = `<div class="space-y-5">
                   <div class="flex gap-1.5 flex-wrap" id="svc-filter-btns">
-                    ${['Semua','Masuk','Diagnosa','Proses','Selesai','Diambil'].map((s,i)=>
+                    ${['Semua','Antrian','Proses','Selesai','Approved','Ditolak'].map((s,i)=>
                       `<button onclick="filterServiceTeknisi('${s}')" class="filter-tab ${i===0?'active':''}">${s}</button>`).join('')}
                   </div>
                   <div id="svc-list">${renderServiceList(list)}</div>
@@ -1568,65 +1599,88 @@
 
         function renderServiceList(list) {
             if (!list.length) return `<div class="table-wrap rounded-2xl py-2">${emptyState('Tidak ada tiket service', settingSvg)}</div>`;
-            return `<div class="space-y-3">` + list.map(s => `<div class="svc-card">
+            return `<div class="space-y-3">` + list.map(s => {
+                // Teknisi bisa update jika status masih Antrian atau Proses
+                // Setelah Selesai, hanya kasir/owner yang bisa approve
+                const canUpdate = ['Antrian','Proses'].includes(s.status);
+                const role = STATE.user?.role;
+                const showUpdateBtn = (role === 'teknisi' && canUpdate) || role === 'owner';
+                return `<div class="svc-card">
                 <div class="flex items-start justify-between gap-3">
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 flex-wrap mb-1.5">
                       <span class="text-[10px] dark:text-zinc-500 text-zinc-400">${s.service_id}</span>
                       ${badgeService(s.status)}
                     </div>
-                    <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 tracking-tight">${s.merk} ${s.tipe}</p>
-                    <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-0.5">
-                      <span class="font-medium dark:text-zinc-300 text-zinc-600">${s.nama_customer}</span>
-                      <span class="dark:text-zinc-600 text-zinc-300"> · </span>${s.kontak_customer}
-                    </p>
+                    <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 tracking-tight">${s.unit_label}</p>
+                    <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-0.5 font-mono text-[11px]">${s.unit_id}</p>
                     <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-0.5">${s.keluhan}</p>
                     ${s.catatan_kerusakan ? `<p class="text-[11px] dark:text-zinc-600 text-zinc-400 mt-0.5 italic">${s.catatan_kerusakan}</p>` : ''}
+                    ${s.teknisi ? `<p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1">Teknisi: <span class="dark:text-zinc-300 text-zinc-600">${s.teknisi}</span></p>` : ''}
                     <div class="flex items-center gap-3 mt-2.5 text-[11px] dark:text-zinc-500 text-zinc-400">
-                      <span>Estimasi: <span class="font-medium dark:text-zinc-300 text-zinc-600">${rp(s.estimasi_biaya)}</span></span>
-                      <span class="dark:text-zinc-700 text-zinc-300">·</span>
                       <span>${s.created_at}</span>
                     </div>
                   </div>
-                  <button onclick="modalUpdateService('${s.service_id}')" class="btn btn-ghost flex-shrink-0" style="height:32px;padding:0 12px;font-size:0.6875rem;">Update</button>
+                  ${showUpdateBtn
+                    ? `<button onclick="modalUpdateService('${s.service_id}')" class="btn btn-ghost flex-shrink-0" style="height:32px;padding:0 12px;font-size:0.6875rem;">Update</button>`
+                    : ''}
                 </div>
                 ${s.foto_urls && s.foto_urls.length ? `<div class="flex gap-2 mt-3 flex-wrap pt-3 border-t border-divider">
                   ${s.foto_urls.map(p=>`<img src="${p}" class="w-14 h-14 rounded-xl object-cover border dark:border-zinc-800 border-zinc-200 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${p}')"/>`).join('')}
                 </div>` : ''}
-            </div>`).join('') + `</div>`;
+            </div>`;
+            }).join('') + `</div>`;
         }
 
         async function modalUpdateService(service_id) {
             const svc = (await API.service.get(service_id)).data;
-            openModal(`${modalHeader('Update Service', `${svc.service_id} · ${svc.merk} ${svc.tipe}`)}
+            const role = STATE.user?.role;
+
+            // Tentukan opsi status yang boleh dipilih sesuai role dan status saat ini
+            // Backend: teknisi hanya boleh Antrian→Proses, Proses→Selesai, Antrian/Proses→Ditolak
+            let statusOptions = [];
+            if (role === 'teknisi') {
+                if (svc.status === 'Antrian') statusOptions = ['Antrian','Proses','Ditolak'];
+                else if (svc.status === 'Proses') statusOptions = ['Proses','Selesai','Ditolak'];
+                else statusOptions = [svc.status]; // locked, tidak bisa ubah
+            } else {
+                // Owner bisa lihat semua, tapi approve via endpoint terpisah
+                statusOptions = ['Antrian','Proses','Selesai','Ditolak'];
+            }
+
+            openModal(`${modalHeader('Update Service', `${svc.service_id} · ${svc.unit_label}`)}
                 <div class="space-y-3">
                   <div><label class="label">Status Pengerjaan</label>
                     <select id="svc-status" class="${input}">
-                      ${['Masuk','Diagnosa','Proses','Selesai','Diambil'].map(st=>`<option ${svc.status===st?'selected':''}>${st}</option>`).join('')}
-                    </select></div>
+                      ${statusOptions.map(st=>`<option ${svc.status===st?'selected':''}>${st}</option>`).join('')}
+                    </select>
+                    <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">Teknisi: Antrian→Proses→Selesai atau Ditolak. Approved hanya via kasir/owner.</p>
+                  </div>
                   <div><label class="label">Catatan Kerusakan</label>
                     <textarea id="svc-catatan" rows="3" class="${input} resize-none" style="height:auto;">${svc.catatan_kerusakan||''}</textarea></div>
-                  <div><label class="label">Estimasi Biaya (Rp)</label>
-                    <input id="svc-estimasi" type="number" min="0" value="${svc.estimasi_biaya||0}" class="${input}"/></div>
+                  <div><label class="label">Nama Teknisi</label>
+                    <input id="svc-teknisi" type="text" class="${input}" value="${svc.teknisi||STATE.user?.name||''}" placeholder="Nama teknisi pengerjaan"/></div>
                   <div>
-                    <label class="label">Upload Foto</label>
-                    <div class="border border-dashed dark:border-zinc-700 border-zinc-200 rounded-xl p-4 text-center cursor-pointer dark:hover:border-zinc-600 hover:border-zinc-300 transition-colors" onclick="document.getElementById('svc-foto-input').click()">
-                      <input id="svc-foto-input" type="file" accept="image/*" class="hidden" onchange="uploadFotoService('${service_id}',this)"/>
-                      <p class="text-xs dark:text-zinc-500 text-zinc-400">Klik untuk upload foto kondisi barang</p>
+                    <label class="label">Tambah Foto (via URL)</label>
+                    <div class="flex gap-2">
+                      <input id="svc-foto-url" type="url" class="${input} flex-1" placeholder="https://i.imgur.com/xxx.jpg"/>
+                      <button onclick="addFotoUrlService('${service_id}')" class="btn btn-ghost flex-shrink-0">Tambah</button>
                     </div>
-                    ${svc.foto_urls && svc.foto_urls.length ? `<div class="flex gap-2 mt-2 flex-wrap">${svc.foto_urls.map(p=>`<img src="${p}" class="w-14 h-14 rounded-xl object-cover dark:border dark:border-zinc-800"/>`).join('')}</div>` : ''}
+                    <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">Upload foto ke ImgBB/Imgur lalu paste URL-nya.</p>
+                    ${svc.foto_urls && svc.foto_urls.length ? `<div class="flex gap-2 mt-2 flex-wrap">${svc.foto_urls.map(p=>`<img src="${p}" class="w-14 h-14 rounded-xl object-cover dark:border dark:border-zinc-800" onclick="window.open('${p}')" style="cursor:pointer;"/>`).join('')}</div>` : ''}
                   </div>
                 </div>
                 <button id="btn-update-svc" onclick="updateService('${service_id}')" class="btn btn-primary w-full mt-5">Update Service</button>`);
         }
 
-        async function uploadFotoService(service_id, input) {
-            const file = input.files[0];
-            if (!file) return;
-            showToast('Mengupload foto...', 'info');
+        async function addFotoUrlService(service_id) {
+            const urlInput = document.getElementById('svc-foto-url');
+            const url = urlInput?.value?.trim();
+            if (!url) { showToast('URL foto tidak boleh kosong', 'error'); return; }
+            showToast('Menyimpan URL foto...', 'info');
             try {
-                await API.service.uploadFoto(service_id, file);
-                showToast('Foto berhasil diupload');
+                await API.service.addFotoUrl(service_id, url);
+                showToast('Foto berhasil ditambahkan');
                 closeModalBtn();
                 await modalUpdateService(service_id);
             } catch (e) { showToast(e.message, 'error'); }
@@ -1637,62 +1691,89 @@
             btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
             btn.disabled = true;
             try {
-                await API.service.update(service_id, {
-                    status: document.getElementById('svc-status').value,
+                // Payload sesuai ServiceUpdateRequest backend: status, catatan_kerusakan, teknisi
+                // TIDAK ADA estimasi_biaya di schema backend
+                const payload = {
+                    status:            document.getElementById('svc-status').value,
                     catatan_kerusakan: document.getElementById('svc-catatan').value,
-                    estimasi_biaya: parseInt(document.getElementById('svc-estimasi').value) || 0,
-                });
-                closeModalBtn(); showToast('Service berhasil diupdate'); await renderServiceTeknisi();
+                    teknisi:           document.getElementById('svc-teknisi').value || undefined,
+                };
+                await API.service.update(service_id, payload);
+                closeModalBtn();
+                showToast('Service berhasil diupdate');
+                await renderServiceTeknisi();
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Update Service'; btn.disabled = false; }
         }
 
-        // ═══ VIEW: INPUT SERVICE ═══
-        async function renderInputService() {
+        // ═══ VIEW: APPROVAL REPAIR (Kasir / Owner) ═══
+        // Endpoint: GET /service/pending-approval → list tiket status Selesai
+        // Endpoint: POST /units/{unit_id}/approve-repair → set harga jual, unit ke Tersedia
+        async function renderApprovalRepair() {
             const c = document.getElementById('view-container');
-            c.innerHTML = `<div class="max-w-lg">
-                <div class="panel rounded-2xl p-7">
-                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-6">Form Input Service Baru</p>
-                  <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-3">
-                      <div class="col-span-2"><label class="label">Nama Customer <span class="text-red-400">*</span></label>
-                        <input id="svc-nama-cu" type="text" class="${input}" placeholder="Nama lengkap customer"/></div>
-                      <div class="col-span-2"><label class="label">Kontak Customer</label>
-                        <input id="svc-kontak-cu" type="text" class="${input}" placeholder="08xxxxxxxxxx"/></div>
-                      <div><label class="label">Merk HP <span class="text-red-400">*</span></label>
-                        <input id="svc-merk" type="text" class="${input}" placeholder="Samsung / iPhone..."/></div>
-                      <div><label class="label">Tipe HP <span class="text-red-400">*</span></label>
-                        <input id="svc-tipe" type="text" class="${input}" placeholder="Galaxy A54..."/></div>
-                    </div>
-                    <div><label class="label">Keluhan <span class="text-red-400">*</span></label>
-                      <textarea id="svc-keluhan" rows="3" class="${input} resize-none" style="height:auto;" placeholder="Deskripsikan keluhan customer..."></textarea></div>
-                    <div><label class="label">Catatan Kerusakan Awal</label>
-                      <textarea id="svc-catatan-awal" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea></div>
-                    <div><label class="label">Estimasi Biaya (Rp)</label>
-                      <input id="svc-est" type="number" min="0" class="${input}" placeholder="0"/></div>
-                    <button id="btn-input-svc" onclick="inputService()" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">Input Service</button>
+            setLoading(c, 4);
+            try {
+                const list = (await API.service.pendingApproval({ cabang: STATE.user.cabang })).data;
+                c.innerHTML = `<div class="space-y-5">
+                  <div class="flex items-center justify-between">
+                    <p class="text-xs dark:text-zinc-500 text-zinc-400">Tiket service yang sudah <span class="text-emerald-400 font-medium">Selesai</span> dan menunggu penetapan harga jual.</p>
+                    <span class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} menunggu</span>
                   </div>
-                </div>
-            </div>`;
+                  ${list.length ? `<div class="space-y-3">` + list.map(s=>`
+                  <div class="svc-card">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                          <span class="text-[10px] dark:text-zinc-500 text-zinc-400">${s.service_id}</span>
+                          ${badgeService(s.status)}
+                        </div>
+                        <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 tracking-tight">${s.unit_label}</p>
+                        <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-0.5 font-mono text-[11px]">${s.unit_id}</p>
+                        <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-0.5">${s.keluhan}</p>
+                        ${s.catatan_kerusakan ? `<p class="text-[11px] dark:text-zinc-600 text-zinc-400 mt-0.5 italic">Catatan teknisi: ${s.catatan_kerusakan}</p>` : ''}
+                        ${s.teknisi ? `<p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1">Dikerjakan: <span class="dark:text-zinc-300 text-zinc-600">${s.teknisi}</span></p>` : ''}
+                        <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1">Masuk: ${s.created_at}</p>
+                      </div>
+                      <button onclick="modalApproveRepair('${s.unit_id}','${s.service_id}')"
+                        class="btn btn-success flex-shrink-0" style="height:36px;padding:0 16px;font-size:0.75rem;">
+                        Approve & Set Harga
+                      </button>
+                    </div>
+                  </div>`).join('') + `</div>`
+                  : `<div class="table-wrap rounded-2xl py-2">${emptyState('Tidak ada tiket menunggu approval', settingSvg)}</div>`}
+                </div>`;
+            } catch (e) { c.innerHTML = errorState(e.message, 'renderApprovalRepair()'); }
         }
 
-        async function inputService() {
-            const btn = document.getElementById('btn-input-svc');
-            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+        function modalApproveRepair(unit_id, service_id) {
+            openModal(`${modalHeader('Approve Repair', `Unit: ${unit_id} · Service: ${service_id}`)}
+                <div class="space-y-4">
+                  <div class="p-4 rounded-xl dark:bg-amber-500/8 bg-amber-50 border dark:border-amber-500/15 border-amber-200">
+                    <p class="text-xs dark:text-amber-400 text-amber-700 font-medium">Setelah approve, unit akan otomatis masuk ke stok <span class="font-bold">Tersedia</span> dengan harga jual yang Anda tentukan.</p>
+                  </div>
+                  <div>
+                    <label class="label">Harga Jual <span class="text-red-400">*</span></label>
+                    <input id="approve-harga-jual" type="number" min="1" class="${input}" placeholder="Masukkan harga jual unit..."/>
+                    <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">Harga harus lebih dari 0.</p>
+                  </div>
+                </div>
+                <button id="btn-confirm-approve" onclick="konfirmasiApproveRepair('${unit_id}')" class="btn btn-success w-full mt-5">
+                  Konfirmasi Approve & Simpan Harga
+                </button>`);
+        }
+
+        async function konfirmasiApproveRepair(unit_id) {
+            const btn = document.getElementById('btn-confirm-approve');
+            const harga_jual = parseInt(document.getElementById('approve-harga-jual').value) || 0;
+            if (harga_jual <= 0) { showToast('Harga jual harus lebih dari 0', 'error'); return; }
+            btn.innerHTML = `<span class="spinner"></span> Memproses...`;
             btn.disabled = true;
             try {
-                const res = await API.service.create({
-                    nama_customer: document.getElementById('svc-nama-cu').value,
-                    kontak_customer: document.getElementById('svc-kontak-cu').value,
-                    merk: document.getElementById('svc-merk').value,
-                    tipe: document.getElementById('svc-tipe').value,
-                    keluhan: document.getElementById('svc-keluhan').value,
-                    catatan_kerusakan: document.getElementById('svc-catatan-awal').value,
-                    estimasi_biaya: parseInt(document.getElementById('svc-est').value) || 0,
-                    cabang: STATE.user.cabang,
-                });
-                showToast(`✓ ${res.data.service_id} berhasil dicatat`, 'success');
-                navigate('service-list');
-            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Input Service'; btn.disabled = false; }
+                const res = await API.units.approveRepair(unit_id, { harga_jual });
+                closeModalBtn();
+                showToast(res.message || `Unit ${unit_id} berhasil diapprove → Tersedia`, 'success');
+                // Refresh halaman approval
+                await renderApprovalRepair();
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Konfirmasi Approve & Simpan Harga'; btn.disabled = false; }
         }
 
         // ═══ INIT ═══

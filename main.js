@@ -76,9 +76,11 @@ const API = {
     stats: (cabang = '') => request('GET', `/dashboard/stats${cabang ? `?cabang=${cabang}` : ''}`),
   },
   units: {
-    list:   (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/units${q?`?${q}`:''}`) },
-    create: (b)      => request('POST', '/units', b),
-    update: (id, b)  => request('PUT',  `/units/${id}`, b),
+    list:          (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/units${q?`?${q}`:''}`) },
+    create:        (b)      => request('POST', '/units', b),
+    // CATATAN: PUT /units/{id} TIDAK ADA di backend. Unit bersifat immutable setelah diposting.
+    // Perubahan harga hanya via approve-repair.
+    approveRepair: (id, b)  => request('POST', `/units/${id}/approve-repair`, b),
   },
   transaksi: {
     list:   (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/transaksi${q?`?${q}`:''}`) },
@@ -92,11 +94,14 @@ const API = {
     list: (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/log${q?`?${q}`:''}`) },
   },
   service: {
-    list:       (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/service${q?`?${q}`:''}`) },
-    get:        (id)     => request('GET',  `/service/${id}`),
-    create:     (b)      => request('POST', '/service', b),
-    update:     (id, b)  => request('PUT',  `/service/${id}`, b),
-    uploadFoto: (id, f)  => uploadFile(`/service/${id}/foto`, f),
+    list:           (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/service${q?`?${q}`:''}`) },
+    get:            (id)     => request('GET', `/service/${id}`),
+    // CATATAN: POST /service (create manual) TIDAK ADA di backend.
+    // Service dibuat OTOMATIS saat unit diposting dengan kondisi_hp = "Repair".
+    update:         (id, b)  => request('PUT', `/service/${id}`, b),
+    pendingApproval:(p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/service/pending-approval${q?`?${q}`:''}`) },
+    // uploadFoto backend menerima JSON {url: string}, bukan file upload FormData
+    addFotoUrl:     (id, url) => request('POST', `/service/${id}/foto`, { url }),
   },
   customers: {
     list:   (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/customers${q?`?${q}`:''}`) },
@@ -108,5 +113,4 @@ window.API      = API;
 window.Token    = Token;
 window.APIError = APIError;
 
-// Menyesuaikan URL media agar folder /uploads mengarah ke domain yang tepat tanpa /api/v1
 window.MEDIA_URL = BASE_URL.replace('/api/v1', '');

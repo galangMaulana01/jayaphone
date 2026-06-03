@@ -15,10 +15,7 @@ const Token = {
 async function request(method, path, body = null) {
   const opts = { method, headers: Token.headers() };
   if (body) opts.body = JSON.stringify(body);
-  
-  // LOGIKA DINAMIS: 
-  // Jika base_url adalah domain luar (http...) dan belum punya /api/v1, kita tambahkan otomatis.
-  // Jika base_url adalah path relatif (seperti '/api/v1' atau kosong), dia tidak akan dobel prefix.
+
   let fullPath = `${BASE_URL}${path}`;
   if (BASE_URL.startsWith('http') && !BASE_URL.includes('/api/v1')) {
     fullPath = `${BASE_URL}/api/v1${path}`;
@@ -28,13 +25,27 @@ async function request(method, path, body = null) {
   try {
     res = await fetch(fullPath, opts);
   } catch {
-    throw new APIError(0, 'Tidak dapat terhubung ke server.');
+    throw new APIError(0, 'Tidak dapat terhubung ke server. Periksa koneksi internet.');
   }
-  
-  const data = await res.json().catch(() => ({}));
+
+  // Coba parse JSON, fallback ke text (misal Vercel Protection 403 return plain text)
+  let data = {};
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    data = await res.json().catch(() => ({}));
+  } else {
+    const txt = await res.text().catch(() => '');
+    if (!res.ok) {
+      if (res.status === 403 && txt.toLowerCase().includes('allowlist')) {
+        throw new APIError(res.status, 'Backend terkunci (Vercel Deployment Protection). Aktifkan di Vercel Dashboard → Settings → Deployment Protection → Disable.');
+      }
+      throw new APIError(res.status, txt || `Server error (${res.status})`);
+    }
+  }
+
   if (!res.ok) {
     if (res.status === 401) { Token.clear(); window.location.reload(); }
-    throw new APIError(res.status, data?.detail || data?.message || 'Terjadi kesalahan beo');
+    throw new APIError(res.status, data?.detail || data?.message || `Terjadi kesalahan (${res.status})`);
   }
   return data;
 }
@@ -42,7 +53,7 @@ async function request(method, path, body = null) {
 async function uploadFile(path, file) {
   const fd = new FormData();
   fd.append('file', file);
-  
+
   let fullPath = `${BASE_URL}${path}`;
   if (BASE_URL.startsWith('http') && !BASE_URL.includes('/api/v1')) {
     fullPath = `${BASE_URL}/api/v1${path}`;
@@ -78,8 +89,7 @@ const API = {
   units: {
     list:          (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/units${q?`?${q}`:''}`) },
     create:        (b)      => request('POST', '/units', b),
-    // CATATAN: PUT /units/{id} TIDAK ADA di backend. Unit bersifat immutable setelah diposting.
-    // Perubahan harga hanya via approve-repair.
+    // PUT /units/{id} TIDAK ADA di backend. Unit immutable setelah diposting.
     approveRepair: (id, b)  => request('POST', `/units/${id}/approve-repair`, b),
   },
   transaksi: {
@@ -94,14 +104,13 @@ const API = {
     list: (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/log${q?`?${q}`:''}`) },
   },
   service: {
-    list:           (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/service${q?`?${q}`:''}`) },
-    get:            (id)     => request('GET', `/service/${id}`),
-    // CATATAN: POST /service (create manual) TIDAK ADA di backend.
-    // Service dibuat OTOMATIS saat unit diposting dengan kondisi_hp = "Repair".
-    update:         (id, b)  => request('PUT', `/service/${id}`, b),
-    pendingApproval:(p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/service/pending-approval${q?`?${q}`:''}`) },
-    // uploadFoto backend menerima JSON {url: string}, bukan file upload FormData
-    addFotoUrl:     (id, url) => request('POST', `/service/${id}/foto`, { url }),
+    list:            (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/service${q?`?${q}`:''}`) },
+    get:             (id)     => request('GET', `/service/${id}`),
+    // POST /service manual TIDAK ADA — service dibuat otomatis saat unit kondisi_hp=Repair
+    update:          (id, b)  => request('PUT', `/service/${id}`, b),
+    pendingApproval: (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/service/pending-approval${q?`?${q}`:''}`) },
+    // Backend foto endpoint terima JSON {url: string}, bukan FormData
+    addFotoUrl:      (id, url) => request('POST', `/service/${id}/foto`, { url }),
   },
   customers: {
     list:   (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/customers${q?`?${q}`:''}`) },

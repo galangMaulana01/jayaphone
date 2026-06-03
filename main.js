@@ -21,14 +21,24 @@ async function request(method, path, body = null) {
     fullPath = `${BASE_URL}/api/v1${path}`;
   }
 
+  // Timeout 15 detik — cegah hang saat Vercel cold start / MongoDB timeout
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  opts.signal = controller.signal;
+
   let res;
   try {
     res = await fetch(fullPath, opts);
-  } catch {
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') {
+      throw new APIError(0, 'Request timeout (>15 detik). Vercel cold start, coba lagi dalam 5 detik.');
+    }
     throw new APIError(0, 'Tidak dapat terhubung ke server. Periksa koneksi internet.');
   }
+  clearTimeout(timer);
 
-  // Coba parse JSON, fallback ke text (misal Vercel Protection 403 return plain text)
+  // Parse JSON, fallback ke text (misal Vercel Protection 403 return plain text)
   let data = {};
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
@@ -37,7 +47,7 @@ async function request(method, path, body = null) {
     const txt = await res.text().catch(() => '');
     if (!res.ok) {
       if (res.status === 403 && txt.toLowerCase().includes('allowlist')) {
-        throw new APIError(res.status, 'Backend terkunci (Vercel Deployment Protection). Aktifkan di Vercel Dashboard → Settings → Deployment Protection → Disable.');
+        throw new APIError(res.status, 'Backend terkunci (Vercel Deployment Protection). Nonaktifkan di Vercel Dashboard → phonejaya → Settings → Deployment Protection.');
       }
       throw new APIError(res.status, txt || `Server error (${res.status})`);
     }
@@ -59,16 +69,23 @@ async function uploadFile(path, file) {
     fullPath = `${BASE_URL}/api/v1${path}`;
   }
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+
   let res;
   try {
     res = await fetch(fullPath, {
       method: 'POST',
       headers: { ...(Token.get() ? { Authorization: `Bearer ${Token.get()}` } : {}) },
       body: fd,
+      signal: controller.signal,
     });
-  } catch {
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') throw new APIError(0, 'Upload timeout, coba lagi.');
     throw new APIError(0, 'Tidak dapat terhubung ke server.');
   }
+  clearTimeout(timer);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new APIError(res.status, data?.detail || data?.message || 'Upload gagal');
   return data;
@@ -89,7 +106,6 @@ const API = {
   units: {
     list:          (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/units${q?`?${q}`:''}`) },
     create:        (b)      => request('POST', '/units', b),
-    // PUT /units/{id} TIDAK ADA di backend. Unit immutable setelah diposting.
     approveRepair: (id, b)  => request('POST', `/units/${id}/approve-repair`, b),
   },
   transaksi: {
@@ -106,10 +122,8 @@ const API = {
   service: {
     list:            (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/service${q?`?${q}`:''}`) },
     get:             (id)     => request('GET', `/service/${id}`),
-    // POST /service manual TIDAK ADA — service dibuat otomatis saat unit kondisi_hp=Repair
     update:          (id, b)  => request('PUT', `/service/${id}`, b),
     pendingApproval: (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/service/pending-approval${q?`?${q}`:''}`) },
-    // Backend foto endpoint terima JSON {url: string}, bukan FormData
     addFotoUrl:      (id, url) => request('POST', `/service/${id}/foto`, { url }),
   },
   customers: {

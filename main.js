@@ -21,7 +21,7 @@ async function request(method, path, body = null) {
     fullPath = `${BASE_URL}/api/v1${path}`;
   }
 
-  // Timeout 15 detik — cegah hang saat Vercel cold start / MongoDB timeout
+  // Timeout 15 detik
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
   opts.signal = controller.signal;
@@ -32,13 +32,12 @@ async function request(method, path, body = null) {
   } catch (err) {
     clearTimeout(timer);
     if (err.name === 'AbortError') {
-      throw new APIError(0, 'Request timeout (>15 detik). Vercel cold start, coba lagi dalam 5 detik.');
+      throw new APIError(0, 'Request timeout (>15 detik). Server cold start, coba lagi.');
     }
     throw new APIError(0, 'Tidak dapat terhubung ke server. Periksa koneksi internet.');
   }
   clearTimeout(timer);
 
-  // Parse JSON, fallback ke text (misal Vercel Protection 403 return plain text)
   let data = {};
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
@@ -47,7 +46,7 @@ async function request(method, path, body = null) {
     const txt = await res.text().catch(() => '');
     if (!res.ok) {
       if (res.status === 403 && txt.toLowerCase().includes('allowlist')) {
-        throw new APIError(res.status, 'Backend terkunci (Vercel Deployment Protection). Nonaktifkan di Vercel Dashboard → phonejaya → Settings → Deployment Protection.');
+        throw new APIError(res.status, 'Backend terkunci (Vercel Deployment Protection aktif).');
       }
       throw new APIError(res.status, txt || `Server error (${res.status})`);
     }
@@ -63,15 +62,12 @@ async function request(method, path, body = null) {
 async function uploadFile(path, file) {
   const fd = new FormData();
   fd.append('file', file);
-
   let fullPath = `${BASE_URL}${path}`;
   if (BASE_URL.startsWith('http') && !BASE_URL.includes('/api/v1')) {
     fullPath = `${BASE_URL}/api/v1${path}`;
   }
-
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
-
   let res;
   try {
     res = await fetch(fullPath, {
@@ -102,6 +98,7 @@ const API = {
   },
   dashboard: {
     stats: (cabang = '') => request('GET', `/dashboard/stats${cabang ? `?cabang=${cabang}` : ''}`),
+    trend: (p = {})      => { const q = new URLSearchParams(p).toString(); return request('GET', `/dashboard/trend${q?`?${q}`:''}`) },
   },
   units: {
     list:          (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/units${q?`?${q}`:''}`) },
@@ -135,5 +132,4 @@ const API = {
 window.API      = API;
 window.Token    = Token;
 window.APIError = APIError;
-
 window.MEDIA_URL = BASE_URL.replace('/api/v1', '');

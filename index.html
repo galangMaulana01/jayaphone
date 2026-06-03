@@ -638,13 +638,15 @@
         }
 
         function errorState(msg, fn = '') {
+            const isTimeout = msg.toLowerCase().includes('timeout') || msg.toLowerCase().includes('cold start');
             return `<div class="flex flex-col items-center justify-center py-16 text-center">
                 <div class="w-11 h-11 rounded-2xl bg-red-500/8 flex items-center justify-center mb-3">
                   <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 </div>
                 <p class="text-sm font-medium dark:text-zinc-200 text-zinc-700 mb-1">Gagal memuat data</p>
-                <p class="text-xs dark:text-zinc-500 text-zinc-400 mb-4 max-w-[200px]">${msg}</p>
-                ${fn ? `<button onclick="${fn}" class="btn btn-ghost text-xs">Coba lagi</button>` : ''}
+                <p class="text-xs dark:text-zinc-500 text-zinc-400 mb-1 max-w-[220px]">${msg}</p>
+                ${isTimeout ? `<p class="text-[11px] dark:text-zinc-600 text-zinc-400 mb-4 max-w-[220px]">Server Vercel cold start, tunggu 5 detik lalu coba lagi.</p>` : '<div class="mb-4"></div>'}
+                ${fn ? `<button onclick="${fn}" class="btn btn-ghost text-xs">↺ Coba lagi</button>` : ''}
             </div>`;
         }
 
@@ -1175,7 +1177,9 @@
             const c = document.getElementById('view-container');
             setLoading(c, 4);
             try {
-                const list = (await API.service.list()).data;
+                const params = { limit: 50 };
+                if (STATE.user?.cabang) params.cabang = STATE.user.cabang;
+                const list = (await API.service.list(params)).data;
                 c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
                   <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
                     <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Semua Data Service</p>
@@ -1576,7 +1580,7 @@
             const c = document.getElementById('view-container');
             setLoading(c, 4);
             try {
-                const list = (await API.service.list({ cabang: STATE.user.cabang })).data;
+                const list = (await API.service.list({ cabang: STATE.user.cabang, limit: 50 })).data;
                 // Status resmi backend: Antrian, Proses, Selesai, Approved, Ditolak
                 c.innerHTML = `<div class="space-y-5">
                   <div class="flex gap-1.5 flex-wrap" id="svc-filter-btns">

@@ -1142,6 +1142,7 @@
                 ${fld('u-merk','Merk <span class="text-red-400">*</span>','text','Apple / Samsung...')}
                 ${fld('u-tipe','Tipe <span class="text-red-400">*</span>','text','iPhone 15 Pro...')}
                 ${fld('u-storage','Storage','text','128GB')}
+                ${fld('u-ram','RAM','text','8GB')}
                 ${fld('u-warna','Warna','text','Black Titanium')}
                 ${fld('u-imei','IMEI','text','15 digit IMEI')}
                 ${fld('u-battery','Battery %','number','100','min="0" max="100"')}
@@ -1202,6 +1203,7 @@
                     merk,
                     tipe,
                     storage:      document.getElementById('u-storage').value || '-',
+                    ram:          document.getElementById('u-ram').value || '-',
                     warna:        document.getElementById('u-warna').value || '-',
                     imei:         document.getElementById('u-imei').value || '-',
                     harga_modal:  parseInt(document.getElementById('u-modal').value) || 0,
@@ -1521,7 +1523,7 @@
                             <div class="font-medium dark:text-zinc-100 text-zinc-800">${u.merk}</div>
                             <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${u.tipe}</div>
                           </td>
-                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${u.storage} · ${u.warna}<br/><span class="text-[10px]">${u.kondisi}</span></td>
+                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${u.storage}/${u.ram} · ${u.warna}<br/><span class="text-[10px]">${u.kondisi}</span></td>
                           <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${u.imei}</td>
                           <td class="px-5 py-4 font-semibold text-[#4FD1C5]">${rp(u.harga_jual)}</td>
                           <td class="px-5 py-4 hidden sm:table-cell">${batteryBar(u.battery)}</td>
@@ -1593,19 +1595,51 @@
             } else { prev.classList.add('hidden'); }
         }
 
+        // Cache unit list untuk search
+        let _modalUnits = [];
+
         function modalPilihUnit(units) {
+            _modalUnits = units;
             openModal(`${modalHeader('Pilih Unit')}
-                <div class="space-y-2 max-h-72 overflow-y-auto -mx-1 px-1">
-                  ${units.length ? units.map(u=>`
-                  <div onclick="pilihUnit('${u.unit_id}')" class="flex justify-between items-center p-4 rounded-xl border dark:border-zinc-800 border-zinc-100 dark:hover:border-zinc-700 hover:border-zinc-200 cursor-pointer transition-all dark:hover:bg-zinc-800/50 hover:bg-zinc-50">
-                    <div>
-                      <div class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-0.5">${u.unit_id}</div>
-                      <div class="text-sm font-medium dark:text-zinc-100 text-zinc-800">${u.merk} ${u.tipe}</div>
-                      <div class="text-[11px] dark:text-zinc-500 text-zinc-400">${u.storage} · ${u.kondisi}</div>
-                    </div>
-                    <span class="text-sm font-bold text-[#4FD1C5]">${rp(u.harga_jual)}</span>
-                  </div>`).join('') : emptyState('Tidak ada unit tersedia','📦')}
+                <div class="mb-3">
+                  <div class="relative">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 dark:text-zinc-500 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input id="modal-unit-search" type="text" class="${input} pl-8" placeholder="Cari nama, tipe, atau IMEI..." oninput="filterModalUnit(this.value)"/>
+                  </div>
+                  <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">${units.length} unit tersedia</p>
+                </div>
+                <div id="modal-unit-list" class="space-y-2 max-h-64 overflow-y-auto -mx-1 px-1">
+                  ${_renderUnitList(units)}
                 </div>`);
+            // Auto focus search
+            setTimeout(() => document.getElementById('modal-unit-search')?.focus(), 100);
+        }
+
+        function _renderUnitList(units) {
+            if (!units.length) return emptyState('Tidak ada unit ditemukan', '📦');
+            return units.map(u => `
+              <div onclick="pilihUnit('${u.unit_id}')" class="flex justify-between items-center p-4 rounded-xl border dark:border-zinc-800 border-zinc-100 dark:hover:border-zinc-700 hover:border-zinc-200 cursor-pointer transition-all dark:hover:bg-zinc-800/50 hover:bg-zinc-50">
+                <div class="flex-1 min-w-0 mr-3">
+                  <div class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-0.5 font-mono">${u.unit_id}</div>
+                  <div class="text-sm font-medium dark:text-zinc-100 text-zinc-800">${u.merk} ${u.tipe}</div>
+                  <div class="text-[11px] dark:text-zinc-500 text-zinc-400">${u.storage}${u.ram && u.ram !== '-' ? ' · '+u.ram : ''} · ${u.kondisi}</div>
+                  <div class="text-[10px] dark:text-zinc-600 text-zinc-300 mt-0.5 font-mono">IMEI: ${u.imei || '-'}</div>
+                </div>
+                <span class="text-sm font-bold text-[#4FD1C5] flex-shrink-0">${rp(u.harga_jual)}</span>
+              </div>`).join('');
+        }
+
+        function filterModalUnit(q) {
+            const keyword = q.trim().toLowerCase();
+            const filtered = keyword
+                ? _modalUnits.filter(u =>
+                    `${u.merk} ${u.tipe} ${u.unit_id} ${u.imei || ''} ${u.storage || ''} ${u.ram || ''}`.toLowerCase().includes(keyword)
+                  )
+                : _modalUnits;
+            const el = document.getElementById('modal-unit-list');
+            if (el) el.innerHTML = _renderUnitList(filtered);
         }
 
         function pilihUnit(id) {
@@ -1891,21 +1925,84 @@
             } catch (e) { c.innerHTML = errorState(e.message, 'renderApprovalRepair()'); }
         }
 
-        function modalApproveRepair(unit_id, service_id) {
+        async function modalApproveRepair(unit_id, service_id) {
+            // Buka modal dulu dengan loading state
             openModal(`${modalHeader('Approve Repair', `Unit: ${unit_id} · Service: ${service_id}`)}
-                <div class="space-y-4">
-                  <div class="p-4 rounded-xl dark:bg-amber-500/8 bg-amber-50 border dark:border-amber-500/15 border-amber-200">
-                    <p class="text-xs dark:text-amber-400 text-amber-700 font-medium">Setelah approve, unit akan otomatis masuk ke stok <span class="font-bold">Tersedia</span> dengan harga jual yang Anda tentukan.</p>
+                <div id="approve-modal-body">
+                  <div class="flex items-center justify-center py-8">
+                    <span class="spinner"></span>
+                    <span class="text-xs dark:text-zinc-500 text-zinc-400 ml-2">Memuat data unit...</span>
                   </div>
+                </div>`);
+
+            // Fetch data unit untuk dapat harga_modal
+            let harga_modal = 0;
+            let unit_info   = '';
+            try {
+                const uRes = await API.units.list({ search: unit_id, limit: 1 });
+                const unit = (uRes.data || []).find(u => u.unit_id === unit_id);
+                if (unit) {
+                    harga_modal = unit.harga_modal || 0;
+                    unit_info   = `${unit.merk} ${unit.tipe}${unit.storage && unit.storage !== '-' ? ' · ' + unit.storage : ''}${unit.ram && unit.ram !== '-' ? ' · ' + unit.ram : ''}`;
+                }
+            } catch (_) { /* silent - tetap tampil modal meski gagal fetch */ }
+
+            const body = document.getElementById('approve-modal-body');
+            if (!body) return;
+
+            const marginPct = harga_modal > 0
+                ? `<span id="approve-margin-pct" class="text-[11px] dark:text-zinc-500 text-zinc-400 ml-2"></span>`
+                : '';
+
+            body.innerHTML = `
+                <div class="space-y-4">
+                  ${unit_info ? `<p class="text-xs dark:text-zinc-400 text-zinc-600 -mt-1">${unit_info}</p>` : ''}
+
+                  <!-- Info harga modal sebagai referensi -->
+                  <div class="p-4 rounded-xl dark:bg-zinc-800/60 bg-zinc-50 border dark:border-zinc-700 border-zinc-200">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-[11px] dark:text-zinc-500 text-zinc-400 uppercase tracking-wider font-medium mb-0.5">Harga Beli / Modal</p>
+                        <p class="text-lg font-bold dark:text-zinc-100 text-zinc-800">${rp(harga_modal)}</p>
+                        <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">Referensi saat unit masuk — gunakan sebagai patokan penetapan harga jual</p>
+                      </div>
+                      <div class="w-10 h-10 rounded-xl dark:bg-zinc-700 bg-zinc-200 flex items-center justify-center flex-shrink-0 ml-3">
+                        <svg class="w-5 h-5 dark:text-zinc-400 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="p-4 rounded-xl dark:bg-amber-500/8 bg-amber-50 border dark:border-amber-500/15 border-amber-200">
+                    <p class="text-xs dark:text-amber-400 text-amber-700 font-medium">Setelah approve, unit otomatis masuk stok <span class="font-bold">Tersedia</span> dengan harga jual yang Anda tentukan.</p>
+                  </div>
+
                   <div>
-                    <label class="label">Harga Jual <span class="text-red-400">*</span></label>
-                    <input id="approve-harga-jual" type="number" min="1" class="${input}" placeholder="Masukkan harga jual unit..."/>
+                    <label class="label">Harga Jual <span class="text-red-400">*</span> ${marginPct}</label>
+                    <input id="approve-harga-jual" type="number" min="1" class="${input}"
+                      placeholder="Masukkan harga jual unit..."
+                      oninput="hitungMarginApprove(${harga_modal}, this.value)"/>
                     <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">Harga harus lebih dari 0.</p>
                   </div>
                 </div>
                 <button id="btn-confirm-approve" onclick="konfirmasiApproveRepair('${unit_id}')" class="btn btn-success w-full mt-5">
                   Konfirmasi Approve & Simpan Harga
-                </button>`);
+                </button>`;
+        }
+
+        function hitungMarginApprove(modal, jualStr) {
+            const jual = parseInt(jualStr) || 0;
+            const el = document.getElementById('approve-margin-pct');
+            if (!el || !modal || modal <= 0) return;
+            const profit = jual - modal;
+            const pct    = ((profit / modal) * 100).toFixed(1);
+            if (jual <= 0) { el.textContent = ''; return; }
+            const color  = profit >= 0 ? 'text-emerald-400' : 'text-red-400';
+            el.className = `text-[11px] ml-2 font-medium ${color}`;
+            el.textContent = profit >= 0
+                ? `+${rp(profit)} (${pct}% margin)`
+                : `${rp(profit)} (rugi ${Math.abs(pct)}%)`;
         }
 
         async function konfirmasiApproveRepair(unit_id) {

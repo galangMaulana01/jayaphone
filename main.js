@@ -107,7 +107,8 @@ const API = {
   },
   transaksi: {
     list:   (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/transaksi${q?`?${q}`:''}`) },
-    create: (b)      => request('POST', '/transaksi', b),
+    create:          (b) => request('POST', '/transaksi', b),
+    createSparepart: (b) => request('POST', '/transaksi/sparepart', b),
   },
   karyawan: {
     list:   (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/karyawan${q?`?${q}`:''}`) },
@@ -126,6 +127,11 @@ const API = {
   customers: {
     list:   (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/customers${q?`?${q}`:''}`) },
     create: (b)      => request('POST', '/customers', b),
+  },
+  sparepart: {
+    list:       (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/sparepart${q?`?${q}`:''}`) },
+    create:     (b)      => request('POST', '/sparepart', b),
+    updateStok: (id, b)  => request('PATCH', `/sparepart/${id}/stok`, b),
   },
 };
 

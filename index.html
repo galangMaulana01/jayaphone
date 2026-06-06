@@ -1098,8 +1098,13 @@
                             <div class="font-medium dark:text-zinc-100 text-zinc-800">${u.merk} ${u.tipe}</div>
                             <div class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-0.5">${u.kondisi} · ${u.warna}</div>
                           </td>
-                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell">${u.storage}</td>
-                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden xl:table-cell text-[11px]">${u.imei}</td>
+                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell">
+                            ${u.storage}${u.ram && u.ram !== '-' ? ' / '+u.ram : ''}
+                          </td>
+                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden xl:table-cell text-[11px]">
+                            <div class="font-mono">${u.imei}</div>
+                            ${u.imei2 && u.imei2 !== '-' ? `<div class="font-mono text-[10px] dark:text-zinc-600">${u.imei2}</div>` : ''}
+                          </td>
                           <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(u.harga_modal)}</td>
                           <td class="px-5 py-4 font-semibold text-[#4FD1C5]">${rp(u.harga_jual)}</td>
                           <td class="px-5 py-4 hidden sm:table-cell">${batteryBar(u.battery)}</td>
@@ -1107,6 +1112,10 @@
                           <td class="px-5 py-4">
                             <span class="text-[11px] ${u.kondisi_hp==='Repair'?'text-amber-400':'dark:text-zinc-500 text-zinc-400'}">${u.kondisi_hp}</span>
                             ${u.service_id ? `<div class="text-[10px] dark:text-zinc-600 text-zinc-400">${u.service_id}</div>` : ''}
+                            <div class="text-[10px] dark:text-zinc-600 text-zinc-300 mt-0.5">
+                              ${u.lcd || ''} ${u.speaker && u.speaker !== 'Normal' ? '· Spk ⚠' : ''}
+                              ${u.battery_health ? '· BH '+u.battery_health+'%' : ''}
+                            </div>
                           </td>
                         </tr>`).join('') : `<tr><td colspan="9">${emptyState('Tidak ada unit untuk filter ini')}</td></tr>`}
                       </tbody>
@@ -1122,6 +1131,8 @@
         function _unitFormFields() {
             const fld = (id, label, type = 'text', placeholder = '', extra = '') =>
                 `<div><label class="label">${label}</label><input id="${id}" type="${type}" class="${input}" placeholder="${placeholder}" ${extra}/></div>`;
+            const sel = (id, label, opts) =>
+                `<div><label class="label">${label}</label><select id="${id}" class="${input}">${opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
             return `
               <div class="grid grid-cols-2 gap-3">
                 <div><label class="label">Kategori</label>
@@ -1140,18 +1151,38 @@
                     <option value="Mulus">Mulus — langsung masuk stok jual</option>
                     <option value="Repair">Repair — masuk antrian service teknisi</option>
                   </select>
-                  <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">Backend akan menentukan status unit secara otomatis berdasarkan kondisi ini.</p>
                 </div>
                 ${fld('u-merk','Merk <span class="text-red-400">*</span>','text','Apple / Samsung...')}
                 ${fld('u-tipe','Tipe <span class="text-red-400">*</span>','text','iPhone 15 Pro...')}
                 ${fld('u-storage','Storage','text','128GB')}
                 ${fld('u-ram','RAM','text','8GB')}
                 ${fld('u-warna','Warna','text','Black Titanium')}
-                ${fld('u-imei','IMEI','text','15 digit IMEI')}
-                ${fld('u-battery','Battery %','number','100','min="0" max="100"')}
                 ${fld('u-modal','Harga Modal','number','0','min="0"')}
+                ${fld('u-garansi','Garansi Toko (hari)','number','7','min="0"')}
               </div>
-              <!-- Harga jual hanya untuk kondisi Mulus; Repair diisi kasir setelah approval -->
+
+              <!-- IMEI -->
+              <div class="grid grid-cols-2 gap-3 mt-3">
+                ${fld('u-imei','IMEI 1 <span class="text-red-400">*</span>','text','15 digit IMEI 1')}
+                ${fld('u-imei2','IMEI 2 (opsional)','text','15 digit IMEI 2')}
+              </div>
+
+              <!-- Tipe SIM & Keamanan -->
+              <div class="grid grid-cols-2 gap-3 mt-3">
+                ${sel('u-tipe-sim','Tipe SIM',['Single SIM','Dual SIM','eSIM','WiFi Only'])}
+                ${sel('u-keamanan','Keamanan',['Tidak Ada','Face ID','Fingerprint','Touch ID'])}
+                ${sel('u-speaker','Speaker',['Normal','Tidak Normal'])}
+                ${sel('u-lcd','LCD',['Original','Tidak Original'])}
+              </div>
+
+              <!-- Battery -->
+              <div class="grid grid-cols-2 gap-3 mt-3">
+                ${fld('u-battery','Battery %','number','100','min="0" max="100"')}
+                ${fld('u-battery-health','Battery Health % (BH)','number','0','min="0" max="100"')}
+              </div>
+              <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1">Battery Health opsional. Isi 0 jika tidak dicek.</p>
+
+              <!-- Harga jual hanya untuk kondisi Mulus -->
               <div id="wrap-harga-jual" class="mt-3">
                 <label class="label">Harga Jual <span class="text-[11px] dark:text-zinc-500 text-zinc-400">(hanya jika Mulus)</span></label>
                 <input id="u-jual" type="number" min="0" class="${input}" placeholder="0"/>
@@ -1290,19 +1321,26 @@
             btn.disabled = true;
             try {
                 const payload = {
-                    kat_kode:     document.getElementById('u-kat').value,
-                    kondisi_kode: document.getElementById('u-kondisi-kode').value,
-                    kondisi_hp,   // "Mulus" | "Repair" — backend yang tentukan status
+                    kat_kode:       document.getElementById('u-kat').value,
+                    kondisi_kode:   document.getElementById('u-kondisi-kode').value,
+                    kondisi_hp,
                     merk,
                     tipe,
-                    storage:      document.getElementById('u-storage').value || '-',
-                    ram:          document.getElementById('u-ram').value || '-',
-                    warna:        document.getElementById('u-warna').value || '-',
-                    imei:         document.getElementById('u-imei').value || '-',
-                    harga_modal:  parseInt(document.getElementById('u-modal').value) || 0,
-                    battery:      parseInt(document.getElementById('u-battery').value) || 100,
-                    catatan:      document.getElementById('u-catatan').value,
-                    cabang:       STATE.user.cabang || 'JYP',
+                    storage:        document.getElementById('u-storage').value || '-',
+                    ram:            document.getElementById('u-ram').value || '-',
+                    warna:          document.getElementById('u-warna').value || '-',
+                    imei:           document.getElementById('u-imei').value || '-',
+                    imei2:          document.getElementById('u-imei2')?.value || '-',
+                    tipe_sim:       document.getElementById('u-tipe-sim')?.value || 'Single SIM',
+                    keamanan:       document.getElementById('u-keamanan')?.value || 'Tidak Ada',
+                    speaker:        document.getElementById('u-speaker')?.value || 'Normal',
+                    lcd:            document.getElementById('u-lcd')?.value || 'Original',
+                    harga_modal:    parseInt(document.getElementById('u-modal').value) || 0,
+                    battery:        parseInt(document.getElementById('u-battery').value) || 100,
+                    battery_health: parseInt(document.getElementById('u-battery-health')?.value) || 0,
+                    garansi_toko:   parseInt(document.getElementById('u-garansi')?.value) || 7,
+                    catatan:        document.getElementById('u-catatan').value,
+                    cabang:         STATE.user.cabang || 'JYP',
                 };
                 // harga_jual hanya relevan untuk Mulus; Repair diisi nanti via approve-repair
                 if (kondisi_hp === 'Mulus') {

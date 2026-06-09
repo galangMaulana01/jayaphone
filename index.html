@@ -877,8 +877,10 @@
                 const tooltipBg  = isDark ? '#18181b' : '#ffffff';
                 const tooltipTxt = isDark ? '#e4e4e7' : '#3f3f46';
 
+                const cabangLabel = STATE.user.role === 'kepala_cabang' ? ` — Cabang ${STATE.user.cabang}` : '';
                 c.innerHTML = `<div class="space-y-6">
 
+                    ${cabangLabel ? `<p class="text-xs dark:text-zinc-500 text-zinc-400">Dashboard${cabangLabel}</p>` : ''}
                     <!-- STAT CARDS -->
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       ${statCard('Total Unit',    unit.total,           'unit tercatat',      'blue')}
@@ -1050,13 +1052,19 @@
         // ═══ VIEW: STOK ═══
         let _stokFilter = 'Semua';
 
+        let _stokCabangFilter = ''; // untuk owner bisa filter by cabang
+
         async function renderStok() {
             const c = document.getElementById('view-container');
+            _stokCabangFilter = '';
             const statuses = ['Semua', 'Tersedia', 'Sold', 'Booking', 'Service'];
+            const isOwner = STATE.user.role === 'owner';
+            const cabangLabel = !isOwner ? `<span class="text-xs dark:text-zinc-500 text-zinc-400">Cabang ${STATE.user.cabang}</span>` : '';
             c.innerHTML = `<div class="space-y-5">
                 <div class="flex flex-wrap gap-2 items-center justify-between">
-                  <div class="flex gap-1.5 flex-wrap" id="stok-filter-btns">
+                  <div class="flex gap-1.5 flex-wrap items-center">
                     ${statuses.map((s,i)=>`<button onclick="filterStok('${s}')" class="filter-tab ${i===0?'active':''}">${s}</button>`).join('')}
+                    ${cabangLabel}
                   </div>
                   <button onclick="modalTambahUnitForm()" class="btn btn-primary">
                     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1084,6 +1092,7 @@
             if (!wrap) return;
             wrap.innerHTML = Array(4).fill('<div class="skeleton h-12 w-full mb-2"></div>').join('');
             try {
+                // Backend auto-filter by cabang dari JWT token
                 const params = filter !== 'Semua' ? { status: filter } : {};
                 const units = (await API.units.list(params)).data;
                 wrap.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
@@ -1240,7 +1249,7 @@
             const el = document.getElementById('sp-repair-list');
             if (!el) return;
             try {
-                const list = (await API.sparepart.list({ cabang: STATE.user.cabang })).data;
+                const list = (await API.sparepart.list({})).data;
                 if (!list.length) {
                     el.innerHTML = '<p class="text-xs dark:text-zinc-600 text-zinc-400 text-center py-2">Belum ada sparepart</p>';
                     return;
@@ -1431,14 +1440,17 @@
             const c = document.getElementById('view-container');
             setLoading(c, 4);
             try {
+                // Backend auto-filter cabang dari JWT — owner lihat semua, kepala_cabang lihat cabangnya
                 const [sRes, tRes] = await Promise.all([API.dashboard.stats(), API.transaksi.list()]);
                 const keu = sRes.data.keuangan;
                 const list = tRes.data;
+                const cabangLabel = STATE.user.role === 'kepala_cabang' ? ` — Cabang ${STATE.user.cabang}` : '';
                 c.innerHTML = `<div class="space-y-6">
+                  ${cabangLabel ? `<p class="text-xs dark:text-zinc-500 text-zinc-400">Data laporan${cabangLabel}</p>` : ''}
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                   ${statCard('Total Revenue', rp(keu.total_revenue), 'bulan ini', keu.total_revenue >= 0 ? 'up' : 'down')}
+                   ${statCard('Total Revenue', rp(keu.total_revenue), 'semua transaksi', 'blue')}
                     ${statCard('Total Modal',   rp(keu.total_modal),   'harga beli',        'red')}
-                    ${statCard('Gross Profit',  rp(keu.total_profit),  'keuntungan bersih', 'profit')}
+                    ${statCard('Gross Profit',  rp(keu.total_profit),  'keuntungan bersih', 'green')}
                   </div>
                   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div class="panel rounded-2xl p-6">
@@ -1471,9 +1483,8 @@
             const c = document.getElementById('view-container');
             setLoading(c, 4);
             try {
-                const params = { limit: 50 };
-                if (STATE.user?.cabang) params.cabang = STATE.user.cabang;
-                const list = (await API.service.list(params)).data;
+                // Backend auto-filter by cabang dari JWT
+                const list = (await API.service.list({ limit: 50 })).data;
                 c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
                   <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
                     <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Semua Data Service</p>
@@ -1693,7 +1704,7 @@
             if (!wrap) return;
             try {
                 if (!_stokKasirCache.length || !q) {
-                    _stokKasirCache = (await API.units.list({ status: 'Tersedia', cabang: STATE.user.cabang })).data;
+                    _stokKasirCache = (await API.units.list({ status: 'Tersedia' })).data;
                 }
                 const units = q ? _stokKasirCache.filter(u =>
                     `${u.merk} ${u.tipe} ${u.unit_id} ${u.imei}`.toLowerCase().includes(q.toLowerCase())
@@ -1744,8 +1755,8 @@
         async function renderInputTransaksi() {
             const c = document.getElementById('view-container');
             let units = [];
-            try { units = (await API.units.list({ status: 'Tersedia', cabang: STATE.user.cabang })).data; } catch {}
-            try { _spCache = (await API.sparepart.list({ cabang: STATE.user.cabang })).data; } catch {}
+            try { units = (await API.units.list({ status: 'Tersedia' })).data; } catch {}
+            try { _spCache = (await API.sparepart.list({})).data; } catch {}
             _spKeranjang = [];
             _trxTab = 'hp';
             c.innerHTML = `<div class="max-w-lg space-y-4">
@@ -2045,7 +2056,7 @@
             const c = document.getElementById('view-container');
             setLoading(c, 3);
             try {
-                const list = (await API.customers.list({ cabang: STATE.user.cabang })).data;
+                const list = (await API.customers.list({})).data;
                 c.innerHTML = `<div class="space-y-5">
                   <div class="flex gap-3">
                     <div class="search-wrap flex-1">
@@ -2121,7 +2132,8 @@
             const c = document.getElementById('view-container');
             setLoading(c, 4);
             try {
-                const list = (await API.service.list({ cabang: STATE.user.cabang, limit: 50 })).data;
+                // Backend auto-filter by cabang dari JWT
+                const list = (await API.service.list({ limit: 50 })).data;
                 // Status resmi backend: Antrian, Proses, Selesai, Approved, Ditolak
                 c.innerHTML = `<div class="space-y-5">
                   <div class="flex gap-1.5 flex-wrap" id="svc-filter-btns">
@@ -2257,7 +2269,8 @@
             const c = document.getElementById('view-container');
             setLoading(c, 4);
             try {
-                const list = (await API.service.pendingApproval({ cabang: STATE.user.cabang })).data;
+                // Backend auto-filter by cabang dari JWT
+                const list = (await API.service.pendingApproval({})).data;
                 c.innerHTML = `<div class="space-y-5">
                   <div class="flex items-center justify-between">
                     <p class="text-xs dark:text-zinc-500 text-zinc-400">Tiket service yang sudah <span class="text-emerald-400 font-medium">Selesai</span> dan menunggu penetapan harga jual.</p>
@@ -2389,7 +2402,7 @@
             const c = document.getElementById('view-container');
             setLoading(c, 4);
             try {
-                const list = (await API.sparepart.list({ cabang: STATE.user.cabang })).data;
+                const list = (await API.sparepart.list({})).data;
                 c.innerHTML = `<div class="space-y-5">
                   <div class="flex items-center justify-between">
                     <p class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} item sparepart</p>

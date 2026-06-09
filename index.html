@@ -745,6 +745,16 @@
                 { page: 'transaksi',         label: 'Transaksi',         d: transaksiSvg },
                 { page: 'laporan',           label: 'Laporan',           d: laporanSvg },
                 { page: 'service',           label: 'Data Service',      d: settingSvg },
+                { page: 'karyawan',          label: 'Karyawan',          d: karyawanSvg },
+                { page: 'cabang',            label: 'Manajemen Cabang',  d: stokSvg2 },
+                { page: 'log',               label: 'Log Aktivitas',     d: logSvg },
+            ],
+            kepala_cabang: [
+                { page: 'dashboard',         label: 'Dashboard',         d: dashboardSvg },
+                { page: 'stok',              label: 'Manajemen Stok',    d: stokSvg1 },
+                { page: 'transaksi',         label: 'Transaksi',         d: transaksiSvg },
+                { page: 'laporan',           label: 'Laporan',           d: laporanSvg },
+                { page: 'service',           label: 'Data Service',      d: settingSvg },
                 { page: 'approval-repair',   label: 'Approval Repair',   d: settingSvg },
                 { page: 'sparepart',         label: 'Sparepart',         d: stokSvg2 },
                 { page: 'karyawan',          label: 'Karyawan',          d: karyawanSvg },
@@ -758,7 +768,6 @@
                 { page: 'customers',         label: 'Data Customer',     d: clientSvg },
             ],
             teknisi: [
-                // Teknisi hanya bisa lihat service dan update status Antrian→Proses→Selesai
                 { page: 'service-list', label: 'Data Service', d: settingSvg },
             ],
         };
@@ -772,6 +781,7 @@
             'approval-repair': ['Approval Repair'],
             'sparepart':       ['Manajemen Sparepart'],
             'karyawan':        ['Karyawan'],
+            'cabang':          ['Manajemen Cabang'],
             'log':             ['Log Aktivitas'],
             'stok-kasir':      ['Cek Stok'],
             'input-transaksi': ['Input Transaksi'],
@@ -790,7 +800,7 @@
             document.getElementById('user-name').textContent = user.name;
             document.getElementById('user-role-label').textContent = user.role;
             
-            const first = { owner: 'dashboard', kasir: 'stok-kasir', teknisi: 'service-list' };
+            const first = { owner: 'dashboard', kepala_cabang: 'dashboard', kasir: 'stok-kasir', teknisi: 'service-list' };
             const activePage = first[user.role] || 'dashboard';
 
             const items = NAV[user.role] || [];
@@ -819,6 +829,7 @@
             'service':         renderServiceOwner,
             'approval-repair': renderApprovalRepair,
             'sparepart':       renderSparepart,
+            'cabang':          renderCabang,
             'karyawan':        renderKaryawan,
             'log':             renderLog,
             'stok-kasir':      renderStokKasir,
@@ -1510,21 +1521,17 @@
             const c = document.getElementById('view-container');
             setLoading(c, 3);
             try {
-                const list = (await API.karyawan.list()).data;
+                const params = STATE.user.role === 'owner' ? {} : { cabang: STATE.user.cabang };
+                const list = (await API.karyawan.list(params)).data;
                 const roleColors = {
                     Kasir: 'bg-blue-500/8 text-blue-400 border border-blue-500/15',
                     Teknisi: 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
                     Admin: 'bg-violet-500/8 text-violet-400 border border-violet-500/15'
                 };
                 c.innerHTML = `<div class="space-y-5">
-                  <div class="flex justify-end">
-                    <button onclick="modalTambahKaryawan()" class="btn btn-primary">
-                       <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M7.5 3.28149V11.719" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M11.7187 7.50025H3.28125" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                       </svg>
-                      Tambah Karyawan
-                    </button>
+                  <div class="flex items-center justify-between">
+                    <p class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} karyawan</p>
+                    ${STATE.user.role === 'kepala_cabang' ? `<button onclick="modalTambahKaryawan()" class="btn btn-primary" style="height:36px;padding:0 16px;font-size:0.75rem;">+ Tambah Karyawan</button>` : ''}
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     ${list.length ? list.map(k=>`<div class="panel rounded-2xl p-5 hover:-translate-y-0.5 transition-all duration-200">
@@ -1538,13 +1545,24 @@
                       </div>
                       <hr class="divider mb-4"/>
                       <div class="space-y-2.5 text-xs">
+                        <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Cabang</span><span class="dark:text-zinc-300 text-zinc-600 font-mono">${k.cabang||'—'}</span></div>
                         <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Bergabung</span><span class="dark:text-zinc-300 text-zinc-600">${k.bergabung}</span></div>
                         <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Gaji Pokok</span><span class="font-semibold text-[#4FD1C5]">${rp(k.gaji)}</span></div>
                       </div>
+                      ${STATE.user.role === 'owner' && k.aktif ? `<button onclick="konfirmasiPecatKaryawan('${k.id}','${k.nama}')" class="btn btn-ghost w-full mt-3 text-xs text-red-400 dark:hover:bg-red-500/10" style="height:32px;">Pecat Karyawan</button>` : ''}
                     </div>`).join('') : `<div class="col-span-3">${emptyState('Belum ada karyawan','👤')}</div>`}
                   </div>
                 </div>`;
             } catch (e) { c.innerHTML = errorState(e.message, 'renderKaryawan()'); }
+        }
+
+        async function konfirmasiPecatKaryawan(id, nama) {
+            if (!confirm(`Pecat ${nama}? Akun login akan dinonaktifkan.`)) return;
+            try {
+                await API.cabang.pecatKaryawan(id);
+                showToast(`${nama} berhasil dipecat`);
+                await renderKaryawan();
+            } catch (e) { showToast(e.message, 'error'); }
         }
 
         function modalTambahKaryawan() {
@@ -2535,6 +2553,167 @@
                 showToast('Stok berhasil diupdate');
                 await renderSparepart();
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Perubahan'; btn.disabled = false; }
+        }
+
+        // ═══ VIEW: MANAJEMEN CABANG (Owner only) ═══
+        async function renderCabang() {
+            const c = document.getElementById('view-container');
+            setLoading(c, 3);
+            try {
+                const list = (await API.cabang.list()).data;
+                c.innerHTML = `<div class="space-y-5">
+                  <div class="flex items-center justify-between">
+                    <p class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} cabang terdaftar</p>
+                    <button onclick="modalTambahCabang()" class="btn btn-primary" style="height:36px;padding:0 16px;font-size:0.75rem;">+ Tambah Cabang</button>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${list.length ? list.map(cab => `
+                    <div class="panel rounded-2xl p-5 space-y-3">
+                      <div class="flex items-start justify-between">
+                        <div>
+                          <div class="flex items-center gap-2">
+                            <span class="text-xs font-mono font-bold dark:text-zinc-300 text-zinc-600 dark:bg-zinc-800 bg-zinc-100 px-2 py-0.5 rounded-lg">${cab.kode}</span>
+                            <span class="${cab.aktif ? 'text-emerald-400' : 'text-red-400'} text-[11px]">● ${cab.aktif ? 'Aktif' : 'Nonaktif'}</span>
+                          </div>
+                          <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 mt-1">${cab.nama}</p>
+                          <p class="text-[11px] dark:text-zinc-500 text-zinc-400">${cab.alamat || '—'}</p>
+                          <p class="text-[11px] dark:text-zinc-500 text-zinc-400">${cab.telp || '—'}</p>
+                        </div>
+                        <div class="text-right flex-shrink-0 ml-3">
+                          <p class="text-[11px] dark:text-zinc-500 text-zinc-400">Karyawan</p>
+                          <p class="text-lg font-bold dark:text-zinc-100 text-zinc-800">${cab.jumlah_karyawan}</p>
+                        </div>
+                      </div>
+                      <div class="pt-3 border-t dark:border-zinc-800 border-zinc-100">
+                        <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mb-1">Kepala Cabang</p>
+                        ${cab.kepala_cabang
+                          ? `<div class="flex items-center gap-2">
+                              <div class="w-6 h-6 rounded-full dark:bg-teal-500/20 bg-teal-100 flex items-center justify-center text-[10px] font-bold text-teal-500">${cab.kepala_cabang[0]}</div>
+                              <div>
+                                <p class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${cab.kepala_cabang}</p>
+                                <p class="text-[10px] dark:text-zinc-500 text-zinc-400">@${cab.kepala_username}</p>
+                              </div>
+                            </div>`
+                          : `<p class="text-xs text-amber-400">⚠ Belum ada kepala cabang</p>`
+                        }
+                      </div>
+                      <div class="flex gap-2 pt-1">
+                        <button onclick="modalAssignKepala('${cab.kode}','${cab.nama}')" class="btn btn-ghost flex-1 text-xs" style="height:32px;">
+                          ${cab.kepala_cabang ? '↻ Ganti Kepala' : '+ Set Kepala'}
+                        </button>
+                        <button onclick="modalEditCabang('${cab.kode}','${cab.nama}','${cab.alamat||''}','${cab.telp||''}')" class="btn btn-ghost text-xs" style="height:32px;padding:0 12px;">Edit</button>
+                        ${cab.aktif
+                          ? `<button onclick="toggleAktifCabang('${cab.kode}',false)" class="btn btn-ghost text-xs text-red-400 dark:hover:bg-red-500/10" style="height:32px;padding:0 12px;">Nonaktifkan</button>`
+                          : `<button onclick="toggleAktifCabang('${cab.kode}',true)" class="btn btn-ghost text-xs text-emerald-400" style="height:32px;padding:0 12px;">Aktifkan</button>`
+                        }
+                      </div>
+                    </div>`).join('') : `<div class="col-span-2">${emptyState('Belum ada cabang terdaftar', '🏢')}</div>`}
+                  </div>
+                </div>`;
+            } catch (e) { c.innerHTML = errorState(e.message, 'renderCabang()'); }
+        }
+
+        function modalTambahCabang() {
+            openModal(`${modalHeader('Tambah Cabang')}
+                <div class="space-y-3">
+                  <div class="grid grid-cols-2 gap-3">
+                    <div><label class="label">Nama Cabang <span class="text-red-400">*</span></label>
+                      <input id="cab-nama" type="text" class="${input}" placeholder="Cabang Bandung"/></div>
+                    <div><label class="label">Kode <span class="text-red-400">*</span></label>
+                      <input id="cab-kode" type="text" class="${input}" placeholder="BDG" maxlength="5" style="text-transform:uppercase"/></div>
+                  </div>
+                  <div><label class="label">Alamat</label>
+                    <input id="cab-alamat" type="text" class="${input}" placeholder="Jl. Contoh No. 1..."/></div>
+                  <div><label class="label">No. Telp</label>
+                    <input id="cab-telp" type="text" class="${input}" placeholder="08xx-xxxx-xxxx"/></div>
+                </div>
+                <button id="btn-simpan-cab" onclick="simpanCabang()" class="btn btn-primary w-full mt-5">Simpan Cabang</button>`);
+        }
+
+        async function simpanCabang() {
+            const btn   = document.getElementById('btn-simpan-cab');
+            const nama  = document.getElementById('cab-nama').value.trim();
+            const kode  = document.getElementById('cab-kode').value.trim().toUpperCase();
+            if (!nama || !kode) { showToast('Nama dan Kode wajib diisi', 'error'); return; }
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
+            try {
+                await API.cabang.create({ nama, kode, alamat: document.getElementById('cab-alamat').value, telp: document.getElementById('cab-telp').value });
+                closeModalBtn(); showToast(`Cabang ${kode} berhasil ditambahkan`); await renderCabang();
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Cabang'; btn.disabled = false; }
+        }
+
+        function modalEditCabang(kode, nama, alamat, telp) {
+            openModal(`${modalHeader('Edit Cabang', kode)}
+                <div class="space-y-3">
+                  <div><label class="label">Nama Cabang</label>
+                    <input id="edit-cab-nama" type="text" class="${input}" value="${nama}"/></div>
+                  <div><label class="label">Alamat</label>
+                    <input id="edit-cab-alamat" type="text" class="${input}" value="${alamat}"/></div>
+                  <div><label class="label">No. Telp</label>
+                    <input id="edit-cab-telp" type="text" class="${input}" value="${telp}"/></div>
+                </div>
+                <button id="btn-edit-cab" onclick="updateCabang('${kode}')" class="btn btn-primary w-full mt-5">Simpan Perubahan</button>`);
+        }
+
+        async function updateCabang(kode) {
+            const btn = document.getElementById('btn-edit-cab');
+            btn.innerHTML = `<span class="spinner"></span>`; btn.disabled = true;
+            try {
+                await API.cabang.update(kode, {
+                    nama:   document.getElementById('edit-cab-nama').value,
+                    alamat: document.getElementById('edit-cab-alamat').value,
+                    telp:   document.getElementById('edit-cab-telp').value,
+                });
+                closeModalBtn(); showToast('Cabang berhasil diupdate'); await renderCabang();
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Perubahan'; btn.disabled = false; }
+        }
+
+        async function toggleAktifCabang(kode, aktif) {
+            if (!confirm(`${aktif ? 'Aktifkan' : 'Nonaktifkan'} cabang ${kode}?`)) return;
+            try {
+                await API.cabang.update(kode, { aktif });
+                showToast(`Cabang ${kode} ${aktif ? 'diaktifkan' : 'dinonaktifkan'}`);
+                await renderCabang();
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        function modalAssignKepala(kode, nama_cabang) {
+            openModal(`${modalHeader('Set Kepala Cabang', nama_cabang)}
+                <div class="space-y-3">
+                  <div class="p-3 rounded-xl dark:bg-amber-500/8 bg-amber-50 border dark:border-amber-500/15 border-amber-200">
+                    <p class="text-xs dark:text-amber-400 text-amber-700">Kepala cabang lama akan dinonaktifkan otomatis jika ada.</p>
+                  </div>
+                  <div><label class="label">Nama Lengkap <span class="text-red-400">*</span></label>
+                    <input id="kc-nama" type="text" class="${input}" placeholder="Nama kepala cabang"/></div>
+                  <div><label class="label">Username <span class="text-red-400">*</span></label>
+                    <input id="kc-user" type="text" class="${input}" placeholder="username_login" autocomplete="off"/></div>
+                  <div><label class="label">Password <span class="text-red-400">*</span></label>
+                    <div class="relative">
+                      <input id="kc-pass" type="password" class="${input} pr-10" placeholder="Min. 6 karakter" autocomplete="new-password"/>
+                      <button type="button" onclick="togglePwVisibility('kc-pass','kc-eye')" class="absolute right-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-zinc-400">
+                        <svg id="kc-eye" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <button id="btn-assign-kc" onclick="simpanKepalaCabang('${kode}')" class="btn btn-primary w-full mt-5">Set sebagai Kepala Cabang</button>`);
+        }
+
+        async function simpanKepalaCabang(kode) {
+            const btn  = document.getElementById('btn-assign-kc');
+            const nama = document.getElementById('kc-nama').value.trim();
+            const user = document.getElementById('kc-user').value.trim();
+            const pass = document.getElementById('kc-pass').value;
+            if (!nama || !user || !pass) { showToast('Semua field wajib diisi', 'error'); return; }
+            if (pass.length < 6) { showToast('Password minimal 6 karakter', 'error'); return; }
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
+            try {
+                await API.cabang.assignKepala(kode, { nama, username: user, password: pass });
+                closeModalBtn(); showToast(`Kepala cabang ${kode} berhasil diset`); await renderCabang();
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Set sebagai Kepala Cabang'; btn.disabled = false; }
         }
 
         // ═══ NOTIFIKASI REAL-TIME (Polling) ═══

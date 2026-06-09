@@ -133,6 +133,13 @@ const API = {
     create:     (b)      => request('POST', '/sparepart', b),
     updateStok: (id, b)  => request('PATCH', `/sparepart/${id}/stok`, b),
   },
+  cabang: {
+    list:           ()       => request('GET',    '/cabang'),
+    create:         (b)      => request('POST',   '/cabang', b),
+    update:         (kode,b) => request('PATCH',  `/cabang/${kode}`, b),
+    assignKepala:   (kode,b) => request('POST',   `/cabang/${kode}/kepala`, b),
+    pecatKaryawan:  (id)     => request('DELETE', `/cabang/karyawan/${id}`),
+  },
 };
 
 window.API      = API;

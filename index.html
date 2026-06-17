@@ -878,7 +878,7 @@ function renderDateFilter(refreshCallback) {
         <button onclick="setPresetFilter('90d', ${refreshCallback})" class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='90d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">3 Bulan</button>
         <button onclick="setPresetFilter('1y', ${refreshCallback})"  class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='1y'?'bg-white dark:bg-zinc-800 shadow-sm':''}">1 Tahun</button>
       </div>
-      <button onclick="showCustomDateModal(${refreshCallback})" class="btn btn-ghost text-xs px-5">📅 Custom</button>
+      <button onclick="showCustomDateModal(${refreshCallback})" class="btn btn-ghost text-xs px-5">Custom</button>
     </div>`;
 }
 
@@ -953,7 +953,7 @@ async function renderDashboard() {
 
         c.innerHTML = `<div class="space-y-6">
 
-            \( {cabangLabel ? `<p class="text-xs dark:text-zinc-500 text-zinc-400">Dashboard \){cabangLabel}</p>` : ''}
+            ${cabangLabel ? `<p class="text-xs dark:text-zinc-500 text-zinc-400">Dashboard ${cabangLabel}</p>` : ''}
             
             <!-- HEADER + FILTER -->
             <div class="flex items-center justify-between flex-wrap gap-4">
@@ -2764,7 +2764,7 @@ function modalBuatRequestSP() {
         </div>
         <div>
           <label class="label">Cabang</label>
-          <input id="req-cabang" type="text" value="\( {cabang}" class=" \){input}" readonly/>
+          <input id="req-cabang" type="text" value="${cabang}" class=" ${input}" readonly/>
         </div>
       </div>
       

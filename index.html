@@ -856,6 +856,72 @@
             VIEWS[page]?.();
         }
 
+
+
+// === GLOBAL DATE FILTER (Tambahkan di sini) ===
+let currentFilter = { preset: '30d', start: null, end: null };
+
+function getDateFilterParams() {
+  if (currentFilter.start && currentFilter.end) {
+    return { date_from: currentFilter.start, date_to: currentFilter.end };
+  }
+  const presetMap = { '7d': 7, '30d': 30, '90d': 90, '1y': 365 };
+  return { hari: presetMap[currentFilter.preset] || 30 };
+}
+
+function renderDateFilter(refreshCallback) {
+  return `
+    <div class="flex items-center gap-2 flex-wrap">
+      <div class="flex bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-1 text-xs font-medium">
+        <button onclick="setPresetFilter('7d', ${refreshCallback})"  class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='7d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">7 Hari</button>
+        <button onclick="setPresetFilter('30d', ${refreshCallback})" class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='30d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">30 Hari</button>
+        <button onclick="setPresetFilter('90d', ${refreshCallback})" class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='90d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">3 Bulan</button>
+        <button onclick="setPresetFilter('1y', ${refreshCallback})"  class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='1y'?'bg-white dark:bg-zinc-800 shadow-sm':''}">1 Tahun</button>
+      </div>
+      <button onclick="showCustomDateModal(${refreshCallback})" class="btn btn-ghost text-xs px-5">📅 Custom</button>
+    </div>`;
+}
+
+function setPresetFilter(preset, callback) {
+  currentFilter = { preset, start: null, end: null };
+  callback();
+}
+
+function showCustomDateModal(callback) {
+  openModal(`
+    ${modalHeader('Pilih Rentang Tanggal')}
+    <div class="space-y-4 py-2">
+      <div>
+        <label class="label">Dari Tanggal</label>
+        <input id="filter-start" type="date" class="${input}">
+      </div>
+      <div>
+        <label class="label">Sampai Tanggal</label>
+        <input id="filter-end" type="date" class="${input}">
+      </div>
+    </div>
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
+      <button onclick="applyCustomFilter(${callback})" class="btn btn-primary flex-1">Terapkan Filter</button>
+    </div>
+  `);
+}
+
+function applyCustomFilter(callback) {
+  const start = document.getElementById('filter-start').value;
+  const end = document.getElementById('filter-end').value;
+  if (!start || !end) {
+    showToast('Pilih tanggal mulai dan akhir', 'error');
+    return;
+  }
+  currentFilter = { preset: 'custom', start, end };
+  closeModalBtn();
+  callback();
+}
+
+
+
+
         // ═══ VIEW: DASHBOARD ═══
         // Chart instance — destroy dulu sebelum recreate
         let _trendChart = null;
@@ -1389,54 +1455,68 @@
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Unit'; btn.disabled = false; }
         }
 
-        // ═══ VIEW: TRANSAKSI ═══
-        async function renderTransaksi() {
-            const c = document.getElementById('view-container');
-            setLoading(c, 5);
-            try {
-                const list = (await API.transaksi.list()).data;
-                const totalProfit = list.reduce((s, t) => s + (t.profit || 0), 0);
-                c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
-                  <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
-                    <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Semua Transaksi</p>
-                    <span class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} transaksi</span>
-                  </div>
-                  <div class="overflow-x-auto">
-                    <table class="w-full text-xs">
-                      <thead>
-                        <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
-                          <th class="px-6 py-3.5 font-medium">ID Trx</th>
-                          <th class="px-6 py-3.5 font-medium">Unit</th>
-                          <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Kasir</th>
-                          <th class="px-6 py-3.5 font-medium">Harga Jual</th>
-                          <th class="px-6 py-3.5 font-medium hidden md:table-cell">Modal</th>
-                          <th class="px-6 py-3.5 font-medium">Profit</th>
-                          <th class="px-6 py-3.5 font-medium hidden lg:table-cell">Waktu</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${list.length ? list.map(t=>`<tr class="tbl-row">
-                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${t.trx_id}</td>
-                          <td class="px-6 py-4">
-                            <div class="font-medium dark:text-zinc-100 text-zinc-800">${t.unit_label}</div>
-                            <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${t.unit_id}</div>
-                          </td>
-                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
-                          <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
-                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(t.harga_modal)}</td>
-                          <td class="px-6 py-4 font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
-                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${t.waktu}</td>
-                        </tr>`).join('') : `<tr><td colspan="7">${emptyState('Belum ada transaksi')}</td></tr>`}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div class="px-6 py-4 border-t border-divider flex justify-between items-center">
-                    <span class="text-xs dark:text-zinc-500 text-zinc-400">Total Profit</span>
-                    <span class="text-sm font-bold text-[#4FD1C5]">${rp(totalProfit)}</span>
-                  </div>
-                </div>`;
-            } catch (e) { c.innerHTML = errorState(e.message, 'renderTransaksi()'); }
-        }
+async function renderTransaksi() {
+  const c = document.getElementById('view-container');
+  setLoading(c, 5);
+  try {
+    const params = getDateFilterParams();
+    const res = await API.transaksi.list(params);
+    const list = res.data || [];
+    const totalProfit = list.reduce((s, t) => s + (t.profit || 0), 0);
+    
+    c.innerHTML = `<div class="space-y-5">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h2 class="text-lg font-semibold tracking-tight">Daftar Transaksi</h2>
+        </div>
+        ${renderDateFilter(() => renderTransaksi())}
+      </div>
+      <div class="table-wrap rounded-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
+          <p class="text-sm font-medium">Semua Transaksi</p>
+          <span class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} transaksi</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+                <th class="px-6 py-3.5 font-medium">ID Trx</th>
+                <th class="px-6 py-3.5 font-medium">Unit</th>
+                <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Kasir</th>
+                <th class="px-6 py-3.5 font-medium">Harga Jual</th>
+                <th class="px-6 py-3.5 font-medium hidden md:table-cell">Modal</th>
+                <th class="px-6 py-3.5 font-medium">Profit</th>
+                <th class="px-6 py-3.5 font-medium hidden lg:table-cell">Waktu</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.length ? list.map(t => `
+                <tr class="tbl-row">
+                  <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${t.trx_id}</td>
+                  <td class="px-6 py-4">
+                    <div class="font-medium dark:text-zinc-100 text-zinc-800">${t.unit_label}</div>
+                    <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${t.unit_id}</div>
+                  </td>
+                  <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
+                  <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
+                  <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(t.harga_modal)}</td>
+                  <td class="px-6 py-4 font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
+                  <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${t.waktu}</td>
+                </tr>
+              `).join('') : `<tr><td colspan="7">${emptyState('Belum ada transaksi')}</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+        <div class="px-6 py-4 border-t border-divider flex justify-between items-center">
+          <span class="text-xs dark:text-zinc-500 text-zinc-400">Total Profit</span>
+          <span class="text-sm font-bold text-[#4FD1C5]">${rp(totalProfit)}</span>
+        </div>
+      </div>
+    </div>`;
+  } catch (e) {
+    c.innerHTML = errorState(e.message, 'renderTransaksi()');
+  }
+}
 
         // ═══ VIEW: LAPORAN ═══
         async function renderLaporan() {

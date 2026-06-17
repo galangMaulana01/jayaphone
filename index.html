@@ -2894,5 +2894,31 @@
             }
         })();
     </script>
+    <script>
+  (async function initDashboard() {
+    const token = Token.get();
+    if (!token) return;
+    
+    try {
+      const res = await API.dashboard.stats();
+      const data = res.data;
+      
+      // Update placeholder statistik
+      const totalUnitEl = document.querySelector('#total-unit') ||
+        document.querySelector('[data-stat="total"]');
+      if (totalUnitEl) totalUnitEl.textContent = data.unit?.total ?? 0;
+      
+      const revenueEl = document.querySelector('#total-revenue') ||
+        document.querySelector('[data-stat="revenue"]');
+      if (revenueEl) revenueEl.textContent =
+        new Intl.NumberFormat('id-ID').format(data.keuangan?.total_revenue ?? 0);
+      
+      // Update elemen lain sesuai kebutuhan
+      // Contoh: data.unit.tersedia, data.unit.sold, data.keuangan.total_profit, dll.
+    } catch (err) {
+      console.error('Gagal load dashboard:', err.message);
+    }
+  })();
+</script>
 </body>
 </html>

@@ -840,8 +840,7 @@
             'tambah-unit':     renderTambahUnit,
             'customers':       renderCustomers,
             'service-list':    renderServiceTeknisi,
-            'request-sparepart': renderRequestSparepart,
-            // input-service DIHAPUS: service dibuat otomatis oleh backend saat unit kondisi_hp=Repair
+            'request-sparepart': renderRequestSparepart
         };
 
         function navigate(page) {
@@ -2533,6 +2532,40 @@
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Sparepart'; btn.disabled = false; }
         }
 
+
+<!-- Tambahkan sebelum baris akhir script (sekitar sebelum initDashboard) -->
+async function renderRequestSparepart() {
+  const c = document.getElementById('view-container');
+  setLoading(c, 4);
+  try {
+    const list = (await API.requestSP.list({})).data;
+    c.innerHTML = `<div class="space-y-5">
+            <div class="flex items-center justify-between">
+                <p class="text-xs dark:text-zinc-500 text-zinc-400">Request Sparepart</p>
+                <button onclick="modalBuatRequestSP()" class="btn btn-primary">+ Request Baru</button>
+            </div>
+            <div id="request-list" class="table-wrap rounded-2xl overflow-hidden">
+                ${renderRequestTable(list)}
+            </div>
+        </div>`;
+    window._allRequests = list;
+  } catch (e) {
+    c.innerHTML = errorState(e.message, 'renderRequestSparepart()');
+  }
+}
+
+function renderRequestTable(list) {
+  if (!list?.length) return emptyState('Belum ada request sparepart', '🔧');
+  return `<div class="overflow-x-auto"><table class="w-full text-xs">... (tabel sederhana sesuai pola lain)</table></div>`;
+}
+
+// Modal sederhana (opsional minimal)
+function modalBuatRequestSP() {
+  // Implementasi minimal atau kosong dulu
+  showToast('Fitur request sparepart sedang di-load', 'info');
+}
+
+
         function modalUpdateStokSP(sp_id, nama, stokNow) {
             openModal(`${modalHeader('Update Stok', nama)}
                 <div class="space-y-4">
@@ -2894,31 +2927,5 @@
             }
         })();
     </script>
-    <script>
-  (async function initDashboard() {
-    const token = Token.get();
-    if (!token) return;
-    
-    try {
-      const res = await API.dashboard.stats();
-      const data = res.data;
-      
-      // Update placeholder statistik
-      const totalUnitEl = document.querySelector('#total-unit') ||
-        document.querySelector('[data-stat="total"]');
-      if (totalUnitEl) totalUnitEl.textContent = data.unit?.total ?? 0;
-      
-      const revenueEl = document.querySelector('#total-revenue') ||
-        document.querySelector('[data-stat="revenue"]');
-      if (revenueEl) revenueEl.textContent =
-        new Intl.NumberFormat('id-ID').format(data.keuangan?.total_revenue ?? 0);
-      
-      // Update elemen lain sesuai kebutuhan
-      // Contoh: data.unit.tersedia, data.unit.sold, data.keuangan.total_profit, dll.
-    } catch (err) {
-      console.error('Gagal load dashboard:', err.message);
-    }
-  })();
-</script>
 </body>
 </html>

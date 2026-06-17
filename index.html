@@ -2532,8 +2532,6 @@
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Sparepart'; btn.disabled = false; }
         }
 
-
-<!-- Tambahkan sebelum baris akhir script (sekitar sebelum initDashboard) -->
 async function renderRequestSparepart() {
   const c = document.getElementById('view-container');
   setLoading(c, 4);
@@ -2556,85 +2554,49 @@ async function renderRequestSparepart() {
 
 function renderRequestTable(list) {
   if (!list?.length) return emptyState('Belum ada request sparepart', '🔧');
-  return `<div class="overflow-x-auto"><table class="w-full text-xs">... (tabel sederhana sesuai pola lain)</table></div>`;
-}
-
-// Modal sederhana (opsional minimal)
-function modalBuatRequestSP() {
-  openModal(`${modalHeader('Request Sparepart Baru')}
-        <div class="space-y-4">
-            <div>
-                <label class="label">Tipe Request <span class="text-red-400">*</span></label>
-                <select id="req-tipe" class="${input}">
-                    <option value="Sparepart">Sparepart</option>
-                    <option value="Aksesoris">Aksesoris</option>
-                    <option value="Tools">Tools / Peralatan</option>
-                    <option value="Lainnya">Lainnya</option>
-                </select>
-            </div>
-            
-            <div>
-                <label class="label">Nama Sparepart / Barang <span class="text-red-400">*</span></label>
-                <input id="req-nama" type="text" class="${input}" placeholder="Contoh: LCD iPhone 11"/>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="label">Jumlah <span class="text-red-400">*</span></label>
-                    <input id="req-jumlah" type="number" min="1" value="1" class="${input}"/>
-                </div>
-                <div>
-                    <label class="label">Cabang</label>
-                    <input id="req-cabang" type="text" value="\( {STATE.user.cabang || 'JYP'}" class=" \){input}" readonly/>
-                </div>
-            </div>
-            
-            <div>
-                <label class="label">Keterangan / Alasan</label>
-                <textarea id="req-keterangan" rows="3" class="${input} resize-none" placeholder="Untuk repair unit apa, atau kebutuhan lainnya..."></textarea>
-            </div>
-        </div>
-        
-        <div class="flex gap-3 mt-6">
-            <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
-            <button onclick="simpanRequestSparepart()" id="btn-simpan-req" class="btn btn-primary flex-1">
-                Kirim Request
-            </button>
-        </div>
-    `);
-}
-
-async function simpanRequestSparepart() {
-  const btn = document.getElementById('btn-simpan-req');
-  btn.innerHTML = `<span class="spinner"></span> Mengirim...`;
-  btn.disabled = true;
   
-  try {
-    const payload = {
-      tipe: document.getElementById('req-tipe').value,
-      nama_sp: document.getElementById('req-nama').value.trim(),
-      jumlah: parseInt(document.getElementById('req-jumlah').value) || 1,
-      keterangan: document.getElementById('req-keterangan').value.trim(),
-      cabang: document.getElementById('req-cabang').value
-    };
-    
-    if (!payload.nama_sp) {
-      showToast('Nama sparepart wajib diisi', 'error');
-      throw new Error();
-    }
-    
-    const res = await API.requestSP.create(payload);
-    closeModalBtn();
-    showToast(res.message || 'Request sparepart berhasil dikirim', 'success');
-    
-    // Refresh halaman
-    setTimeout(() => renderRequestSparepart(), 800);
-  } catch (e) {
-    showToast(e.message || 'Gagal mengirim request', 'error');
-  } finally {
-    btn.innerHTML = 'Kirim Request';
-    btn.disabled = false;
-  }
+  return `<div class="overflow-x-auto">
+    <table class="w-full text-xs">
+      <thead>
+        <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+          <th class="px-6 py-3.5 font-medium">ID Request</th>
+          <th class="px-6 py-3.5 font-medium">Tipe</th>
+          <th class="px-6 py-3.5 font-medium">Nama Barang</th>
+          <th class="px-6 py-3.5 font-medium text-center">Jumlah</th>
+          <th class="px-6 py-3.5 font-medium hidden md:table-cell">Cabang</th>
+          <th class="px-6 py-3.5 font-medium">Status</th>
+          <th class="px-6 py-3.5 font-medium hidden lg:table-cell">Dibuat Oleh</th>
+          <th class="px-6 py-3.5 font-medium hidden xl:table-cell">Tanggal</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(r => `
+          <tr class="tbl-row">
+            <td class="px-6 py-4 font-mono dark:text-zinc-500 text-zinc-400 text-[11px]">${r.req_id}</td>
+            <td class="px-6 py-4">
+              <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800">${r.tipe}</span>
+            </td>
+            <td class="px-6 py-4 font-medium dark:text-zinc-100 text-zinc-800">${r.nama_sp}</td>
+            <td class="px-6 py-4 text-center font-semibold">${r.jumlah}</td>
+            <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${r.cabang}</td>
+            <td class="px-6 py-4">${badgeRequest(r.status)}</td>
+            <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell">${r.dibuat_oleh}</td>
+            <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden xl:table-cell text-[11px]">${r.created_at}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+// Helper badge (tambahkan di bagian global helper jika belum ada)
+function badgeRequest(status) {
+  const colors = {
+    'Pending': 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
+    'Diterima': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
+    'Ditolak': 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400'
+  };
+  return `<span class="inline-block px-3 py-1 text-xs font-medium rounded-full \( {colors[status] || 'bg-zinc-100 dark:bg-zinc-800'}"> \){status}</span>`;
 }
 
 

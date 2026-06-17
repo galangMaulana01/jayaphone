@@ -926,197 +926,210 @@ function applyCustomFilter(callback) {
         // Chart instance — destroy dulu sebelum recreate
         let _trendChart = null;
 
-        async function renderDashboard() {
-            const c = document.getElementById('view-container');
-            setLoading(c, 6);
-            try {
-                // Fetch stats & trend paralel
-                const [statsRes, trendRes] = await Promise.allSettled([
-                    API.dashboard.stats(),
-                    API.dashboard.trend({ hari: 30 }),
-                ]);
+async function renderDashboard() {
+    const c = document.getElementById('view-container');
+    setLoading(c, 6);
+    try {
+        const params = getDateFilterParams();
 
-                if (statsRes.status === 'rejected') throw new Error(statsRes.reason.message);
-                const { unit, keuangan: keu, recent_transaksi: trx } = statsRes.value.data;
-                const trend = trendRes.status === 'fulfilled' ? trendRes.value.data : null;
+        // Fetch stats & trend paralel
+        const [statsRes, trendRes] = await Promise.allSettled([
+            API.dashboard.stats(),
+            API.dashboard.trend(params),
+        ]);
 
-                const isDark = document.documentElement.classList.contains('dark');
-                const gridColor  = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-                const textColor  = isDark ? '#71717a' : '#a1a1aa';
-                const tooltipBg  = isDark ? '#18181b' : '#ffffff';
-                const tooltipTxt = isDark ? '#e4e4e7' : '#3f3f46';
+        if (statsRes.status === 'rejected') throw new Error(statsRes.reason.message);
+        
+        const { unit, keuangan: keu, recent_transaksi: trx } = statsRes.value.data;
+        const trend = trendRes.status === 'fulfilled' ? trendRes.value.data : null;
 
-                const cabangLabel = STATE.user.role === 'kepala_cabang' ? ` — Cabang ${STATE.user.cabang}` : '';
-                c.innerHTML = `<div class="space-y-6">
+        const isDark = document.documentElement.classList.contains('dark');
+        const gridColor  = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+        const textColor  = isDark ? '#71717a' : '#a1a1aa';
+        const tooltipBg  = isDark ? '#18181b' : '#ffffff';
+        const tooltipTxt = isDark ? '#e4e4e7' : '#3f3f46';
 
-                    ${cabangLabel ? `<p class="text-xs dark:text-zinc-500 text-zinc-400">Dashboard${cabangLabel}</p>` : ''}
-                    <!-- STAT CARDS -->
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      ${statCard('Total Unit',    unit.total,           'unit tercatat',      'blue')}
-                      ${statCard('Stok Tersedia', unit.tersedia,        'unit siap jual',     'green')}
-                      ${statCard('Total Terjual', unit.sold,            'unit berhasil sold', 'orange')}
-                      ${statCard('Gross Profit',  rp(keu.total_profit), 'keuntungan bersih',  'purple')}
-                    </div>
+        const cabangLabel = STATE.user.role === 'kepala_cabang' ? ` — Cabang ${STATE.user.cabang}` : '';
 
-                    <!-- TREND CHART -->
-                    <div class="panel rounded-2xl p-6">
-                      <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
-                        <div>
-                          <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 tracking-tight">Trend Penjualan</p>
-                          <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">30 hari terakhir</p>
-                        </div>
-                        <div class="flex items-center gap-4 text-[11px] dark:text-zinc-500 text-zinc-400">
-                          <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-full bg-[#4FD1C5]"></span>Revenue</span>
-                          <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-full bg-[#818cf8]"></span>Profit</span>
-                        </div>
-                      </div>
-                      ${trend ? `<div class="relative" style="height:220px"><canvas id="trend-canvas"></canvas></div>` 
-                               : `<div class="h-[220px] flex items-center justify-center text-xs dark:text-zinc-600 text-zinc-400">Data trend tidak tersedia</div>`}
-                    </div>
+        c.innerHTML = `<div class="space-y-6">
 
-                    <!-- KEUANGAN + STATUS UNIT -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                      <div class="lg:col-span-2 panel rounded-2xl p-6">
-                        <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Ringkasan Keuangan</p>
-                        <div class="divide-y dark:divide-zinc-800 divide-zinc-100">
-                          ${finRow('Profit Hari Ini',  rp(keu.profit_harian), 'text-[#4FD1C5]')}
-                          ${finRow('Total Revenue',    rp(keu.total_revenue), 'text-[#4FD1C5]')}
-                          ${finRow('Total Modal',      rp(keu.total_modal),   'text-[#4FD1C5]')}
-                          ${finRow('Gross Profit',     rp(keu.total_profit),  'text-[#4FD1C5]')}
-                        </div>
-                      </div>
-                      <div class="panel rounded-2xl p-6">
-                        <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Status Unit</p>
-                        <div class="space-y-4">
-                          ${statusBar('Tersedia', unit.tersedia, unit.total)}
-                          ${statusBar('Sold',     unit.sold,     unit.total)}
-                          ${statusBar('Booking',  unit.booking,  unit.total)}
-                          ${statusBar('Service',  unit.service,  unit.total)}
-                        </div>
-                      </div>
-                    </div>
+            \( {cabangLabel ? `<p class="text-xs dark:text-zinc-500 text-zinc-400">Dashboard \){cabangLabel}</p>` : ''}
+            
+            <!-- HEADER + FILTER -->
+            <div class="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
+              </div>
+              ${renderDateFilter(() => renderDashboard())}
+            </div>
 
-                    <!-- TRANSAKSI TERBARU -->
-                    <div class="table-wrap rounded-2xl overflow-hidden">
-                      <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
-                        <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Transaksi Terbaru</p>
-                        <button onclick="navigate('transaksi')" class="text-xs dark:text-zinc-500 text-zinc-400 dark:hover:text-zinc-300 hover:text-zinc-600 transition-colors">Lihat semua</button>
-                      </div>
-                      <div class="overflow-x-auto">
-                        <table class="w-full text-xs">
-                          <thead>
-                            <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
-                              <th class="px-6 py-3.5 font-medium">ID</th>
-                              <th class="px-6 py-3.5 font-medium">Unit</th>
-                              <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Kasir</th>
-                              <th class="px-6 py-3.5 font-medium">Harga Jual</th>
-                              <th class="px-6 py-3.5 font-medium">Profit</th>
-                              <th class="px-6 py-3.5 font-medium hidden md:table-cell">Waktu</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            ${trx.length ? trx.map(t=>`<tr class="tbl-row">
-                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${t.trx_id}</td>
-                              <td class="px-6 py-4 font-medium dark:text-zinc-100 text-zinc-800 max-w-[160px] truncate">${t.unit_label}</td>
-                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
-                              <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
-                              <td class="px-6 py-4 font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
-                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell text-[11px]">${t.waktu}</td>
-                            </tr>`).join('') : `<tr><td colspan="6">${emptyState('Belum ada transaksi')}</td></tr>`}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                </div>`;
+            <!-- STAT CARDS -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              ${statCard('Total Unit',    unit.total,           'unit tercatat',      'blue')}
+              ${statCard('Stok Tersedia', unit.tersedia,        'unit siap jual',     'green')}
+              ${statCard('Total Terjual', unit.sold,            'unit berhasil sold', 'orange')}
+              ${statCard('Gross Profit',  rp(keu.total_profit), 'keuntungan bersih',  'purple')}
+            </div>
 
-                // Render Chart.js setelah DOM ready
-                if (trend && document.getElementById('trend-canvas')) {
-                    if (_trendChart) { _trendChart.destroy(); _trendChart = null; }
+            <!-- TREND CHART -->
+            <div class="panel rounded-2xl p-6">
+              <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+                <div>
+                  <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 tracking-tight">Trend Penjualan</p>
+                  <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">Periode filter di atas</p>
+                </div>
+                <div class="flex items-center gap-4 text-[11px] dark:text-zinc-500 text-zinc-400">
+                  <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-full bg-[#4FD1C5]"></span>Revenue</span>
+                  <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-full bg-[#818cf8]"></span>Profit</span>
+                </div>
+              </div>
+              ${trend ? `<div class="relative" style="height:220px"><canvas id="trend-canvas"></canvas></div>` 
+                       : `<div class="h-[220px] flex items-center justify-center text-xs dark:text-zinc-600 text-zinc-400">Data trend tidak tersedia</div>`}
+            </div>
 
-                    const ctx = document.getElementById('trend-canvas').getContext('2d');
+            <!-- KEUANGAN + STATUS UNIT -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div class="lg:col-span-2 panel rounded-2xl p-6">
+                <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Ringkasan Keuangan</p>
+                <div class="divide-y dark:divide-zinc-800 divide-zinc-100">
+                  ${finRow('Profit Hari Ini',  rp(keu.profit_harian), 'text-[#4FD1C5]')}
+                  ${finRow('Total Revenue',    rp(keu.total_revenue), 'text-[#4FD1C5]')}
+                  ${finRow('Total Modal',      rp(keu.total_modal),   'text-[#4FD1C5]')}
+                  ${finRow('Gross Profit',     rp(keu.total_profit),  'text-[#4FD1C5]')}
+                </div>
+              </div>
+              <div class="panel rounded-2xl p-6">
+                <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Status Unit</p>
+                <div class="space-y-4">
+                  ${statusBar('Tersedia', unit.tersedia, unit.total)}
+                  ${statusBar('Sold',     unit.sold,     unit.total)}
+                  ${statusBar('Booking',  unit.booking,  unit.total)}
+                  ${statusBar('Service',  unit.service,  unit.total)}
+                </div>
+              </div>
+            </div>
 
-                    // Gradient revenue
-                    const gradRev = ctx.createLinearGradient(0, 0, 0, 220);
-                    gradRev.addColorStop(0,   'rgba(79,209,197,0.18)');
-                    gradRev.addColorStop(1,   'rgba(79,209,197,0)');
+            <!-- TRANSAKSI TERBARU -->
+            <div class="table-wrap rounded-2xl overflow-hidden">
+              <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
+                <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Transaksi Terbaru</p>
+                <button onclick="navigate('transaksi')" class="text-xs dark:text-zinc-500 text-zinc-400 dark:hover:text-zinc-300 hover:text-zinc-600 transition-colors">Lihat semua</button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                  <thead>
+                    <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+                      <th class="px-6 py-3.5 font-medium">ID</th>
+                      <th class="px-6 py-3.5 font-medium">Unit</th>
+                      <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Kasir</th>
+                      <th class="px-6 py-3.5 font-medium">Harga Jual</th>
+                      <th class="px-6 py-3.5 font-medium">Profit</th>
+                      <th class="px-6 py-3.5 font-medium hidden md:table-cell">Waktu</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${trx.length ? trx.map(t=>`<tr class="tbl-row">
+                      <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${t.trx_id}</td>
+                      <td class="px-6 py-4 font-medium dark:text-zinc-100 text-zinc-800 max-w-[160px] truncate">${t.unit_label}</td>
+                      <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
+                      <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
+                      <td class="px-6 py-4 font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
+                      <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell text-[11px]">${t.waktu}</td>
+                    </tr>`).join('') : `<tr><td colspan="6">${emptyState('Belum ada transaksi')}</td></tr>`}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+        </div>`;
 
-                    // Gradient profit
-                    const gradProfit = ctx.createLinearGradient(0, 0, 0, 220);
-                    gradProfit.addColorStop(0,   'rgba(129,140,248,0.15)');
-                    gradProfit.addColorStop(1,   'rgba(129,140,248,0)');
+        // Render Chart.js setelah DOM ready
+        if (trend && document.getElementById('trend-canvas')) {
+            if (_trendChart) { _trendChart.destroy(); _trendChart = null; }
 
-                    _trendChart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: trend.labels,
-                            datasets: [
-                                {
-                                    label: 'Revenue',
-                                    data:  trend.revenue,
-                                    borderColor:     '#4FD1C5',
-                                    backgroundColor:  gradRev,
-                                    borderWidth: 2,
-                                    pointRadius: 0,
-                                    pointHoverRadius: 4,
-                                    pointHoverBackgroundColor: '#4FD1C5',
-                                    tension: 0.4,
-                                    fill: true,
-                                },
-                                {
-                                    label: 'Profit',
-                                    data:  trend.profit,
-                                    borderColor:     '#818cf8',
-                                    backgroundColor:  gradProfit,
-                                    borderWidth: 2,
-                                    pointRadius: 0,
-                                    pointHoverRadius: 4,
-                                    pointHoverBackgroundColor: '#818cf8',
-                                    tension: 0.4,
-                                    fill: true,
-                                },
-                            ],
+            const ctx = document.getElementById('trend-canvas').getContext('2d');
+
+            const gradRev = ctx.createLinearGradient(0, 0, 0, 220);
+            gradRev.addColorStop(0,   'rgba(79,209,197,0.18)');
+            gradRev.addColorStop(1,   'rgba(79,209,197,0)');
+
+            const gradProfit = ctx.createLinearGradient(0, 0, 0, 220);
+            gradProfit.addColorStop(0,   'rgba(129,140,248,0.15)');
+            gradProfit.addColorStop(1,   'rgba(129,140,248,0)');
+
+            _trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trend.labels,
+                    datasets: [
+                        {
+                            label: 'Revenue',
+                            data:  trend.revenue,
+                            borderColor:     '#4FD1C5',
+                            backgroundColor:  gradRev,
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
+                            pointHoverBackgroundColor: '#4FD1C5',
+                            tension: 0.4,
+                            fill: true,
                         },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            interaction: { mode: 'index', intersect: false },
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: {
-                                    backgroundColor: tooltipBg,
-                                    titleColor: textColor,
-                                    bodyColor:  tooltipTxt,
-                                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-                                    borderWidth: 1,
-                                    padding: 10,
-                                    callbacks: {
-                                        label: ctx => ` ${ctx.dataset.label}: ${new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0}).format(ctx.raw)}`,
-                                    },
-                                },
-                            },
-                            scales: {
-                                x: {
-                                    grid:  { color: gridColor, drawBorder: false },
-                                    ticks: { color: textColor, font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 },
-                                    border: { display: false },
-                                },
-                                y: {
-                                    grid:  { color: gridColor, drawBorder: false },
-                                    ticks: {
-                                        color: textColor,
-                                        font: { size: 10 },
-                                        maxTicksLimit: 5,
-                                        callback: v => v >= 1000000 ? `${(v/1000000).toFixed(1)}jt` : v >= 1000 ? `${(v/1000).toFixed(0)}rb` : v,
-                                    },
-                                    border: { display: false },
-                                },
+                        {
+                            label: 'Profit',
+                            data:  trend.profit,
+                            borderColor:     '#818cf8',
+                            backgroundColor:  gradProfit,
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 4,
+                            pointHoverBackgroundColor: '#818cf8',
+                            tension: 0.4,
+                            fill: true,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: tooltipBg,
+                            titleColor: textColor,
+                            bodyColor:  tooltipTxt,
+                            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                            borderWidth: 1,
+                            padding: 10,
+                            callbacks: {
+                                label: ctx => ` ${ctx.dataset.label}: ${new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0}).format(ctx.raw)}`,
                             },
                         },
-                    });
-                }
-
-            } catch (e) { c.innerHTML = errorState(e.message, 'renderDashboard()'); }
+                    },
+                    scales: {
+                        x: {
+                            grid:  { color: gridColor, drawBorder: false },
+                            ticks: { color: textColor, font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 },
+                            border: { display: false },
+                        },
+                        y: {
+                            grid:  { color: gridColor, drawBorder: false },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10 },
+                                maxTicksLimit: 5,
+                                callback: v => v >= 1000000 ? `\( {(v/1000000).toFixed(1)}jt` : v >= 1000 ? ` \){(v/1000).toFixed(0)}rb` : v,
+                            },
+                            border: { display: false },
+                        },
+                    },
+                },
+            });
         }
+
+    } catch (e) { 
+        c.innerHTML = errorState(e.message, 'renderDashboard()'); 
+    }
+}
 
         // ═══ VIEW: STOK ═══
         let _stokFilter = 'Semua';
@@ -1727,42 +1740,49 @@ async function renderTransaksi() {
         }
 
         // ═══ VIEW: LOG ═══
-        async function renderLog() {
-            const c = document.getElementById('view-container');
-            setLoading(c, 6);
-            try {
-                const list = (await API.log.list()).data;
-                const actionColors = {
-                    'Input Transaksi':         'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
-                    'Jual Sparepart':           'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
-                    'Tambah Unit':             'bg-blue-500/8 text-blue-400 border border-blue-500/15',
-                    'Approve Repair':          'bg-teal-500/8 text-teal-400 border border-teal-500/15',
-                    'Tambah Karyawan':         'bg-violet-500/8 text-violet-400 border border-violet-500/15',
-                    'Update Service':          'bg-orange-500/8 text-orange-400 border border-orange-500/15',
-                    'Tambah Sparepart':        'bg-sky-500/8 text-sky-400 border border-sky-500/15',
-                    'Update Stok Sparepart':   'bg-sky-500/8 text-sky-400 border border-sky-500/15',
-                    'Pemakaian Sparepart Service': 'bg-amber-500/8 text-amber-400 border border-amber-500/15',
-                };
-                c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
-                  <div class="px-6 py-4 border-b border-divider">
-                    <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Sistem</p>
-                  </div>
-                  <div>
-                    ${list.length ? list.map(l=>`<div class="log-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">
-                      <div class="w-1.5 h-1.5 rounded-full dark:bg-zinc-600 bg-zinc-300 mt-2 flex-shrink-0"></div>
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2.5 flex-wrap">
-                          <span class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${l.user}</span>
-                          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${actionColors[l.aksi]||'dark:bg-zinc-800 bg-zinc-100 dark:text-zinc-500 text-zinc-400'}">${l.aksi}</span>
-                        </div>
-                        <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">${l.detail}</p>
-                      </div>
-                      <span class="text-[10px] dark:text-zinc-600 text-zinc-400 whitespace-nowrap flex-shrink-0">${l.waktu}</span>
-                    </div>`).join('') : emptyState('Belum ada log aktivitas')}
-                  </div>
-                </div>`;
-            } catch (e) { c.innerHTML = errorState(e.message, 'renderLog()'); }
-        }
+// ═══ VIEW: LOG ═══
+async function renderLog() {
+  const c = document.getElementById('view-container');
+  setLoading(c, 6);
+  try {
+    const params = getDateFilterParams();
+    const list = (await API.log.list(params)).data;
+    
+    const actionColors = {
+      'Input Transaksi': 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
+      'Jual Sparepart': 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
+      'Tambah Unit': 'bg-blue-500/8 text-blue-400 border border-blue-500/15',
+      'Approve Repair': 'bg-teal-500/8 text-teal-400 border border-teal-500/15',
+      'Tambah Karyawan': 'bg-violet-500/8 text-violet-400 border border-violet-500/15',
+      'Update Service': 'bg-orange-500/8 text-orange-400 border border-orange-500/15',
+      'Tambah Sparepart': 'bg-sky-500/8 text-sky-400 border border-sky-500/15',
+      'Update Stok Sparepart': 'bg-sky-500/8 text-sky-400 border border-sky-500/15',
+      'Pemakaian Sparepart Service': 'bg-amber-500/8 text-amber-400 border border-amber-500/15',
+    };
+    
+    c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+          <div class="px-6 py-4 border-b border-divider flex items-center justify-between">
+            <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Sistem</p>
+            ${renderDateFilter(() => renderLog())}
+          </div>
+          <div>
+            ${list.length ? list.map(l=>`<div class="log-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">
+              <div class="w-1.5 h-1.5 rounded-full dark:bg-zinc-600 bg-zinc-300 mt-2 flex-shrink-0"></div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2.5 flex-wrap">
+                  <span class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${l.user}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-medium \( {actionColors[l.aksi]||'dark:bg-zinc-800 bg-zinc-100 dark:text-zinc-500 text-zinc-400'}"> \){l.aksi}</span>
+                </div>
+                <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">${l.detail}</p>
+              </div>
+              <span class="text-[10px] dark:text-zinc-600 text-zinc-400 whitespace-nowrap flex-shrink-0">${l.waktu}</span>
+            </div>`).join('') : emptyState('Belum ada log aktivitas')}
+          </div>
+        </div>`;
+  } catch (e) {
+    c.innerHTML = errorState(e.message, 'renderLog()');
+  }
+}
 
         // ═══ VIEW: STOK KASIR ═══
         let _stokKasirCache = [];

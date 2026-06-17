@@ -2532,6 +2532,7 @@
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Sparepart'; btn.disabled = false; }
         }
 
+// === REQUEST SPAREPART ===
 async function renderRequestSparepart() {
   const c = document.getElementById('view-container');
   setLoading(c, 4);
@@ -2589,18 +2590,100 @@ function renderRequestTable(list) {
   </div>`;
 }
 
-// Helper Badge Status (WAJIB ditambahkan)
 function badgeRequest(status) {
-  if (!status) return `<span class="inline-block px-3 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">Pending</span>`;
-  
+  if (!status) status = 'Pending';
   const colors = {
     'Pending': 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
     'Diterima': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
     'Ditolak': 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400'
   };
-  
   const colorClass = colors[status] || 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400';
   return `<span class="inline-block px-3 py-1 text-xs font-medium rounded-full \( {colorClass}"> \){status}</span>`;
+}
+
+// ================== MODAL & SIMPAN ==================
+function modalBuatRequestSP() {
+  const cabang = STATE?.user?.cabang || 'JYP';
+  
+  openModal(`
+    ${modalHeader('Request Sparepart Baru')}
+    <div class="space-y-4">
+      <div>
+        <label class="label">Tipe Request <span class="text-red-400">*</span></label>
+        <select id="req-tipe" class="${input}">
+          <option value="Sparepart">Sparepart</option>
+          <option value="Aksesoris">Aksesoris</option>
+          <option value="Tools">Tools / Peralatan</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+      </div>
+      
+      <div>
+        <label class="label">Nama Sparepart / Barang <span class="text-red-400">*</span></label>
+        <input id="req-nama" type="text" class="${input}" placeholder="Contoh: LCD iPhone 13"/>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="label">Jumlah <span class="text-red-400">*</span></label>
+          <input id="req-jumlah" type="number" min="1" value="1" class="${input}"/>
+        </div>
+        <div>
+          <label class="label">Cabang</label>
+          <input id="req-cabang" type="text" value="\( {cabang}" class=" \){input}" readonly/>
+        </div>
+      </div>
+      
+      <div>
+        <label class="label">Keterangan / Alasan</label>
+        <textarea id="req-keterangan" rows="3" class="${input} resize-none" placeholder="Untuk repair unit apa, atau kebutuhan lainnya..."></textarea>
+      </div>
+    </div>
+    
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
+      <button onclick="simpanRequestSparepart()" id="btn-simpan-req" class="btn btn-primary flex-1">
+        Kirim Request
+      </button>
+    </div>
+  `);
+}
+
+async function simpanRequestSparepart() {
+  const btn = document.getElementById('btn-simpan-req');
+  const originalText = btn.innerHTML;
+  
+  btn.innerHTML = `<span class="spinner"></span> Mengirim...`;
+  btn.disabled = true;
+  
+  try {
+    const payload = {
+      tipe: document.getElementById('req-tipe').value,
+      nama_sp: document.getElementById('req-nama').value.trim(),
+      jumlah: parseInt(document.getElementById('req-jumlah').value) || 1,
+      keterangan: document.getElementById('req-keterangan').value.trim(),
+      cabang: document.getElementById('req-cabang').value
+    };
+    
+    if (!payload.nama_sp) {
+      showToast('Nama sparepart wajib diisi!', 'error');
+      return;
+    }
+    
+    const res = await API.requestSP.create(payload);
+    
+    closeModalBtn();
+    showToast(res.message || 'Request sparepart berhasil dikirim ✅', 'success');
+    
+    // Refresh tabel
+    setTimeout(() => renderRequestSparepart(), 700);
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || 'Gagal mengirim request', 'error');
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
 }
 
 

@@ -757,6 +757,7 @@
                 { page: 'service',           label: 'Data Service',      d: settingSvg },
                 { page: 'approval-repair',   label: 'Approval Repair',   d: settingSvg },
                 { page: 'sparepart',         label: 'Sparepart',         d: stokSvg2 },
+                { page: 'request-sparepart', label: 'Request Sparepart', d: stokSvg2 },
                 { page: 'karyawan',          label: 'Karyawan',          d: karyawanSvg },
                 { page: 'log',               label: 'Log Aktivitas',     d: logSvg },
             ],
@@ -765,6 +766,7 @@
                 { page: 'input-transaksi',   label: 'Input Transaksi',   d: transaksiSvg2 },
                 { page: 'tambah-unit',       label: 'Tambah Unit',       d: tambahSvg },
                 { page: 'approval-repair',   label: 'Approval Repair',   d: settingSvg },
+                { page: 'request-sparepart', label: 'Request Sparepart', d: stokSvg2 },
                 { page: 'customers',         label: 'Data Customer',     d: clientSvg },
             ],
             teknisi: [
@@ -788,6 +790,7 @@
             'tambah-unit':     ['Tambah Unit'],
             'customers':       ['Data Customer'],
             'service-list':    ['Data Service'],
+            'request-sparepart': ['Request Sparepart'],
         };
 
 
@@ -837,6 +840,7 @@
             'tambah-unit':     renderTambahUnit,
             'customers':       renderCustomers,
             'service-list':    renderServiceTeknisi,
+            'request-sparepart': renderRequestSparepart,
             // input-service DIHAPUS: service dibuat otomatis oleh backend saat unit kondisi_hp=Repair
         };
 

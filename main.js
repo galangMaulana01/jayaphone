@@ -140,6 +140,11 @@ const API = {
     assignKepala:   (kode,b) => request('POST',   `/cabang/${kode}/kepala`, b),
     pecatKaryawan:  (id)     => request('DELETE', `/cabang/karyawan/${id}`),
   },
+  requestSP: {
+    list:    (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/request-sparepart${q?`?${q}`:''}`) },
+    create:  (b)      => request('POST',  '/request-sparepart', b),
+    respond: (id, b)  => request('PATCH', `/request-sparepart/${id}`, b),
+  },
 };
 
 window.API      = API;

@@ -1117,7 +1117,7 @@ async function renderDashboard() {
                                 color: textColor,
                                 font: { size: 10 },
                                 maxTicksLimit: 5,
-                                callback: v => v >= 1000000 ? `\( {(v/1000000).toFixed(1)}jt` : v >= 1000 ? ` \){(v/1000).toFixed(0)}rb` : v,
+                                callback: v => v >= 1000000 ? `${(v/1000000).toFixed(1)}jt` : v >= 1000 ? `${(v/1000).toFixed(0)}rb` : v,
                             },
                             border: { display: false },
                         },
@@ -1169,66 +1169,123 @@ async function renderDashboard() {
             await loadStokTable(status);
         }
 
-        async function loadStokTable(filter) {
-            const wrap = document.getElementById('stok-table-wrap');
-            if (!wrap) return;
-            wrap.innerHTML = Array(4).fill('<div class="skeleton h-12 w-full mb-2"></div>').join('');
-            try {
-                // Backend auto-filter by cabang dari JWT token
-                const params = filter !== 'Semua' ? { status: filter } : {};
-                const units = (await API.units.list(params)).data;
-                wrap.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
-                  <div class="overflow-x-auto">
-                    <table class="w-full text-xs">
-                      <thead>
-                        <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
-                          <th class="px-5 py-3.5 font-medium">ID Produk</th>
-                          <th class="px-5 py-3.5 font-medium">Perangkat</th>
-                          <th class="px-5 py-3.5 font-medium hidden lg:table-cell">Storage</th>
-                          <th class="px-5 py-3.5 font-medium hidden xl:table-cell">IMEI</th>
-                          <th class="px-5 py-3.5 font-medium hidden md:table-cell">Modal</th>
-                          <th class="px-5 py-3.5 font-medium">Jual</th>
-                          <th class="px-5 py-3.5 font-medium hidden sm:table-cell">Battery</th>
-                          <th class="px-5 py-3.5 font-medium">Status</th>
-                          <th class="px-5 py-3.5 font-medium">Kondisi HP</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${units.length ? units.map(u=>`<tr class="tbl-row">
-                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${u.unit_id}</td>
-                          <td class="px-5 py-4">
-                            <div class="font-medium dark:text-zinc-100 text-zinc-800">${u.merk} ${u.tipe}</div>
-                            <div class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-0.5">${u.kondisi} · ${u.warna}</div>
-                          </td>
-                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell">
-                            ${u.storage}${u.ram && u.ram !== '-' ? ' / '+u.ram : ''}
-                          </td>
-                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden xl:table-cell text-[11px]">
-                            <div class="font-mono">${u.imei}</div>
-                            ${u.imei2 && u.imei2 !== '-' ? `<div class="font-mono text-[10px] dark:text-zinc-600">${u.imei2}</div>` : ''}
-                          </td>
-                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(u.harga_modal)}</td>
-                          <td class="px-5 py-4 font-semibold text-[#4FD1C5]">${rp(u.harga_jual)}</td>
-                          <td class="px-5 py-4 hidden sm:table-cell">${batteryBar(u.battery)}</td>
-                          <td class="px-5 py-4">${badge(u.status)}</td>
-                          <td class="px-5 py-4">
-                            <span class="text-[11px] ${u.kondisi_hp==='Repair'?'text-amber-400':'dark:text-zinc-500 text-zinc-400'}">${u.kondisi_hp}</span>
-                            ${u.service_id ? `<div class="text-[10px] dark:text-zinc-600 text-zinc-400">${u.service_id}</div>` : ''}
-                            <div class="text-[10px] dark:text-zinc-600 text-zinc-300 mt-0.5">
-                              ${u.lcd || ''} ${u.speaker && u.speaker !== 'Normal' ? '· Spk ⚠' : ''}
-                              ${u.battery_health ? '· BH '+u.battery_health+'%' : ''}
-                            </div>
-                          </td>
-                        </tr>`).join('') : `<tr><td colspan="9">${emptyState('Tidak ada unit untuk filter ini')}</td></tr>`}
-                      </tbody>
-                    </table>
+async function loadStokTable(filter) {
+  const wrap = document.getElementById('stok-table-wrap');
+  if (!wrap) return;
+  
+  wrap.innerHTML = Array(4).fill('<div class="skeleton h-12 w-full mb-2"></div>').join('');
+  
+  try {
+    const params = filter !== 'Semua' ? { status: filter } : {};
+    const units = (await API.units.list(params)).data;
+
+    wrap.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+              <th class="px-5 py-3.5 font-medium">ID Produk</th>
+              <th class="px-5 py-3.5 font-medium">Perangkat</th>
+              <th class="px-5 py-3.5 font-medium hidden lg:table-cell">Storage</th>
+              <th class="px-5 py-3.5 font-medium hidden xl:table-cell">IMEI</th>
+              <th class="px-5 py-3.5 font-medium hidden md:table-cell">Modal</th>
+              <th class="px-5 py-3.5 font-medium">Jual</th>
+              <th class="px-5 py-3.5 font-medium hidden sm:table-cell">Battery</th>
+              <th class="px-5 py-3.5 font-medium">Status</th>
+              <th class="px-5 py-3.5 font-medium">Kondisi HP</th>
+              <th class="px-5 py-3.5 font-medium text-center">Kadaluarsa</th>   <!-- Kolom Baru -->
+            </tr>
+          </thead>
+          <tbody>
+           ${units.length ? units.map(u => {
+  console.log("ID:", u.unit_id, "Tanggal:", u.created_at, u.tanggal_masuk); // <-- TARUH INI SEMENTARA
+  const kadaluarsaHTML = getKadaluarsaBadge(u.created_at || u.tanggal_masuk);
+  // ... sisanya sama
+
+              
+              return `<tr class="tbl-row">
+                <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${u.unit_id}</td>
+                <td class="px-5 py-4">
+                  <div class="font-medium dark:text-zinc-100 text-zinc-800">${u.merk} ${u.tipe}</div>
+                  <div class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-0.5">${u.kondisi} · ${u.warna}</div>
+                </td>
+                <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell">
+                  ${u.storage} ${u.ram && u.ram !== '-' ? ' / '+u.ram : ''}
+                </td>
+                <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden xl:table-cell text-[11px]">
+                  <div class="font-mono">${u.imei}</div>
+                  ${u.imei2 && u.imei2 !== '-' ? `<div class="font-mono text-[10px] dark:text-zinc-600">${u.imei2}</div>` : ''}
+                </td>
+                <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(u.harga_modal)}</td>
+                <td class="px-5 py-4 font-semibold text-[#4FD1C5]">${rp(u.harga_jual)}</td>
+                <td class="px-5 py-4 hidden sm:table-cell">${batteryBar(u.battery)}</td>
+                <td class="px-5 py-4">${badge(u.status)}</td>
+                <td class="px-5 py-4">
+                  <span class="text-[11px] ${u.kondisi_hp==='Repair'?'text-amber-400':'dark:text-zinc-500 text-zinc-400'}">${u.kondisi_hp}</span>
+                  ${u.service_id ? `<div class="text-[10px] dark:text-zinc-600 text-zinc-400"> ${u.service_id}</div>` : ''}
+                  <div class="text-[10px] dark:text-zinc-600 text-zinc-300 mt-0.5">
+                    ${u.lcd || ''} ${u.speaker && u.speaker !== 'Normal' ? '· Spk ⚠' : ''}
+                    ${u.battery_health ? '· BH '+u.battery_health+'%' : ''}
                   </div>
-                  <div class="px-5 py-3.5 border-t border-divider">
-                    <span class="text-[11px] dark:text-zinc-500 text-zinc-400">${units.length} unit ditampilkan</span>
-                  </div>
-                </div>`;
-            } catch (e) { wrap.innerHTML = errorState(e.message, `filterStok('${filter}')`); }
-        }
+                </td>
+                <td class="px-5 py-4 text-center">${kadaluarsaHTML}</td>
+              </tr>`;
+            }).join('') : `<tr><td colspan="10">${emptyState('Tidak ada unit untuk filter ini')}</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+      <div class="px-5 py-3.5 border-t border-divider">
+        <span class="text-[11px] dark:text-zinc-500 text-zinc-400">${units.length} unit ditampilkan</span>
+      </div>
+    </div>`;
+  } catch (e) { 
+    wrap.innerHTML = errorState(e.message, `filterStok('${filter}')`); 
+  }
+}
+
+
+function getKadaluarsaBadge(dateStr) {
+  if (!dateStr) return `<span class="text-zinc-400 text-[10px]">—</span>`;
+  
+  const created = new Date(dateStr);
+  
+  // CEK JIKA TANGGAL INVALID
+  if (isNaN(created.getTime())) {
+    return `<span class="text-zinc-400 text-[10px]">Format Salah</span>`;
+  }
+
+  const now = new Date();
+  
+  // Menghitung selisih (Gunakan pengurangan biasa, hilangkan Math.abs jika ingin tahu apakah barangnya 'overdue')
+  const diffTime = now - created; 
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  // Jika tanggal di masa depan (tidak logis untuk stok masuk)
+  if (diffDays < 0) return `<span class="text-zinc-400 text-[10px]">Belum Masuk</span>`;
+
+  let color = '';
+  let emoji = '';
+  
+  if (diffDays < 30) {
+    color = 'text-emerald-600 dark:text-emerald-400';
+    emoji = '🟢';
+  } else if (diffDays <= 60) {
+    color = 'text-yellow-600 dark:text-yellow-400';
+    emoji = '🟡';
+  } else {
+    color = 'text-red-600 dark:text-red-400';
+    emoji = '🔴';
+  }
+  
+  return `
+    <div class="inline-flex flex-col items-center">
+      <span class="text-lg leading-none">${emoji}</span>
+      <span class="text-[10px] ${color} font-medium">${diffDays} hari</span>
+    </div>
+  `;
+}
+
+
 
         function _unitFormFields() {
             const fld = (id, label, type = 'text', placeholder = '', extra = '') =>
@@ -1771,7 +1828,7 @@ async function renderLog() {
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2.5 flex-wrap">
                   <span class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${l.user}</span>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-medium \( {actionColors[l.aksi]||'dark:bg-zinc-800 bg-zinc-100 dark:text-zinc-500 text-zinc-400'}"> \){l.aksi}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${actionColors[l.aksi]||'dark:bg-zinc-800 bg-zinc-100 dark:text-zinc-500 text-zinc-400'}"> ${l.aksi}</span>
                 </div>
                 <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">${l.detail}</p>
               </div>

@@ -2682,8 +2682,7 @@ function renderRequestTable(list) {
         ${list.map(r => {
           let statusHTML = badgeRequest(r.status);
           
-          // === PERBAIKAN UTAMA ===
-          if (r.status === 'Diterima' && r.respon_keterangan) {
+          if (r.status === 'Diterima' && r.respon_keterangan) { 
             statusHTML = `
               <div>
                 ${badgeRequest(r.status)}
@@ -2717,7 +2716,7 @@ function renderRequestTable(list) {
             ${isKepala ? `
             <td class="px-6 py-4 text-center">
               ${r.status === 'Pending' ? `
-                <button onclick="modalResponRequest('\( {r.req_id}', ' \){r.nama_sp}')" 
+                <button onclick="modalResponRequest('${r.req_id}', ' ${r.nama_sp}')" 
                   class="btn btn-primary text-xs px-4 py-1.5">Proses</button>
               ` : `<span class="text-xs text-zinc-400">Sudah diproses</span>`}
             </td>` : ''}

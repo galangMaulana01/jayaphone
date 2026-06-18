@@ -2638,10 +2638,15 @@ async function renderRequestSparepart() {
   setLoading(c, 4);
   try {
     const list = (await API.requestSP.list({})).data;
+    
+    const isKepala = STATE.user?.role === 'kepala_cabang' || STATE.user?.role === 'owner';
+    
     c.innerHTML = `<div class="space-y-5">
             <div class="flex items-center justify-between">
                 <p class="text-xs dark:text-zinc-500 text-zinc-400">Request Sparepart</p>
+                ${!isKepala ? `
                 <button onclick="modalBuatRequestSP()" class="btn btn-primary">+ Request Baru</button>
+                ` : ''}
             </div>
             <div id="request-list" class="table-wrap rounded-2xl overflow-hidden">
                 ${renderRequestTable(list)}
@@ -2677,14 +2682,13 @@ function renderRequestTable(list) {
         ${list.map(r => {
           let statusHTML = badgeRequest(r.status);
           
-          // Khusus Kasir/Owner: Tampilkan ESTIMASI dari Kepala Cabang (bukan keterangan kasir)
           if ((STATE.user?.role === 'kasir' || STATE.user?.role === 'owner') && 
               r.status === 'Diterima' && r.respon_keterangan) { 
             statusHTML = `
               <div>
                 ${badgeRequest(r.status)}
                 <div class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 line-clamp-2">
-                  Estimasi: ${r.respon_keterangan}
+                  Estimasi: <span class="font-medium">${r.respon_keterangan} Jam</span>
                 </div>
               </div>`;
           } 
@@ -2837,9 +2841,15 @@ function modalResponRequest(req_id, nama_sp) {
       </div>
       
       <div>
-        <label class="label">Estimasi Waktu / Keterangan</label>
-        <textarea id="respon-keterangan" rows="4" class="${input} resize-none" 
-          placeholder="Estimasi kedatangan sparepart, catatan penting, dll..."></textarea>
+        <label class="label">Estimasi Waktu (Jam) <span class="text-red-400">*</span></label>
+        <input 
+          id="respon-keterangan" 
+          type="number" 
+          min="1" 
+          class="${input}" 
+          placeholder="Contoh: 3" 
+          onkeypress="return event.charCode >= 48 && event.charCode <= 57" />
+        <p class="text-[10px] text-zinc-500 mt-1">Masukkan estimasi dalam satuan jam (angka saja)</p>
       </div>
     </div>
     

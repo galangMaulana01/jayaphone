@@ -2682,6 +2682,7 @@ function renderRequestTable(list) {
         ${list.map(r => {
           let statusHTML = badgeRequest(r.status);
           
+          // DEBUG: Tampilkan estimasi untuk semua role
           if (r.status === 'Diterima' && r.respon_keterangan) { 
             statusHTML = `
               <div>
@@ -2716,7 +2717,7 @@ function renderRequestTable(list) {
             ${isKepala ? `
             <td class="px-6 py-4 text-center">
               ${r.status === 'Pending' ? `
-                <button onclick="modalResponRequest('${r.req_id}', ' ${r.nama_sp}')" 
+                <button onclick="modalResponRequest('${r.req_id}', '${r.nama_sp}')" 
                   class="btn btn-primary text-xs px-4 py-1.5">Proses</button>
               ` : `<span class="text-xs text-zinc-400">Sudah diproses</span>`}
             </td>` : ''}
@@ -2873,12 +2874,23 @@ async function simpanResponRequest(req_id) {
       keterangan: document.getElementById('respon-keterangan').value.trim()
     };
     
+    if (payload.status === 'Diterima' && !payload.keterangan) {
+      showToast('Estimasi waktu wajib diisi!', 'error');
+      return;
+    }
+    
     const res = await API.requestSP.respond(req_id, payload);
     
     closeModalBtn();
     showToast(res.message || 'Request berhasil diproses', 'success');
-    setTimeout(() => renderRequestSparepart(), 600);
+    
+    // Force refresh dengan delay lebih lama
+    setTimeout(() => {
+      renderRequestSparepart();
+    }, 1000);
+    
   } catch (e) {
+    console.error(e);
     showToast(e.message || 'Gagal memproses', 'error');
   } finally {
     btn.innerHTML = original;

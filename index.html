@@ -1193,15 +1193,12 @@ async function loadStokTable(filter) {
               <th class="px-5 py-3.5 font-medium hidden sm:table-cell">Battery</th>
               <th class="px-5 py-3.5 font-medium">Status</th>
               <th class="px-5 py-3.5 font-medium">Kondisi HP</th>
-              <th class="px-5 py-3.5 font-medium text-center">Kadaluarsa</th>   <!-- Kolom Baru -->
+              <th class="px-5 py-3.5 font-medium text-center">Umur Stok</th>
             </tr>
           </thead>
           <tbody>
-           ${units.length ? units.map(u => {
-  console.log("ID:", u.unit_id, "Tanggal:", u.created_at, u.tanggal_masuk); // <-- TARUH INI SEMENTARA
-  const kadaluarsaHTML = getKadaluarsaBadge(u.created_at || u.tanggal_masuk);
-  // ... sisanya sama
-
+            ${units.length ? units.map(u => {
+              const kadaluarsaHTML = getKadaluarsaBadge(u.tgl_masuk);
               
               return `<tr class="tbl-row">
                 <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${u.unit_id}</td>
@@ -1214,14 +1211,14 @@ async function loadStokTable(filter) {
                 </td>
                 <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden xl:table-cell text-[11px]">
                   <div class="font-mono">${u.imei}</div>
-                  ${u.imei2 && u.imei2 !== '-' ? `<div class="font-mono text-[10px] dark:text-zinc-600">${u.imei2}</div>` : ''}
+                  ${u.imei2 && u.imei2 !== '-' ? `<div class="font-mono text-[10px] dark:text-zinc-600"> ${u.imei2}</div>` : ''}
                 </td>
                 <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(u.harga_modal)}</td>
                 <td class="px-5 py-4 font-semibold text-[#4FD1C5]">${rp(u.harga_jual)}</td>
                 <td class="px-5 py-4 hidden sm:table-cell">${batteryBar(u.battery)}</td>
                 <td class="px-5 py-4">${badge(u.status)}</td>
                 <td class="px-5 py-4">
-                  <span class="text-[11px] ${u.kondisi_hp==='Repair'?'text-amber-400':'dark:text-zinc-500 text-zinc-400'}">${u.kondisi_hp}</span>
+                  <span class="text-[11px] ${u.kondisi_hp==='Repair'?'text-amber-400':'dark:text-zinc-500 text-zinc-400'}"> ${u.kondisi_hp}</span>
                   ${u.service_id ? `<div class="text-[10px] dark:text-zinc-600 text-zinc-400"> ${u.service_id}</div>` : ''}
                   <div class="text-[10px] dark:text-zinc-600 text-zinc-300 mt-0.5">
                     ${u.lcd || ''} ${u.speaker && u.speaker !== 'Normal' ? '· Spk ⚠' : ''}
@@ -1243,47 +1240,41 @@ async function loadStokTable(filter) {
   }
 }
 
-
+// Fungsi Helper yang sudah dibersihkan dari duplikasi
 function getKadaluarsaBadge(dateStr) {
   if (!dateStr) return `<span class="text-zinc-400 text-[10px]">—</span>`;
   
-  const created = new Date(dateStr);
+  // Parse tanggal (format: "2026-06-15 18:59")
+  const created = new Date(dateStr.replace(' ', 'T'));
   
-  // CEK JIKA TANGGAL INVALID
   if (isNaN(created.getTime())) {
-    return `<span class="text-zinc-400 text-[10px]">Format Salah</span>`;
+    return `<span class="text-zinc-400 text-[10px]">—</span>`;
   }
-
-  const now = new Date();
   
-  // Menghitung selisih (Gunakan pengurangan biasa, hilangkan Math.abs jika ingin tahu apakah barangnya 'overdue')
-  const diffTime = now - created; 
+  const now = new Date();
+  const diffTime = now - created;
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   
-  // Jika tanggal di masa depan (tidak logis untuk stok masuk)
-  if (diffDays < 0) return `<span class="text-zinc-400 text-[10px]">Belum Masuk</span>`;
-
+  if (diffDays < 0) return `<span class="text-zinc-400 text-[10px]">Baru</span>`;
+  
   let color = '';
   let emoji = '';
   
   if (diffDays < 30) {
     color = 'text-emerald-600 dark:text-emerald-400';
-    emoji = '🟢';
   } else if (diffDays <= 60) {
     color = 'text-yellow-600 dark:text-yellow-400';
-    emoji = '🟡';
   } else {
     color = 'text-red-600 dark:text-red-400';
-    emoji = '🔴';
   }
   
   return `
     <div class="inline-flex flex-col items-center">
-      <span class="text-lg leading-none">${emoji}</span>
-      <span class="text-[10px] ${color} font-medium">${diffDays} hari</span>
+      <span class="text-[10px] ${color} font-medium"> ${diffDays} hari</span>
     </div>
   `;
 }
+
 
 
 

@@ -742,6 +742,7 @@
             owner: [
                 { page: 'dashboard',         label: 'Dashboard',         d: dashboardSvg },
                 { page: 'stok',              label: 'Manajemen Stok',    d: stokSvg1 },
+                { page: 'transfer-stok',     label: 'Transfer Stok',     d: stokSvg2 },
                 { page: 'transaksi',         label: 'Transaksi',         d: transaksiSvg },
                 { page: 'laporan',           label: 'Laporan',           d: laporanSvg },
                 { page: 'service',           label: 'Data Service',      d: settingSvg },
@@ -752,6 +753,7 @@
             kepala_cabang: [
                 { page: 'dashboard',         label: 'Dashboard',         d: dashboardSvg },
                 { page: 'stok',              label: 'Manajemen Stok',    d: stokSvg1 },
+                { page: 'transfer-stok',     label: 'Transfer Stok',     d: stokSvg2 },
                 { page: 'transaksi',         label: 'Transaksi',         d: transaksiSvg },
                 { page: 'laporan',           label: 'Laporan',           d: laporanSvg },
                 { page: 'service',           label: 'Data Service',      d: settingSvg },
@@ -791,6 +793,7 @@
             'customers':       ['Data Customer'],
             'service-list':    ['Data Service'],
             'request-sparepart': ['Request Sparepart'],
+            'transfer-stok':     ['Transfer Stok Antar Cabang'],
         };
 
 
@@ -840,7 +843,8 @@
             'tambah-unit':     renderTambahUnit,
             'customers':       renderCustomers,
             'service-list':    renderServiceTeknisi,
-            'request-sparepart': renderRequestSparepart
+            'request-sparepart': renderRequestSparepart,
+            'transfer-stok':     renderTransferStok,
         };
 
         function navigate(page) {
@@ -1148,13 +1152,22 @@ async function renderDashboard() {
                     ${statuses.map((s,i)=>`<button onclick="filterStok('${s}')" class="filter-tab ${i===0?'active':''}">${s}</button>`).join('')}
                     ${cabangLabel}
                   </div>
-                  <button onclick="modalTambahUnitForm()" class="btn btn-primary">
-                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M7.5 3.28149V11.719" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M11.7187 7.50025H3.28125" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    Tambah Unit
-                  </button>
+                  <div class="flex gap-2">
+                    ${STATE.user.role === 'kepala_cabang' ? `
+                    <button onclick="navigate('transfer-stok')" class="btn btn-secondary" style="height:36px;padding:0 14px;font-size:0.75rem;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                      </svg>
+                      Transfer Stok
+                    </button>` : ''}
+                    <button onclick="modalTambahUnitForm()" class="btn btn-primary">
+                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M7.5 3.28149V11.719" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M11.7187 7.50025H3.28125" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      Tambah Unit
+                    </button>
+                  </div>
                 </div>
                 <div id="stok-table-wrap">${Array(4).fill('<div class="skeleton h-12 w-full mb-2"></div>').join('')}</div>
             </div>`;
@@ -2946,6 +2959,429 @@ async function simpanResponRequest(req_id) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  TRANSFER STOK ANTAR CABANG
+// ═══════════════════════════════════════════════════════════════
+
+async function renderTransferStok() {
+  const c = document.getElementById('view-container');
+  setLoading(c, 4);
+  try {
+    const role = STATE.user?.role;
+    const isKepala = role === 'kepala_cabang';
+    const isOwner  = role === 'owner';
+
+    const [transfersRes, cabangRes] = await Promise.all([
+      API.transferStok.list({}),
+      API.cabang.list(),
+    ]);
+    const transfers = transfersRes.data || [];
+    const allCabang = cabangRes.data || [];
+
+    window._trf_cabang_all = allCabang;
+    window._trf_all        = transfers;
+
+    c.innerHTML = `
+      <div class="space-y-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs dark:text-zinc-500 text-zinc-400">Transfer Stok Antar Cabang</p>
+            <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mt-0.5">Stok yang dipindah tidak mengubah harga barang</p>
+          </div>
+          ${isKepala ? `
+          <button onclick="modalBuatTransfer()" class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+            Transfer Baru
+          </button>` : ''}
+        </div>
+
+        <!-- Filter status -->
+        <div class="flex gap-2 flex-wrap">
+          ${['Semua','Pending','Diterima','Ditolak'].map(s => `
+            <button onclick="filterTransfer('${s}')"
+              id="trf-filter-${s}"
+              class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors
+                ${s === 'Semua' ? 'bg-teal-500 text-white' : 'dark:bg-zinc-800 dark:text-zinc-400 bg-zinc-100 text-zinc-500 hover:dark:bg-zinc-700'}">
+              ${s}
+            </button>`).join('')}
+        </div>
+
+        <div id="trf-list" class="table-wrap rounded-2xl overflow-hidden">
+          ${renderTransferTable(transfers, isKepala || isOwner)}
+        </div>
+      </div>`;
+  } catch (e) {
+    c.innerHTML = errorState(e.message, 'renderTransferStok()');
+  }
+}
+
+function filterTransfer(status) {
+  // Update active button
+  ['Semua','Pending','Diterima','Ditolak'].forEach(s => {
+    const btn = document.getElementById(`trf-filter-${s}`);
+    if (!btn) return;
+    if (s === status) {
+      btn.className = btn.className.replace(/dark:bg-zinc-800.*$/, 'bg-teal-500 text-white');
+    } else {
+      btn.className = btn.className.replace(/bg-teal-500 text-white/, 'dark:bg-zinc-800 dark:text-zinc-400 bg-zinc-100 text-zinc-500 hover:dark:bg-zinc-700');
+    }
+  });
+
+  const all = window._trf_all || [];
+  const filtered = status === 'Semua' ? all : all.filter(t => t.status === status);
+  const isKepalaOrOwner = ['kepala_cabang','owner'].includes(STATE.user?.role);
+  document.getElementById('trf-list').innerHTML = renderTransferTable(filtered, isKepalaOrOwner);
+}
+
+function renderTransferTable(list, canRespond) {
+  if (!list?.length) return emptyState('Belum ada transfer stok', '📦');
+  const isKepala = STATE.user?.role === 'kepala_cabang';
+  const userCabang = STATE.user?.cabang;
+
+  return `<div class="overflow-x-auto">
+    <table class="w-full text-xs">
+      <thead>
+        <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+          <th class="px-5 py-3.5 font-medium">ID Transfer</th>
+          <th class="px-5 py-3.5 font-medium">Dari → Ke</th>
+          <th class="px-5 py-3.5 font-medium text-center">Jumlah</th>
+          <th class="px-5 py-3.5 font-medium hidden md:table-cell">Unit</th>
+          <th class="px-5 py-3.5 font-medium">Status</th>
+          <th class="px-5 py-3.5 font-medium hidden lg:table-cell">Dibuat Oleh</th>
+          <th class="px-5 py-3.5 font-medium hidden xl:table-cell">Tanggal</th>
+          ${canRespond ? `<th class="px-5 py-3.5 font-medium text-center">Aksi</th>` : ''}
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(t => {
+          // Kepala cabang tujuan atau owner yang bisa respon
+          const bisBisaRespon = canRespond && t.status === 'Pending' &&
+            (STATE.user?.role === 'owner' || userCabang === t.cabang_tujuan);
+
+          const unitPreview = (t.units || []).slice(0, 2)
+            .map(u => `<span class="font-mono text-[10px] dark:text-zinc-500 text-zinc-400">${u.unit_id_asal}</span>`)
+            .join('<br>') + (t.units?.length > 2 ? `<br><span class="text-zinc-400">+${t.units.length - 2} lainnya</span>` : '');
+
+          return `
+          <tr class="tbl-row">
+            <td class="px-5 py-4 font-mono dark:text-zinc-500 text-zinc-400 text-[11px]">${t.transfer_id || '-'}</td>
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-1.5 font-medium dark:text-zinc-200 text-zinc-700">
+                <span>${t.cabang_asal}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="dark:text-zinc-600 text-zinc-300"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                <span>${t.cabang_tujuan}</span>
+              </div>
+            </td>
+            <td class="px-5 py-4 text-center font-semibold">${t.jumlah || 0}</td>
+            <td class="px-5 py-4 hidden md:table-cell">${unitPreview || '-'}</td>
+            <td class="px-5 py-4">
+              ${badgeTransfer(t.status)}
+              ${t.catatan_respon && t.status !== 'Pending' ? `<div class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-1 max-w-[140px] truncate">${t.catatan_respon}</div>` : ''}
+            </td>
+            <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell">${t.dibuat_oleh || '-'}</td>
+            <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden xl:table-cell text-[11px]">${t.created_at || '-'}</td>
+            ${canRespond ? `
+            <td class="px-5 py-4 text-center">
+              ${bisBisaRespon
+                ? `<button onclick="modalResponTransfer('${t.transfer_id}', ${JSON.stringify(t.units||[]).replace(/"/g,'&quot;')})"
+                     class="btn btn-primary text-xs px-4 py-1.5">Proses</button>`
+                : `<button onclick="modalDetailTransfer('${t.transfer_id}')"
+                     class="text-xs dark:text-zinc-600 text-zinc-400 underline underline-offset-2">Detail</button>`}
+            </td>` : ''}
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function badgeTransfer(status) {
+  const colors = {
+    'Pending':  'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
+    'Diterima': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
+    'Ditolak':  'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400',
+  };
+  const cls = colors[status] || 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400';
+  return `<span class="inline-block px-3 py-1 text-xs font-medium rounded-full ${cls}">${status}</span>`;
+}
+
+// ── Modal: Buat Transfer Baru ─────────────────────────────────────────────────
+
+async function modalBuatTransfer() {
+  const userCabang = STATE.user?.cabang;
+  const allCabang  = (window._trf_cabang_all || []).filter(c => c.kode !== userCabang && c.aktif !== false);
+
+  // Ambil unit Tersedia milik cabang ini
+  let units = [];
+  try {
+    const res = await API.units.list({ cabang: userCabang, status: 'Tersedia', limit: 200 });
+    units = res.data || [];
+  } catch(e) {
+    showToast('Gagal memuat daftar unit: ' + e.message, 'error');
+    return;
+  }
+
+  if (!units.length) {
+    showToast('Tidak ada unit berstatus Tersedia di cabang ini', 'info');
+    return;
+  }
+
+  openModal(`
+    ${modalHeader('Transfer Stok ke Cabang Lain')}
+    <div class="space-y-4">
+
+      <div>
+        <label class="label">Cabang Tujuan <span class="text-red-400">*</span></label>
+        <select id="trf-cab-tujuan" class="${input}">
+          <option value="">— Pilih Cabang —</option>
+          ${allCabang.map(c => `<option value="${c.kode}">${c.kode} – ${c.nama || ''}</option>`).join('')}
+        </select>
+      </div>
+
+      <div>
+        <label class="label">Pilih Unit <span class="text-red-400">*</span>
+          <span class="dark:text-zinc-600 text-zinc-400 font-normal ml-1">(${units.length} tersedia)</span>
+        </label>
+        <div class="flex gap-2 mb-2">
+          <input id="trf-search-unit" type="text" class="${input} !py-1.5 text-xs" placeholder="Cari merk / tipe / unit_id…"
+            oninput="filterTrfUnits()"/>
+          <button onclick="trfSelectAll()" class="btn btn-ghost text-xs px-3 py-1.5 whitespace-nowrap">Pilih Semua</button>
+        </div>
+        <div id="trf-unit-list" class="max-h-56 overflow-y-auto rounded-xl border dark:border-zinc-700/50 border-zinc-200 divide-y dark:divide-zinc-800 divide-zinc-100">
+          ${units.map(u => `
+            <label class="flex items-center gap-3 px-4 py-2.5 hover:dark:bg-zinc-800/60 hover:bg-zinc-50 cursor-pointer transition-colors">
+              <input type="checkbox" class="trf-unit-cb accent-teal-500" value="${u.unit_id}" data-label="${u.merk} ${u.tipe} ${u.storage || ''}" data-search="${u.unit_id} ${u.merk} ${u.tipe} ${u.storage || ''}">
+              <div class="flex-1 min-w-0">
+                <span class="font-medium dark:text-zinc-200 text-zinc-700 text-xs">${u.merk} ${u.tipe}</span>
+                ${u.storage ? `<span class="text-[10px] dark:text-zinc-500 text-zinc-400 ml-1">${u.storage}</span>` : ''}
+                <div class="font-mono text-[10px] dark:text-zinc-600 text-zinc-300">${u.unit_id}</div>
+              </div>
+              <span class="text-[10px] dark:text-zinc-500 text-zinc-400 whitespace-nowrap">${u.kondisi || ''}</span>
+            </label>`).join('')}
+        </div>
+        <div id="trf-selected-count" class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">0 unit dipilih</div>
+      </div>
+
+      <div>
+        <label class="label">Catatan <span class="text-zinc-400 font-normal">(opsional)</span></label>
+        <textarea id="trf-catatan" rows="2" class="${input} resize-none" placeholder="Alasan transfer, kondisi khusus, dll…"></textarea>
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
+      <button onclick="simpanTransfer()" id="btn-simpan-trf" class="btn btn-primary flex-1">Kirim Transfer</button>
+    </div>
+  `);
+
+  // Init counter listener
+  document.querySelectorAll('.trf-unit-cb').forEach(cb => {
+    cb.addEventListener('change', _updateTrfCount);
+  });
+}
+
+function filterTrfUnits() {
+  const q = document.getElementById('trf-search-unit').value.toLowerCase();
+  document.querySelectorAll('#trf-unit-list label').forEach(row => {
+    const cb = row.querySelector('input[type=checkbox]');
+    const searchStr = cb?.dataset.search?.toLowerCase() || '';
+    row.style.display = searchStr.includes(q) ? '' : 'none';
+  });
+}
+
+function trfSelectAll() {
+  const cbs = document.querySelectorAll('.trf-unit-cb');
+  const allChecked = [...cbs].every(c => c.checked);
+  cbs.forEach(c => {
+    // hanya toggle yang visible
+    if (c.closest('label').style.display !== 'none') {
+      c.checked = !allChecked;
+    }
+  });
+  _updateTrfCount();
+}
+
+function _updateTrfCount() {
+  const n = document.querySelectorAll('.trf-unit-cb:checked').length;
+  const el = document.getElementById('trf-selected-count');
+  if (el) el.textContent = `${n} unit dipilih`;
+}
+
+async function simpanTransfer() {
+  const btn = document.getElementById('btn-simpan-trf');
+  const original = btn.innerHTML;
+
+  const cabangTujuan = document.getElementById('trf-cab-tujuan').value;
+  const checked = [...document.querySelectorAll('.trf-unit-cb:checked')];
+  const catatan  = document.getElementById('trf-catatan').value.trim();
+
+  if (!cabangTujuan) { showToast('Pilih cabang tujuan dulu', 'error'); return; }
+  if (!checked.length) { showToast('Pilih minimal 1 unit', 'error'); return; }
+
+  btn.innerHTML = `<span class="spinner"></span> Mengirim…`;
+  btn.disabled = true;
+
+  try {
+    const payload = {
+      cabang_tujuan: cabangTujuan,
+      unit_ids: checked.map(cb => ({ unit_id: cb.value })),
+      catatan,
+    };
+
+    const res = await API.transferStok.create(payload);
+    closeModalBtn();
+    showToast(res.message || `Transfer berhasil diajukan ✅`, 'success');
+    setTimeout(() => renderTransferStok(), 700);
+  } catch (e) {
+    // Tampilkan error per-unit jika ada
+    const detail = e?.detail;
+    if (detail?.errors?.length) {
+      const errList = detail.errors.map(err => `• ${err}`).join('\n');
+      showToast(`Validasi gagal:\n${errList}`, 'error');
+    } else {
+      showToast(e.message || 'Gagal mengirim transfer', 'error');
+    }
+  } finally {
+    btn.innerHTML = original;
+    btn.disabled = false;
+  }
+}
+
+// ── Modal: Respon Transfer (Terima / Tolak) ───────────────────────────────────
+
+function modalResponTransfer(transfer_id, units) {
+  const unitList = Array.isArray(units) ? units : [];
+  openModal(`
+    ${modalHeader('Proses Transfer ' + transfer_id)}
+    <div class="space-y-4">
+
+      <!-- Preview unit -->
+      <div class="rounded-xl border dark:border-zinc-700/50 border-zinc-200 overflow-hidden">
+        <div class="px-4 py-2.5 dark:bg-zinc-800/60 bg-zinc-50 text-[10px] uppercase tracking-widest dark:text-zinc-500 text-zinc-400 font-medium">
+          ${unitList.length} Unit dalam transfer ini
+        </div>
+        <div class="divide-y dark:divide-zinc-800 divide-zinc-100 max-h-40 overflow-y-auto">
+          ${unitList.map(u => `
+            <div class="px-4 py-2.5 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${u.merk} ${u.tipe}</span>
+                ${u.storage ? `<span class="text-[10px] dark:text-zinc-500 text-zinc-400 ml-1">${u.storage}</span>` : ''}
+                <div class="font-mono text-[10px] dark:text-zinc-600 text-zinc-400">${u.unit_id_asal}</div>
+              </div>
+              <span class="text-[10px] dark:text-zinc-500 text-zinc-400">${u.kondisi || ''}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div>
+        <label class="label">Keputusan <span class="text-red-400">*</span></label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex items-center gap-2 p-3 rounded-xl border dark:border-zinc-700 border-zinc-200 cursor-pointer hover:dark:border-emerald-500/50 hover:border-emerald-300 transition-colors has-[:checked]:dark:border-emerald-500 has-[:checked]:border-emerald-400 has-[:checked]:dark:bg-emerald-500/5">
+            <input type="radio" name="trf-keputusan" value="Diterima" class="accent-emerald-500" checked>
+            <span class="text-xs font-medium text-emerald-600 dark:text-emerald-400">✓ Terima</span>
+          </label>
+          <label class="flex items-center gap-2 p-3 rounded-xl border dark:border-zinc-700 border-zinc-200 cursor-pointer hover:dark:border-red-500/50 hover:border-red-300 transition-colors has-[:checked]:dark:border-red-500 has-[:checked]:border-red-400 has-[:checked]:dark:bg-red-500/5">
+            <input type="radio" name="trf-keputusan" value="Ditolak" class="accent-red-500">
+            <span class="text-xs font-medium text-red-600 dark:text-red-400">✕ Tolak</span>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label class="label">Catatan <span class="text-zinc-400 font-normal">(opsional, wajib jika ditolak)</span></label>
+        <textarea id="trf-respon-catatan" rows="2" class="${input} resize-none" placeholder="Alasan terima / tolak…"></textarea>
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
+      <button onclick="kirimResponTransfer('${transfer_id}')" id="btn-respon-trf" class="btn btn-primary flex-1">Simpan Keputusan</button>
+    </div>
+  `);
+}
+
+async function kirimResponTransfer(transfer_id) {
+  const btn      = document.getElementById('btn-respon-trf');
+  const original = btn.innerHTML;
+  const status   = document.querySelector('input[name="trf-keputusan"]:checked')?.value;
+  const catatan  = document.getElementById('trf-respon-catatan').value.trim();
+
+  if (!status) { showToast('Pilih keputusan dulu', 'error'); return; }
+  if (status === 'Ditolak' && !catatan) { showToast('Catatan wajib diisi jika ditolak', 'error'); return; }
+
+  btn.innerHTML = `<span class="spinner"></span> Memproses…`;
+  btn.disabled = true;
+
+  try {
+    const res = await API.transferStok.respond(transfer_id, { status, catatan });
+    closeModalBtn();
+    showToast(res.message || `Transfer ${status} ✅`, 'success');
+    setTimeout(() => renderTransferStok(), 700);
+  } catch (e) {
+    showToast(e.message || 'Gagal memproses transfer', 'error');
+  } finally {
+    btn.innerHTML = original;
+    btn.disabled = false;
+  }
+}
+
+// ── Modal: Detail Transfer (read-only) ───────────────────────────────────────
+
+function modalDetailTransfer(transfer_id) {
+  const t = (window._trf_all || []).find(x => x.transfer_id === transfer_id);
+  if (!t) { showToast('Data tidak ditemukan', 'error'); return; }
+
+  openModal(`
+    ${modalHeader('Detail ' + transfer_id)}
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div class="p-3 rounded-xl dark:bg-zinc-800/60 bg-zinc-50">
+          <p class="dark:text-zinc-500 text-zinc-400 text-[10px] mb-0.5">Dari</p>
+          <p class="font-semibold dark:text-zinc-100 text-zinc-800">${t.cabang_asal}</p>
+        </div>
+        <div class="p-3 rounded-xl dark:bg-zinc-800/60 bg-zinc-50">
+          <p class="dark:text-zinc-500 text-zinc-400 text-[10px] mb-0.5">Ke</p>
+          <p class="font-semibold dark:text-zinc-100 text-zinc-800">${t.cabang_tujuan}</p>
+        </div>
+        <div class="p-3 rounded-xl dark:bg-zinc-800/60 bg-zinc-50">
+          <p class="dark:text-zinc-500 text-zinc-400 text-[10px] mb-0.5">Status</p>
+          <p>${badgeTransfer(t.status)}</p>
+        </div>
+        <div class="p-3 rounded-xl dark:bg-zinc-800/60 bg-zinc-50">
+          <p class="dark:text-zinc-500 text-zinc-400 text-[10px] mb-0.5">Dibuat Oleh</p>
+          <p class="font-medium dark:text-zinc-200 text-zinc-700">${t.dibuat_oleh || '-'}</p>
+        </div>
+      </div>
+
+      ${t.catatan ? `<div class="p-3 rounded-xl dark:bg-zinc-800/40 bg-zinc-50 text-xs dark:text-zinc-400 text-zinc-500"><span class="font-medium">Catatan:</span> ${t.catatan}</div>` : ''}
+      ${t.catatan_respon ? `<div class="p-3 rounded-xl dark:bg-zinc-800/40 bg-zinc-50 text-xs dark:text-zinc-400 text-zinc-500"><span class="font-medium">Respon:</span> ${t.catatan_respon}</div>` : ''}
+
+      <div class="rounded-xl border dark:border-zinc-700/50 border-zinc-200 overflow-hidden">
+        <div class="px-4 py-2 dark:bg-zinc-800/60 bg-zinc-50 text-[10px] uppercase tracking-widest dark:text-zinc-500 text-zinc-400 font-medium">
+          Daftar Unit (${t.units?.length || 0})
+        </div>
+        <div class="divide-y dark:divide-zinc-800 divide-zinc-100 max-h-48 overflow-y-auto">
+          ${(t.units || []).map(u => `
+            <div class="px-4 py-2.5 text-xs">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-mono dark:text-zinc-400 text-zinc-500">${u.unit_id_asal}</span>
+                ${u.unit_id_baru ? `
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  <span class="font-mono text-emerald-500">${u.unit_id_baru}</span>` : ''}
+              </div>
+              <div class="dark:text-zinc-500 text-zinc-400 text-[11px] mt-0.5">${u.merk} ${u.tipe}${u.storage ? ' · ' + u.storage : ''} · ${u.kondisi}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="mt-5">
+      <button onclick="closeModalBtn()" class="btn btn-ghost w-full">Tutup</button>
+    </div>
+  `);
+}
+
         function modalUpdateStokSP(sp_id, nama, stokNow) {
             openModal(`${modalHeader('Update Stok', nama)}
                 <div class="space-y-4">
@@ -3245,6 +3681,36 @@ async function simpanResponRequest(req_id) {
                     this.updateBadge();
                 } catch (e) {
                     // Silent fail - polling tidak boleh ganggu UI
+                }
+
+                // ── Polling Transfer Stok (kepala_cabang tujuan & owner) ──
+                if (role === 'kepala_cabang' || role === 'owner') {
+                    try {
+                        const trfRes = await API.transferStok.notifCount();
+                        const count  = trfRes?.data?.count || 0;
+                        if (count > 0) {
+                            // Fetch list pending untuk ditampilkan sebagai notif
+                            const pendingRes = await API.transferStok.notifPending();
+                            const pending    = pendingRes?.data || [];
+                            let newTrf = 0;
+                            for (const t of pending) {
+                                const added = this.add({
+                                    id:    t.transfer_id,
+                                    type:  'info',
+                                    title: `Transfer Stok Masuk — ${t.transfer_id}`,
+                                    body:  `${t.jumlah} unit dari ${t.cabang_asal} menunggu persetujuan`,
+                                    page:  'transfer-stok',
+                                });
+                                if (added) newTrf++;
+                            }
+                            if (newTrf > 0) {
+                                showToast(`📦 ${newTrf} transfer stok baru menunggu persetujuan`, 'info');
+                            }
+                            this.updateBadge();
+                        }
+                    } catch (e) {
+                        // Silent fail
+                    }
                 }
             },
 

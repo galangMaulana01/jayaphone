@@ -145,6 +145,13 @@ const API = {
     create:  (b)      => request('POST',  '/request-sparepart', b),
     respond: (id, b)  => request('PATCH', `/request-sparepart/${id}`, b),
   },
+  transferStok: {
+    list:         (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/transfer-stok${q?`?${q}`:''}`) },
+    create:       (b)      => request('POST',  '/transfer-stok', b),
+    respond:      (id, b)  => request('PATCH', `/transfer-stok/${id}`, b),
+    notifCount:   ()       => request('GET', '/transfer-stok/notif/count'),
+    notifPending: ()       => request('GET', '/transfer-stok/notif/pending'),
+  },
 };
 
 window.API      = API;

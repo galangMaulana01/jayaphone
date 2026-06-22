@@ -151,6 +151,7 @@ const API = {
     respond:      (id, b)  => request('PATCH', `/transfer-stok/${id}`, b),
     notifCount:   ()       => request('GET', '/transfer-stok/notif/count'),
     notifPending: ()       => request('GET', '/transfer-stok/notif/pending'),
+    cabangList:   ()       => request('GET', '/transfer-stok/cabang-list'),
   },
 };
 

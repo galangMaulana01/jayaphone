@@ -1914,7 +1914,7 @@ async function renderLog() {
         // ═══ VIEW: INPUT TRANSAKSI ═══
         let _trxTab = 'hp'; // 'hp' | 'sparepart'
         let _spCache = [];  // cache sparepart list
-        let _spKeranjang = []; // keranjang sparepart
+        let _spKeranjang = []; 
 
         async function renderInputTransaksi() {
             const c = document.getElementById('view-container');
@@ -2971,15 +2971,10 @@ async function renderTransferStok() {
     const isKepala = role === 'kepala_cabang';
     const isOwner  = role === 'owner';
 
-    const [transfersRes, cabangRes] = await Promise.all([
-      API.transferStok.list({}),
-      API.cabang.list(),
-    ]);
+    const transfersRes = await API.transferStok.list({});
     const transfers = transfersRes.data || [];
-    const allCabang = cabangRes.data || [];
 
-    window._trf_cabang_all = allCabang;
-    window._trf_all        = transfers;
+    window._trf_all = transfers;
 
     c.innerHTML = `
       <div class="space-y-5">
@@ -3111,7 +3106,14 @@ function badgeTransfer(status) {
 
 async function modalBuatTransfer() {
   const userCabang = STATE.user?.cabang;
-  const allCabang  = (window._trf_cabang_all || []).filter(c => c.kode !== userCabang && c.aktif !== false);
+  let allCabang = [];
+  try {
+  const cabRes = await API.transferStok.cabangList();
+  allCabang = (cabRes.data || []).filter(c => c.kode !== userCabang);
+  } catch(e) {
+  showToast('Gagal memuat daftar cabang: ' + e.message, 'error');
+  return;
+  }
 
   // Ambil unit Tersedia milik cabang ini
   let units = [];
@@ -3683,13 +3685,11 @@ function modalDetailTransfer(transfer_id) {
                     // Silent fail - polling tidak boleh ganggu UI
                 }
 
-                // ── Polling Transfer Stok (kepala_cabang tujuan & owner) ──
                 if (role === 'kepala_cabang' || role === 'owner') {
                     try {
                         const trfRes = await API.transferStok.notifCount();
                         const count  = trfRes?.data?.count || 0;
                         if (count > 0) {
-                            // Fetch list pending untuk ditampilkan sebagai notif
                             const pendingRes = await API.transferStok.notifPending();
                             const pending    = pendingRes?.data || [];
                             let newTrf = 0;

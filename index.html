@@ -1561,6 +1561,7 @@ async function renderTransaksi() {
                 <th class="px-6 py-3.5 font-medium hidden md:table-cell">Modal</th>
                 <th class="px-6 py-3.5 font-medium">Profit</th>
                 <th class="px-6 py-3.5 font-medium hidden lg:table-cell">Waktu</th>
+                <th class="px-6 py-3.5 font-medium text-center">Struk</th>
               </tr>
             </thead>
             <tbody>
@@ -1576,8 +1577,15 @@ async function renderTransaksi() {
                   <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(t.harga_modal)}</td>
                   <td class="px-6 py-4 font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
                   <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${t.waktu}</td>
+                  <td class="px-6 py-4 text-center">
+                    <button onclick='printStruk(${JSON.stringify(t)})'
+                      class="btn btn-ghost text-xs px-3 py-1" style="height:28px;"
+                      title="Cetak Struk">
+                      🖨️
+                    </button>
+                  </td>
                 </tr>
-              `).join('') : `<tr><td colspan="7">${emptyState('Belum ada transaksi')}</td></tr>`}
+              `).join('') : `<tr><td colspan="8">${emptyState('Belum ada transaksi')}</td></tr>`}
             </tbody>
           </table>
         </div>
@@ -1717,7 +1725,13 @@ async function renderTransaksi() {
                         <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Bergabung</span><span class="dark:text-zinc-300 text-zinc-600">${k.bergabung}</span></div>
                         <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Gaji Pokok</span><span class="font-semibold text-[#4FD1C5]">${rp(k.gaji)}</span></div>
                       </div>
-                      ${STATE.user.role === 'owner' && k.aktif ? `<button onclick="konfirmasiPecatKaryawan('${k.id}','${k.nama}')" class="btn btn-ghost w-full mt-3 text-xs text-red-400 dark:hover:bg-red-500/10" style="height:32px;">Pecat Karyawan</button>` : ''}
+                      <div class="flex gap-2 mt-3">
+                        ${(k.jabatan === 'Kasir' || k.jabatan === 'Teknisi') ? `
+                        <button onclick="modalKaryawanStats('${k.id}','${k.nama}','${k.jabatan}')" class="btn btn-ghost flex-1 text-xs" style="height:32px;">
+                          📊 Detail
+                        </button>` : '<div class="flex-1"></div>'}
+                        ${STATE.user.role === 'owner' && k.aktif ? `<button onclick="konfirmasiPecatKaryawan('${k.id}','${k.nama}')" class="btn btn-ghost flex-1 text-xs text-red-400 dark:hover:bg-red-500/10" style="height:32px;">Pecat</button>` : ''}
+                      </div>
                     </div>`).join('') : `<div class="col-span-3">${emptyState('Belum ada karyawan','👤')}</div>`}
                   </div>
                 </div>`;
@@ -1800,8 +1814,285 @@ async function renderTransaksi() {
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Karyawan'; btn.disabled = false; }
         }
 
-        // ═══ VIEW: LOG ═══
-// ═══ VIEW: LOG ═══
+        // ═══ DASHBOARD KARYAWAN DETAIL ═══════════════════════════════════════
+
+        let _karStatsFilter = { preset: '30d', start: null, end: null };
+        let _karStatsChart  = null;
+        let _karStatsCurrent = null; // { id, nama, jabatan }
+
+        async function modalKaryawanStats(id, nama, jabatan) {
+            _karStatsCurrent = { id, nama, jabatan };
+            _karStatsFilter  = { preset: '30d', start: null, end: null };
+            openModal(`
+                ${modalHeader('📊 Statistik ' + nama)}
+                <div id="kar-stats-body">
+                  <div class="flex justify-center py-8"><span class="spinner"></span></div>
+                </div>
+            `, 'max-w-2xl');
+            await _loadKarStats();
+        }
+
+        async function _loadKarStats() {
+            const { id, nama, jabatan } = _karStatsCurrent;
+            const body = document.getElementById('kar-stats-body');
+            if (!body) return;
+
+            // Build params
+            const params = {};
+            if (_karStatsFilter.start && _karStatsFilter.end) {
+                params.date_from = _karStatsFilter.start;
+                params.date_to   = _karStatsFilter.end;
+            } else {
+                const map = { '7d': 7, '30d': 30, '90d': 90, '1y': 365 };
+                params.hari = map[_karStatsFilter.preset] || 30;
+            }
+
+            try {
+                const res  = await API.karyawan.stats(id, params);
+                const data = res.data;
+
+                const isKasir    = jabatan === 'Kasir';
+                const d          = isKasir ? data.kasir : data.teknisi;
+                const periodeStr = `${data.periode.dari} → ${data.periode.sampai}`;
+
+                // Filter tabs
+                const tabs = [
+                    { key: '7d',  label: '7 Hari' },
+                    { key: '30d', label: '30 Hari' },
+                    { key: '90d', label: '3 Bulan' },
+                    { key: '1y',  label: '1 Tahun' },
+                ];
+                const filterHtml = `
+                <div class="flex items-center gap-2 flex-wrap mb-5">
+                  <div class="flex bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-1 text-xs font-medium">
+                    ${tabs.map(t => `
+                    <button onclick="_setKarFilter('${t.key}')"
+                      class="kar-filter-tab px-3 py-1.5 rounded-xl transition-colors ${_karStatsFilter.preset === t.key && !_karStatsFilter.start ? 'bg-white dark:bg-zinc-800 shadow-sm font-semibold' : 'dark:text-zinc-500 text-zinc-400'}">
+                      ${t.label}
+                    </button>`).join('')}
+                  </div>
+                  <button onclick="_showKarCustomDate()" class="btn btn-ghost text-xs px-4 py-1.5 ${_karStatsFilter.start ? 'dark:text-teal-400 text-teal-600' : ''}">
+                    ${_karStatsFilter.start ? `📅 ${_karStatsFilter.start} → ${_karStatsFilter.end}` : 'Custom'}
+                  </button>
+                </div>`;
+
+                // Stat cards
+                let statCards = '';
+                if (isKasir) {
+                    statCards = `
+                    <div class="grid grid-cols-3 gap-3 mb-5">
+                      <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50">
+                        <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-1">Transaksi</p>
+                        <p class="text-2xl font-bold dark:text-zinc-100 text-zinc-800">${d.jumlah_transaksi}</p>
+                        <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mt-0.5">≈ ${d.rata_per_hari}/hari</p>
+                      </div>
+                      <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50">
+                        <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-1">Total Omzet</p>
+                        <p class="text-lg font-bold text-[#4FD1C5]">${rp(d.total_omzet)}</p>
+                      </div>
+                      <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50">
+                        <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-1">Total Profit</p>
+                        <p class="text-lg font-bold text-emerald-400">${rp(d.total_profit)}</p>
+                      </div>
+                    </div>`;
+                } else {
+                    const breakdown = d.status_breakdown || {};
+                    statCards = `
+                    <div class="grid grid-cols-3 gap-3 mb-5">
+                      <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50">
+                        <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-1">Total Service</p>
+                        <p class="text-2xl font-bold dark:text-zinc-100 text-zinc-800">${d.total_service}</p>
+                      </div>
+                      <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50">
+                        <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-1">Selesai</p>
+                        <p class="text-2xl font-bold text-emerald-400">${d.jumlah_selesai}</p>
+                        <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mt-0.5">≈ ${d.rata_selesai_per_hari}/hari</p>
+                      </div>
+                      <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50">
+                        <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-2">Status</p>
+                        ${Object.entries(breakdown).map(([s,n]) =>
+                          `<div class="flex justify-between text-[11px]"><span class="dark:text-zinc-500 text-zinc-400">${s}</span><span class="font-semibold dark:text-zinc-200 text-zinc-700">${n}</span></div>`
+                        ).join('')}
+                      </div>
+                    </div>`;
+                }
+
+                // Chart
+                const trend      = isKasir ? d.trend_harian : d.trend_harian;
+                const labels     = trend.map(t => t.tanggal.slice(5));   // MM-DD
+                const chartData  = isKasir
+                    ? trend.map(t => t.omzet)
+                    : trend.map(t => t.selesai);
+                const chartLabel = isKasir ? 'Omzet (Rp)' : 'Service Selesai';
+                const chartColor = isKasir ? '#4FD1C5' : '#34d399';
+
+                body.innerHTML = filterHtml + statCards + `
+                <div class="rounded-2xl dark:bg-zinc-800/40 bg-zinc-50 p-4">
+                  <p class="text-xs font-medium dark:text-zinc-400 text-zinc-500 mb-3">${chartLabel} — Trend Harian</p>
+                  ${trend.length ? `<canvas id="kar-stats-chart" height="160"></canvas>` : `<p class="text-xs dark:text-zinc-600 text-zinc-400 text-center py-6">Belum ada data dalam periode ini</p>`}
+                </div>
+                <p class="text-[10px] dark:text-zinc-600 text-zinc-300 text-center mt-3">${periodeStr}</p>`;
+
+                // Render chart
+                if (trend.length) {
+                    if (_karStatsChart) { _karStatsChart.destroy(); _karStatsChart = null; }
+                    const ctx = document.getElementById('kar-stats-chart')?.getContext('2d');
+                    if (ctx) {
+                        _karStatsChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels,
+                                datasets: [{
+                                    label: chartLabel,
+                                    data: chartData,
+                                    backgroundColor: chartColor + '33',
+                                    borderColor: chartColor,
+                                    borderWidth: 2,
+                                    borderRadius: 6,
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    x: { grid: { display: false }, ticks: { color: '#71717a', font: { size: 10 } } },
+                                    y: {
+                                        grid: { color: 'rgba(113,113,122,0.1)' },
+                                        ticks: {
+                                            color: '#71717a', font: { size: 10 },
+                                            callback: isKasir ? v => 'Rp' + (v/1e6).toFixed(1) + 'jt' : v => v,
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            } catch(e) {
+                body.innerHTML = `<div class="py-8 text-center text-sm dark:text-zinc-500 text-zinc-400">Gagal memuat statistik: ${e.message}</div>`;
+            }
+        }
+
+        function _setKarFilter(preset) {
+            _karStatsFilter = { preset, start: null, end: null };
+            _loadKarStats();
+        }
+
+        function _showKarCustomDate() {
+            openModal(`
+                ${modalHeader('Pilih Rentang Tanggal')}
+                <div class="space-y-4 py-2">
+                  <div><label class="label">Dari</label><input id="kar-date-from" type="date" class="${input}"></div>
+                  <div><label class="label">Sampai</label><input id="kar-date-to" type="date" class="${input}"></div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                  <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
+                  <button onclick="_applyKarCustomDate()" class="btn btn-primary flex-1">Terapkan</button>
+                </div>`);
+        }
+
+        function _applyKarCustomDate() {
+            const from = document.getElementById('kar-date-from')?.value;
+            const to   = document.getElementById('kar-date-to')?.value;
+            if (!from || !to) { showToast('Lengkapi tanggal', 'error'); return; }
+            _karStatsFilter = { preset: 'custom', start: from, end: to };
+            closeModalBtn();
+            // Re-open stats modal
+            const { id, nama, jabatan } = _karStatsCurrent;
+            openModal(`${modalHeader('📊 Statistik ' + nama)}<div id="kar-stats-body"><div class="flex justify-center py-8"><span class="spinner"></span></div></div>`, 'max-w-2xl');
+            _loadKarStats();
+        }
+
+        // ═══ PRINT STRUK TRANSAKSI ════════════════════════════════════════════
+
+        function printStruk(trx) {
+            // trx = { trx_id, unit_label, unit_id, kasir, harga_jual, harga_modal,
+            //          profit, waktu, catatan, garansi_hari, biaya_garansi, cabang }
+            const tokoNama   = 'JayaPhone';
+            const tokoAlamat = `Cabang ${trx.cabang || ''}`;
+            const totalBayar = (trx.harga_jual || 0) + (trx.biaya_garansi || 0);
+
+            const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>Struk - ${trx.trx_id}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    width: 80mm;
+    margin: 0 auto;
+    padding: 4mm;
+    color: #000;
+    background: #fff;
+  }
+  .center  { text-align: center; }
+  .right   { text-align: right; }
+  .bold    { font-weight: bold; }
+  .lg      { font-size: 15px; }
+  .sm      { font-size: 10px; }
+  .divider { border-top: 1px dashed #000; margin: 6px 0; }
+  .row     { display: flex; justify-content: space-between; margin: 2px 0; }
+  .row span:last-child { text-align: right; max-width: 55%; word-break: break-all; }
+  .total-row { display: flex; justify-content: space-between; margin: 3px 0; font-weight: bold; font-size: 13px; }
+  .footer  { text-align: center; margin-top: 8px; font-size: 10px; }
+  @media print {
+    body { width: 80mm; }
+    @page { size: 80mm auto; margin: 0; }
+  }
+</style>
+</head>
+<body>
+  <div class="center bold lg">${tokoNama}</div>
+  <div class="center sm">${tokoAlamat}</div>
+  <div class="divider"></div>
+
+  <div class="row"><span>No. Struk</span><span class="bold">${trx.trx_id}</span></div>
+  <div class="row"><span>Tanggal</span><span>${trx.waktu || new Date().toLocaleString('id-ID')}</span></div>
+  <div class="row"><span>Kasir</span><span>${trx.kasir || '-'}</span></div>
+
+  <div class="divider"></div>
+
+  <div class="bold" style="margin-bottom:4px;">Item Pembelian</div>
+  <div class="row">
+    <span style="max-width:60%;">${trx.unit_label || '-'}</span>
+    <span class="bold">${rpStr(trx.harga_jual)}</span>
+  </div>
+  <div class="sm" style="color:#555;margin-bottom:2px;">ID: ${trx.unit_id || '-'}</div>
+
+  ${trx.biaya_garansi ? `<div class="row"><span>Garansi ${trx.garansi_hari} hari</span><span>${rpStr(trx.biaya_garansi)}</span></div>` : ''}
+
+  <div class="divider"></div>
+
+  <div class="total-row"><span>TOTAL BAYAR</span><span>${rpStr(totalBayar)}</span></div>
+
+  <div class="divider"></div>
+
+  ${trx.garansi_hari ? `<div class="row sm"><span>Garansi</span><span>${trx.garansi_hari} hari</span></div>` : ''}
+  ${trx.catatan ? `<div class="row sm"><span>Catatan</span><span>${trx.catatan}</span></div>` : ''}
+
+  <div class="footer">
+    <div class="divider"></div>
+    <div>Terima kasih telah berbelanja!</div>
+    <div style="margin-top:2px;">Barang yang sudah dibeli</div>
+    <div>tidak dapat dikembalikan</div>
+  </div>
+</body>
+</html>`;
+
+            const win = window.open('', '_blank', 'width=400,height=600');
+            win.document.write(html);
+            win.document.close();
+            win.focus();
+            setTimeout(() => { win.print(); win.close(); }, 400);
+        }
+
+        function rpStr(n) {
+            if (!n) return 'Rp 0';
+            return 'Rp ' + Number(n).toLocaleString('id-ID');
+        }
 async function renderLog() {
   const c = document.getElementById('view-container');
   setLoading(c, 6);

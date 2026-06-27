@@ -113,6 +113,7 @@ const API = {
   karyawan: {
     list:   (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/karyawan${q?`?${q}`:''}`) },
     create: (b)      => request('POST', '/karyawan', b),
+    stats:  (id, p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/karyawan/${id}/stats${q?`?${q}`:''}`) },
   },
   log: {
     list: (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/log${q?`?${q}`:''}`) },
@@ -151,7 +152,6 @@ const API = {
     respond:      (id, b)  => request('PATCH', `/transfer-stok/${id}`, b),
     notifCount:   ()       => request('GET', '/transfer-stok/notif/count'),
     notifPending: ()       => request('GET', '/transfer-stok/notif/pending'),
-    cabangList:   ()       => request('GET', '/transfer-stok/cabang-list'),
   },
 };
 

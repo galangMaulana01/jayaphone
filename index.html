@@ -877,7 +877,7 @@ function getDateFilterParams() {
 
 function renderDateFilter(refreshCallback) {
   // refreshCallback is a function name string like 'renderDashboard'
-  const cb = refreshCallback.name || refreshCallback;
+  const cb = typeof refreshCallback === 'string' ? refreshCallback : (refreshCallback.name || '');
   return `
      <div class="flex items-center gap-2 flex-wrap">
        <div class="flex bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-1 text-xs font-medium">
@@ -924,7 +924,7 @@ function applyCustomFilter(callbackName) {
   }
   currentFilter = { preset: 'custom', start, end };
   closeModalBtn();
-  callback();
+  window[callbackName]?.();
 }
 
 
@@ -968,7 +968,7 @@ async function renderDashboard() {
               <div>
                 <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
               </div>
-              ${renderDateFilter(() => renderDashboard())}
+              ${renderDateFilter('renderDashboard')}
             </div>
 
             <!-- STAT CARDS -->
@@ -1164,13 +1164,13 @@ async function renderDashboard() {
                       </svg>
                       Transfer Stok
                     </button>` : ''}
-                    <button onclick="modalTambahUnitForm()" class="btn btn-primary">
+                    ${STATE.user.role !== "owner" ? `<button onclick="modalTambahUnitForm()" class="btn btn-primary">
                       <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M7.5 3.28149V11.719" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                       <path d="M11.7187 7.50025H3.28125" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                       Tambah Unit
-                    </button>
+                    </button>` : ""}
                   </div>
                 </div>
                 <div id="stok-table-wrap">${Array(4).fill('<div class="skeleton h-12 w-full mb-2"></div>').join('')}</div>
@@ -1559,7 +1559,7 @@ async function renderTransaksi() {
         <div>
           <h2 class="text-lg font-semibold tracking-tight">Daftar Transaksi</h2>
         </div>
-        ${renderDateFilter(() => renderTransaksi())}
+        ${renderDateFilter('renderTransaksi')}
       </div>
       <div class="table-wrap rounded-2xl overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
@@ -2033,7 +2033,7 @@ async function renderLog() {
     c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
           <div class="px-6 py-4 border-b border-divider flex items-center justify-between">
             <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Sistem</p>
-            ${renderDateFilter(() => renderLog())}
+            ${renderDateFilter('renderLog')}
           </div>
           <div>
             ${list.length ? list.map(l=>`<div class="log-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">

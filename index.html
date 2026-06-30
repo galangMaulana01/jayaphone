@@ -1300,11 +1300,6 @@ function getKadaluarsaBadge(dateStr) {
             const sel = (id, label, opts) =>
                 `<div><label class="label">${label}</label><select id="${id}" class="${input}">${opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
             return `
-            const fld = (id, label, type = 'text', placeholder = '', extra = '') =>
-                `<div><label class="label">${label}</label><input id="${id}" type="${type}" class="${input}" placeholder="${placeholder}" ${extra}/></div>`;
-            const sel = (id, label, opts) =>
-                `<div><label class="label">${label}</label><select id="${id}" class="${input}">${opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
-            return `
                   <select id="u-kondisi-kode" class="${input}">
                     <option value="BN">Normal</option><option value="MN">Minus</option>
                     <option value="EX">Ex Inter</option><option value="RJ">Reject</option>

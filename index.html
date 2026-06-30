@@ -1586,6 +1586,10 @@ async function renderTransaksi() {
                   <td class="px-6 py-4">
                     <div class="font-medium dark:text-zinc-100 text-zinc-800">${t.unit_label}</div>
                     <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${t.unit_id}</div>
+                    ${(t.poin_dipakai > 0 || t.poin_dapat > 0) ? `<div class="flex gap-2 mt-1">
+                      ${t.poin_dipakai > 0 ? `<span class="text-[9px] px-1.5 py-0.5 rounded-full dark:bg-red-500/10 bg-red-50 text-red-400 border dark:border-red-500/20 border-red-200">-${t.poin_dipakai} poin</span>` : ''}
+                      ${t.poin_dapat > 0 ? `<span class="text-[9px] px-1.5 py-0.5 rounded-full dark:bg-amber-500/10 bg-amber-50 text-amber-500 border dark:border-amber-500/20 border-amber-200">+${t.poin_dapat} poin</span>` : ''}
+                    </div>` : ''}
                   </td>
                   <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
                   <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
@@ -2127,7 +2131,117 @@ const c = document.getElementById('view-container');
         // ═══ VIEW: INPUT TRANSAKSI ═══
         let _trxTab = 'hp'; // 'hp' | 'sparepart'
         let _spCache = [];  // cache sparepart list
-        let _spKeranjang = []; 
+        let _spKeranjang = [];
+        let _trxSelectedCustomer = null; // selected customer for points
+        let _trxUnitHarga = 0;           // harga_jual of selected unit
+        let _trxSearchTimer = null;
+
+        // ── CUSTOMER SEARCH (debounced 300ms) ──
+        function searchCustomerTrx(query) {
+            const dropdown = document.getElementById('trx-customer-dropdown');
+            if (!dropdown) return;
+            clearTimeout(_trxSearchTimer);
+            // Reset selected customer when user types (unless exact match)
+            if (_trxSelectedCustomer && query !== _trxSelectedCustomer.nama) {
+                _trxSelectedCustomer = null;
+                document.getElementById('trx-poin-section')?.classList.add('hidden');
+                document.getElementById('trx-poin').value = 0;
+                hitungPoin();
+            }
+            if (!query || query.trim().length < 2) {
+                dropdown.classList.add('hidden');
+                dropdown.innerHTML = '';
+                return;
+            }
+            _trxSearchTimer = setTimeout(async () => {
+                try {
+                    const res = await API.customers.list({ q: query.trim() });
+                    const list = res.data || [];
+                    if (!list.length) {
+                        dropdown.innerHTML = '<div class="px-4 py-3 text-xs dark:text-zinc-500 text-zinc-400">Tidak ditemukan — ketik nama baru</div>';
+                    } else {
+                        dropdown.innerHTML = list.map(cu => `
+                          <div onclick="selectCustomerTrx(${JSON.stringify(cu).replace(/"/g,'&quot;')})"
+                            class="flex items-center justify-between px-4 py-3 cursor-pointer dark:hover:bg-zinc-800 hover:bg-zinc-50 transition-colors">
+                            <div>
+                              <div class="text-xs font-medium dark:text-zinc-100 text-zinc-800">${cu.nama}</div>
+                              <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${cu.kontak || '-'}</div>
+                            </div>
+                            <span class="text-[10px] font-medium dark:text-amber-400 text-amber-500">⭐ ${cu.points || 0} poin</span>
+                          </div>`).join('');
+                    }
+                    dropdown.classList.remove('hidden');
+                } catch (e) {
+                    dropdown.innerHTML = '<div class="px-4 py-3 text-xs text-red-400">Gagal memuat</div>';
+                    dropdown.classList.remove('hidden');
+                }
+            }, 300);
+        }
+
+        // Close dropdown on outside click
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('trx-customer-dropdown');
+            const input = document.getElementById('trx-customer-nama');
+            if (dropdown && !dropdown.contains(e.target) && e.target !== input) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // ── SELECT CUSTOMER ──
+        function selectCustomerTrx(cu) {
+            _trxSelectedCustomer = cu;
+            document.getElementById('trx-customer-nama').value = cu.nama;
+            document.getElementById('trx-customer-kontak').value = cu.kontak || '';
+            document.getElementById('trx-customer-dropdown').classList.add('hidden');
+
+            const poinSection = document.getElementById('trx-poin-section');
+            const poinInfo = document.getElementById('trx-poin-info');
+            const poinMaks = document.getElementById('trx-poin-maks');
+            const poinInput = document.getElementById('trx-poin');
+
+            if (cu.points && cu.points > 0) {
+                poinSection.classList.remove('hidden');
+                poinInfo.textContent = `Poin: ${cu.points} (Rp ${(cu.points * 1000).toLocaleString('id-ID')})`;
+                poinMaks.textContent = cu.points;
+                poinInput.max = cu.points;
+                poinInput.value = 0;
+            } else {
+                poinSection.classList.add('hidden');
+                poinInput.value = 0;
+            }
+            hitungPoin();
+        }
+
+        // ── POINTS CALCULATION ──
+        function hitungPoin() {
+            const poinDipakai = parseInt(document.getElementById('trx-poin')?.value) || 0;
+            const maxPoin = _trxSelectedCustomer?.points || 0;
+            const hargaJual = _trxUnitHarga || 0;
+            const poinValid = Math.min(poinDipakai, maxPoin);
+            const diskon = poinValid * 1000;
+            const hargaFinal = Math.max(hargaJual - diskon, 0);
+            const poinDapat = Math.floor(hargaFinal / 100000);
+
+            const breakdown = document.getElementById('trx-harga-breakdown');
+            const hargaAsli = document.getElementById('trx-harga-asli');
+            const diskonRow = document.getElementById('trx-diskon-row');
+            const diskonPoin = document.getElementById('trx-diskon-poin');
+            const hargaFinalEl = document.getElementById('trx-harga-final');
+            const poinDapatEl = document.getElementById('trx-poin-dapat');
+
+            if (hargaJual > 0) {
+                breakdown?.classList.remove('hidden');
+                if (hargaAsli) hargaAsli.textContent = rp(hargaJual);
+                if (diskon > 0) {
+                    diskonRow?.classList.remove('hidden');
+                    if (diskonPoin) diskonPoin.textContent = '- ' + rp(diskon);
+                } else {
+                    diskonRow?.classList.add('hidden');
+                }
+                if (hargaFinalEl) hargaFinalEl.textContent = rp(hargaFinal);
+                if (poinDapatEl) poinDapatEl.textContent = poinDapat + ' poin';
+            }
+        } 
 
         async function renderInputTransaksi() {
             const c = document.getElementById('view-container');
@@ -2136,6 +2250,8 @@ const c = document.getElementById('view-container');
             try { _spCache = (await API.sparepart.list({})).data; } catch {}
             _spKeranjang = [];
             _trxTab = 'hp';
+            _trxSelectedCustomer = null;
+            _trxUnitHarga = 0;
             c.innerHTML = `<div class="max-w-lg space-y-4">
                 <!-- Tab switcher -->
                 <div class="flex gap-1.5 p-1 dark:bg-zinc-800/60 bg-zinc-100 rounded-2xl">
@@ -2167,16 +2283,57 @@ const c = document.getElementById('view-container');
                       <label class="label">Verifikasi IMEI <span class="text-red-400">*</span></label>
                       <input id="trx-imei" type="text" class="${input}" placeholder="Masukkan IMEI unit"/>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                      <div>
-                        <label class="label">Nama Customer <span class="text-red-400">*</span></label>
-                        <input id="trx-customer-nama" type="text" class="${input}" placeholder="Nama pembeli"/>
-                      </div>
-                      <div>
-                        <label class="label">Kontak Customer</label>
-                        <input id="trx-customer-kontak" type="text" class="${input}" placeholder="08xxxxxxxxxx / email"/>
+                    <div>
+                      <label class="label">Customer <span class="text-red-400">*</span></label>
+                      <div class="relative">
+                        <input id="trx-customer-nama" type="text" class="${input}" placeholder="Ketik nama customer..."
+                          oninput="searchCustomerTrx(this.value)" onfocus="searchCustomerTrx(this.value)" autocomplete="off"/>
+                        <div id="trx-customer-dropdown" class="hidden absolute z-50 left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto rounded-xl border dark:border-zinc-700 border-zinc-200 dark:bg-zinc-900 bg-white shadow-lg"></div>
                       </div>
                     </div>
+                    <div>
+                      <label class="label">Kontak Customer</label>
+                      <input id="trx-customer-kontak" type="text" class="${input}" placeholder="08xxxxxxxxxx / email"/>
+                    </div>
+
+                    <!-- Customer Points Info (hidden by default) -->
+                    <div id="trx-poin-section" class="hidden">
+                      <div class="flex items-center gap-2 p-3 rounded-xl dark:bg-emerald-500/8 bg-emerald-50 border dark:border-emerald-500/20 border-emerald-200">
+                        <span class="text-base">⭐</span>
+                        <div class="flex-1">
+                          <p id="trx-poin-info" class="text-xs font-medium dark:text-emerald-400 text-emerald-600"></p>
+                          <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-0.5">1 poin = Rp 1.000 diskon</p>
+                        </div>
+                      </div>
+                      <div class="mt-3">
+                        <label class="label">Pakai Poin (opsional)</label>
+                        <div class="flex gap-2 items-center">
+                          <input id="trx-poin" type="number" min="0" value="0" class="${input}" placeholder="0" oninput="hitungPoin()"/>
+                          <span class="text-[10px] dark:text-zinc-500 text-zinc-400 whitespace-nowrap">maks: <span id="trx-poin-maks">0</span></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Price Breakdown (hidden by default) -->
+                    <div id="trx-harga-breakdown" class="hidden p-4 rounded-xl dark:bg-zinc-800/40 bg-zinc-50 space-y-2 text-xs">
+                      <div class="flex justify-between">
+                        <span class="dark:text-zinc-500 text-zinc-400">Harga Unit</span>
+                        <span id="trx-harga-asli" class="dark:text-zinc-300 text-zinc-600 font-medium">Rp 0</span>
+                      </div>
+                      <div id="trx-diskon-row" class="hidden flex justify-between">
+                        <span class="dark:text-zinc-500 text-zinc-400">Diskon Poin</span>
+                        <span id="trx-diskon-poin" class="text-red-400 font-medium">- Rp 0</span>
+                      </div>
+                      <div class="border-t dark:border-zinc-700 border-zinc-200 pt-2 flex justify-between font-bold">
+                        <span class="dark:text-zinc-200 text-zinc-700">Harga Final</span>
+                        <span id="trx-harga-final" class="text-[#4FD1C5]">Rp 0</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="dark:text-zinc-500 text-zinc-400">Poin didapat</span>
+                        <span id="trx-poin-dapat" class="font-medium dark:text-amber-400 text-amber-500">0 poin</span>
+                      </div>
+                    </div>
+
                     <div>
                       <label class="label">Catatan</label>
                       <textarea id="trx-catatan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea>
@@ -2345,6 +2502,7 @@ const c = document.getElementById('view-container');
             const prev = document.getElementById('unit-preview');
             const cont = document.getElementById('unit-preview-content');
             if (u) {
+                _trxUnitHarga = u.harga_jual || 0;
                 prev.classList.remove('hidden');
                 cont.innerHTML = `<div class="flex justify-between items-start">
                     <div>
@@ -2354,7 +2512,12 @@ const c = document.getElementById('view-container');
                     </div>
                     <span class="text-sm font-bold text-[#4FD1C5]">${rp(u.harga_jual)}</span>
                 </div>`;
-            } else { prev.classList.add('hidden'); }
+                hitungPoin();
+            } else {
+                _trxUnitHarga = 0;
+                prev.classList.add('hidden');
+                hitungPoin();
+            }
         }
 
         // Cache unit list untuk search
@@ -2418,13 +2581,16 @@ const c = document.getElementById('view-container');
             const biaya_garansi = parseInt(document.getElementById('trx-biaya-garansi')?.value || '0');
             const customer_nama = document.getElementById('trx-customer-nama')?.value?.trim() || '';
             const customer_kontak = document.getElementById('trx-customer-kontak')?.value?.trim() || '';
+            const poin_dipakai = parseInt(document.getElementById('trx-poin')?.value) || 0;
             const btn = document.getElementById('btn-konfirmasi');
             if (!unit_id || !imei) { showToast('ID Produk dan IMEI wajib diisi', 'error'); return; }
             if (!customer_nama) { showToast('Nama Customer wajib diisi', 'error'); return; }
             btn.innerHTML = `<span class="spinner"></span> Memproses...`;
             btn.disabled = true;
             try {
-                const res = await API.transaksi.create({ unit_id, imei, catatan, garansi_hari, biaya_garansi, customer_nama, customer_kontak });
+                const payload = { unit_id, imei, catatan, garansi_hari, biaya_garansi, customer_nama, customer_kontak };
+                if (poin_dipakai > 0) payload.poin_dipakai = poin_dipakai;
+                const res = await API.transaksi.create(payload);
                 _stokKasirCache = [];
                 closeModalBtn();
                 modalStrukKasir(res.data);
@@ -2435,7 +2601,8 @@ const c = document.getElementById('view-container');
 
         function modalStrukKasir(trx) {
             // Tampilkan modal sukses + tombol cetak
-            const totalBayar = (trx.harga_jual || 0) + (trx.biaya_garansi || 0);
+            const diskonPoin = (trx.poin_dipakai || 0) * 1000;
+            const totalBayar = (trx.harga_jual || 0) + (trx.biaya_garansi || 0) - diskonPoin;
             openModal(`
                 ${modalHeader('✅ Transaksi Berhasil')}
                 <div class="space-y-3">
@@ -2444,7 +2611,9 @@ const c = document.getElementById('view-container');
                     <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Item</span><span class="dark:text-zinc-200 text-zinc-700 text-right max-w-[55%]">${trx.unit_label}</span></div>
                     <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Harga</span><span class="font-semibold dark:text-zinc-200 text-zinc-700">${rp(trx.harga_jual)}</span></div>
                     ${trx.biaya_garansi ? `<div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Garansi ${trx.garansi_hari}h</span><span>${rp(trx.biaya_garansi)}</span></div>` : ''}
+                    ${trx.poin_dipakai > 0 ? `<div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Diskon Poin (${trx.poin_dipakai} poin)</span><span class="text-red-400">-${rp(diskonPoin)}</span></div>` : ''}
                     <div class="border-t dark:border-zinc-700 border-zinc-200 pt-2 flex justify-between font-bold"><span>Total Bayar</span><span class="text-[#4FD1C5]">${rp(totalBayar)}</span></div>
+                    ${trx.poin_dapat > 0 ? `<div class="flex justify-between font-medium"><span class="dark:text-amber-400 text-amber-500">⭐ Poin didapat</span><span class="dark:text-amber-400 text-amber-500">${trx.poin_dapat} poin</span></div>` : ''}
                   </div>
                 </div>
                 <div class="flex gap-3 mt-5">
@@ -2459,7 +2628,8 @@ const c = document.getElementById('view-container');
         function printStruk(trx) {
             const tokoNama   = 'JayaPhone';
             const tokoAlamat = `Cabang ${trx.cabang || ''}`;
-            const totalBayar = (trx.harga_jual || 0) + (trx.biaya_garansi || 0);
+            const diskonPoin = (trx.poin_dipakai || 0) * 1000;
+            const totalBayar = (trx.harga_jual || 0) + (trx.biaya_garansi || 0) - diskonPoin;
 
             const html = `<!DOCTYPE html>
 <html><head>
@@ -2496,14 +2666,18 @@ const c = document.getElementById('view-container');
   <div class="row"><span>No. Struk</span><span class="bold">${trx.trx_id}</span></div>
   <div class="row"><span>Tanggal</span><span>${trx.waktu || new Date().toLocaleString('id-ID')}</span></div>
   <div class="row"><span>Kasir</span><span>${trx.kasir || '-'}</span></div>
+  ${trx.customer_nama ? `<div class="row"><span>Customer</span><span>${trx.customer_nama}</span></div>` : ''}
   <div class="dash"></div>
   <div class="bold" style="margin-bottom:4px;">Item Pembelian</div>
   <div class="row"><span style="max-width:60%">${trx.unit_label || '-'}</span><span class="bold">${rpStr(trx.harga_jual)}</span></div>
   <div class="sm" style="margin-bottom:2px;">ID: ${trx.unit_id || '-'}</div>
   ${trx.biaya_garansi ? `<div class="row"><span>Garansi ${trx.garansi_hari} hari</span><span>${rpStr(trx.biaya_garansi)}</span></div>` : ''}
+  ${trx.poin_dipakai > 0 ? `<div class="row"><span>Diskon Poin (${trx.poin_dipakai})</span><span>-${rpStr(diskonPoin)}</span></div>` : ''}
   <div class="dash"></div>
   <div class="total"><span>TOTAL BAYAR</span><span>${rpStr(totalBayar)}</span></div>
   <div class="dash"></div>
+  ${trx.poin_dipakai > 0 ? `<div class="row sm"><span>Poin dipakai</span><span>${trx.poin_dipakai} poin</span></div>` : ''}
+  ${trx.poin_dapat > 0 ? `<div class="row sm"><span>Poin didapat</span><span>${trx.poin_dapat} poin</span></div>` : ''}
   ${trx.garansi_hari ? `<div class="row sm"><span>Garansi</span><span>${trx.garansi_hari} hari</span></div>` : ''}
   ${trx.catatan ? `<div class="row sm"><span>Catatan</span><span>${trx.catatan}</span></div>` : ''}
   <div class="footer">
@@ -4152,6 +4326,9 @@ function modalDetailTransfer(transfer_id) {
         window.openMobileSidebar = openMobileSidebar;
         window.pilihUnit = pilihUnit;
         window.previewUnitById = previewUnitById;
+        window.searchCustomerTrx = searchCustomerTrx;
+        window.selectCustomerTrx = selectCustomerTrx;
+        window.hitungPoin = hitungPoin;
         window.printStruk = printStruk;
         window.renderApprovalRepair = renderApprovalRepair;
         window.renderCabang = renderCabang;

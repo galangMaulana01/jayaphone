@@ -21,7 +21,6 @@ async function request(method, path, body = null) {
     fullPath = `${BASE_URL}/api/v1${path}`;
   }
 
-  // Timeout 15 detik
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
   opts.signal = controller.signal;

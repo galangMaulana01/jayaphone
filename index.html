@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <!-- Eruda - Mobile Console Debug -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
+    <script>if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.DEBUG_MODE) eruda.init();</script>
     <script>
       window.BACKEND_URL = 'https://phonejaya.vercel.app';
         tailwind.config = {
@@ -745,7 +745,6 @@
             owner: [
                 { page: 'dashboard',         label: 'Dashboard',         d: dashboardSvg },
                 { page: 'stok',              label: 'Manajemen Stok',    d: stokSvg1 },
-                { page: 'transfer-stok',     label: 'Transfer Stok',     d: stokSvg2 },
                 { page: 'transaksi',         label: 'Transaksi',         d: transaksiSvg },
                 { page: 'laporan',           label: 'Laporan',           d: laporanSvg },
                 { page: 'service',           label: 'Data Service',      d: settingSvg },
@@ -2049,8 +2048,9 @@ async function renderLog() {
         // ═══ VIEW: STOK KASIR ═══
         let _stokKasirCache = [];
 
-        async function renderStokKasir() {
-            const c = document.getElementById('view-container');
+        async function renderStokKasir()  {
+            try {
+const c = document.getElementById('view-container');
             c.innerHTML = `<div class="space-y-5">
                 <div class="search-wrap">
                   <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2062,6 +2062,9 @@ async function renderLog() {
                 <div id="stok-kasir-table">${Array(4).fill('<div class="skeleton h-12 w-full mb-2"></div>').join('')}</div>
             </div>`;
             await loadStokKasirTable('');
+            } catch (e) {
+                showToast('Gagal memuat stok kasir: ' + e.message, 'error');
+            }
         }
 
         async function loadStokKasirTable(q) {
@@ -3066,21 +3069,21 @@ function renderRequestTable(list) {
           let statusHTML = badgeRequest(r.status);
           
           // DEBUG: Tampilkan estimasi untuk semua role
-          if (r.status === 'Diterima' && r.respon_keterangan) { 
+          if (r.status === 'Diterima' && r.catatan_kc) {
             statusHTML = `
               <div>
                 ${badgeRequest(r.status)}
                 <div class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1">
-                  Estimasi: <span class="font-medium">${r.respon_keterangan} Jam</span>
+                  Estimasi: <span class="font-medium">${r.catatan_kc} Jam</span>
                 </div>
               </div>`;
-          } 
-          else if (r.status === 'Ditolak' && r.respon_keterangan) {
+          }
+          else if (r.status === 'Ditolak' && r.catatan_kc) {
             statusHTML = `
               <div>
                 ${badgeRequest(r.status)}
                 <div class="text-[10px] text-red-600 dark:text-red-400 mt-1">
-                  Alasan: ${r.respon_keterangan}
+                  Alasan: ${r.catatan_kc}
                 </div>
               </div>`;
           }

@@ -874,24 +874,26 @@ function getDateFilterParams() {
 }
 
 function renderDateFilter(refreshCallback) {
+  // refreshCallback is a function name string like 'renderDashboard'
+  const cb = refreshCallback.name || refreshCallback;
   return `
-    <div class="flex items-center gap-2 flex-wrap">
-      <div class="flex bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-1 text-xs font-medium">
-        <button onclick="setPresetFilter('7d', ${refreshCallback})"  class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='7d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">7 Hari</button>
-        <button onclick="setPresetFilter('30d', ${refreshCallback})" class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='30d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">30 Hari</button>
-        <button onclick="setPresetFilter('90d', ${refreshCallback})" class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='90d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">3 Bulan</button>
-        <button onclick="setPresetFilter('1y', ${refreshCallback})"  class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='1y'?'bg-white dark:bg-zinc-800 shadow-sm':''}">1 Tahun</button>
-      </div>
-      <button onclick="showCustomDateModal(${refreshCallback})" class="btn btn-ghost text-xs px-5">Custom</button>
-    </div>`;
+     <div class="flex items-center gap-2 flex-wrap">
+       <div class="flex bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-1 text-xs font-medium">
+         <button onclick="setPresetFilter('7d', '${cb}')"  class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='7d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">7 Hari</button>
+         <button onclick="setPresetFilter('30d', '${cb}')" class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='30d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">30 Hari</button>
+         <button onclick="setPresetFilter('90d', '${cb}')" class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='90d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">3 Bulan</button>
+         <button onclick="setPresetFilter('1y', '${cb}')"  class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='1y'?'bg-white dark:bg-zinc-800 shadow-sm':''}">1 Tahun</button>
+       </div>
+       <button onclick="showCustomDateModal('${cb}')" class="btn btn-ghost text-xs px-5">Custom</button>
+     </div>`;
 }
 
-function setPresetFilter(preset, callback) {
+function setPresetFilter(preset, callbackName) {
   currentFilter = { preset, start: null, end: null };
-  callback();
+  window[callbackName]?.();
 }
 
-function showCustomDateModal(callback) {
+function showCustomDateModal(callbackName) {
   openModal(`
     ${modalHeader('Pilih Rentang Tanggal')}
     <div class="space-y-4 py-2">
@@ -906,12 +908,12 @@ function showCustomDateModal(callback) {
     </div>
     <div class="flex gap-3 mt-6">
       <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
-      <button onclick="applyCustomFilter(${callback})" class="btn btn-primary flex-1">Terapkan Filter</button>
+      <button onclick="applyCustomFilter('${callbackName}')" class="btn btn-primary flex-1">Terapkan Filter</button>
     </div>
   `);
 }
 
-function applyCustomFilter(callback) {
+function applyCustomFilter(callbackName) {
   const start = document.getElementById('filter-start').value;
   const end = document.getElementById('filter-end').value;
   if (!start || !end) {
@@ -1254,6 +1256,7 @@ async function loadStokTable(filter) {
 }
 
 // Fungsi Helper yang sudah dibersihkan dari duplikasi
+// Fungsi Helper - pindah ke atas sebelum loadStokTable
 function getKadaluarsaBadge(dateStr) {
   if (!dateStr) return `<span class="text-zinc-400 text-[10px]">—</span>`;
   
@@ -1289,21 +1292,17 @@ function getKadaluarsaBadge(dateStr) {
 }
 
 
-
-
         function _unitFormFields() {
             const fld = (id, label, type = 'text', placeholder = '', extra = '') =>
                 `<div><label class="label">${label}</label><input id="${id}" type="${type}" class="${input}" placeholder="${placeholder}" ${extra}/></div>`;
             const sel = (id, label, opts) =>
                 `<div><label class="label">${label}</label><select id="${id}" class="${input}">${opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
             return `
-              <div class="grid grid-cols-2 gap-3">
-                <div><label class="label">Kategori</label>
-                  <select id="u-kat" class="${input}">
-                    <option value="IP">iPhone</option><option value="AI">Android</option>
-                    <option value="TB">Tablet</option><option value="AC">Accessories</option><option value="SP">Sparepart</option>
-                  </select></div>
-                <div><label class="label">Kondisi Fisik</label>
+            const fld = (id, label, type = 'text', placeholder = '', extra = '') =>
+                `<div><label class="label">${label}</label><input id="${id}" type="${type}" class="${input}" placeholder="${placeholder}" ${extra}/></div>`;
+            const sel = (id, label, opts) =>
+                `<div><label class="label">${label}</label><select id="${id}" class="${input}">${opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
+            return `
                   <select id="u-kondisi-kode" class="${input}">
                     <option value="BN">Normal</option><option value="MN">Minus</option>
                     <option value="EX">Ex Inter</option><option value="RJ">Reject</option>
@@ -2147,6 +2146,16 @@ async function renderLog() {
                       <label class="label">Verifikasi IMEI <span class="text-red-400">*</span></label>
                       <input id="trx-imei" type="text" class="${input}" placeholder="Masukkan IMEI unit"/>
                     </div>
+                    <div class="grid grid-cols-2 gap-3">
+                      <div>
+                        <label class="label">Nama Customer <span class="text-red-400">*</span></label>
+                        <input id="trx-customer-nama" type="text" class="${input}" placeholder="Nama pembeli"/>
+                      </div>
+                      <div>
+                        <label class="label">Kontak Customer</label>
+                        <input id="trx-customer-kontak" type="text" class="${input}" placeholder="08xxxxxxxxxx / email"/>
+                      </div>
+                    </div>
                     <div>
                       <label class="label">Catatan</label>
                       <textarea id="trx-catatan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea>
@@ -2386,12 +2395,15 @@ async function renderLog() {
             const catatan = document.getElementById('trx-catatan').value;
             const garansi_hari  = parseInt(document.getElementById('trx-garansi')?.value || '7');
             const biaya_garansi = parseInt(document.getElementById('trx-biaya-garansi')?.value || '0');
+            const customer_nama = document.getElementById('trx-customer-nama')?.value?.trim() || '';
+            const customer_kontak = document.getElementById('trx-customer-kontak')?.value?.trim() || '';
             const btn = document.getElementById('btn-konfirmasi');
             if (!unit_id || !imei) { showToast('ID Produk dan IMEI wajib diisi', 'error'); return; }
+            if (!customer_nama) { showToast('Nama Customer wajib diisi', 'error'); return; }
             btn.innerHTML = `<span class="spinner"></span> Memproses...`;
             btn.disabled = true;
             try {
-                const res = await API.transaksi.create({ unit_id, imei, catatan, garansi_hari, biaya_garansi });
+                const res = await API.transaksi.create({ unit_id, imei, catatan, garansi_hari, biaya_garansi, customer_nama, customer_kontak });
                 _stokKasirCache = [];
                 closeModalBtn();
                 modalStrukKasir(res.data);

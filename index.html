@@ -1300,6 +1300,20 @@ function getKadaluarsaBadge(dateStr) {
             const sel = (id, label, opts) =>
                 `<div><label class="label">${label}</label><select id="${id}" class="${input}">${opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
             return `
+              <div class="col-span-2">
+                <label class="label">Kategori <span class="text-red-400">*</span></label>
+                <select id="u-kat" class="${input}">
+                  <option value="IP">iPhone</option>
+                  <option value="AI">Android</option>
+                  <option value="TB">Tablet</option>
+                  <option value="AC">Accessories</option>
+                  <option value="SP">Sparepart</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="label">Kondisi Fisik <span class="text-red-400">*</span></label>
                   <select id="u-kondisi-kode" class="${input}">
                     <option value="BN">Normal</option><option value="MN">Minus</option>
                     <option value="EX">Ex Inter</option><option value="RJ">Reject</option>
@@ -4102,8 +4116,6 @@ function modalDetailTransfer(transfer_id) {
         window.doLogin = doLogin;
         window.doLogout = doLogout;
         window.filterModalUnit = filterModalUnit;
-        window.filterRequest = filterRequest;
-        window.filterRequestSparepart = filterRequestSparepart;
         window.filterServiceTeknisi = filterServiceTeknisi;
         window.filterSpTrx = filterSpTrx;
         window.filterStok = filterStok;

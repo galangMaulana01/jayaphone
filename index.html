@@ -1373,22 +1373,28 @@ function getKadaluarsaBadge(dateStr) {
         let _spRepairKeranjang = [];
 
         async function toggleKeluhanField(kondisi_hp) {
-            const wrapJual    = document.getElementById('wrap-harga-jual');
-            const wrapKeluhan = document.getElementById('wrap-keluhan');
-            const wrapSp      = document.getElementById('wrap-sp-repair');
-            if (kondisi_hp === 'Repair') {
-                wrapKeluhan.classList.remove('hidden');
-                wrapJual.classList.add('hidden');
-                wrapSp?.classList.remove('hidden');
-                // Load daftar sparepart
-                await loadSpRepairList();
-            } else {
-                wrapKeluhan.classList.add('hidden');
-                wrapJual.classList.remove('hidden');
-                wrapSp?.classList.add('hidden');
-                _spRepairKeranjang = [];
+            try {
+                const wrapJual    = document.getElementById('wrap-harga-jual');
+                const wrapKeluhan = document.getElementById('wrap-keluhan');
+                const wrapSp      = document.getElementById('wrap-sp-repair');
+                if (kondisi_hp === 'Repair') {
+                    wrapKeluhan.classList.remove('hidden');
+                    wrapJual.classList.add('hidden');
+                    wrapSp?.classList.remove('hidden');
+                    // Load daftar sparepart
+                    await loadSpRepairList();
+                } else {
+                    wrapKeluhan.classList.add('hidden');
+                    wrapJual.classList.remove('hidden');
+                    wrapSp?.classList.add('hidden');
+                    _spRepairKeranjang = [];
+                }
+            } catch (e) {
+                showToast('Gagal mengubah tampilan: ' + e.message, 'error');
             }
-        }
+ }
+
+
 
         async function loadSpRepairList() {
             const el = document.getElementById('sp-repair-list');
@@ -2665,8 +2671,9 @@ async function renderLog() {
             }).join('') + `</div>`;
         }
 
-        async function modalUpdateService(service_id) {
-            const svc = (await API.service.get(service_id)).data;
+        async function modalUpdateService(service_id)  {
+            try {
+const svc = (await API.service.get(service_id)).data;
             const role = STATE.user?.role;
 
             // Tentukan opsi status yang boleh dipilih sesuai role dan status saat ini
@@ -2696,7 +2703,7 @@ async function renderLog() {
                   <div>
                     <label class="label">Tambah Foto (via URL)</label>
                     <div class="flex gap-2">
-                      <input id="svc-foto-url" type="url" class="${input} flex-1" placeholder="https://i.imgur.com/xxx.jpg"/>
+                      <input id="svc-foto-url" type="url" class="${input} flex-1" placeholder="data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23ddd" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="%23999" font-size="12">No Image</text></svg>"/>
                       <button onclick="addFotoUrlService('${service_id}')" class="btn btn-ghost flex-shrink-0">Tambah</button>
                     </div>
                     <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">Upload foto ke ImgBB/Imgur lalu paste URL-nya.</p>
@@ -2704,6 +2711,9 @@ async function renderLog() {
                   </div>
                 </div>
                 <button id="btn-update-svc" onclick="updateService('${service_id}')" class="btn btn-primary w-full mt-5">Update Service</button>`);
+            } catch (e) {
+                showToast('Gagal update service: ' + e.message, 'error');
+            }
         }
 
         async function addFotoUrlService(service_id) {

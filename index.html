@@ -2755,6 +2755,7 @@ const c = document.getElementById('view-container');
                       <th class="px-6 py-3.5 font-medium">Nama</th>
                       <th class="px-6 py-3.5 font-medium">Kontak</th>
                       <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Bergabung</th>
+                      <th class="px-6 py-3.5 font-medium">Poin</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2762,6 +2763,7 @@ const c = document.getElementById('view-container');
                       <td class="px-6 py-4 font-medium dark:text-zinc-100 text-zinc-800">${cu.nama}</td>
                       <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400">${cu.kontak}</td>
                       <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell text-[11px]">${cu.created_at}</td>
+                      <td class="px-6 py-4"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${cu.points > 0 ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"}">⭐ ${cu.points || 0}</span></td>
                     </tr>`).join('')}
                   </tbody>
                 </table>

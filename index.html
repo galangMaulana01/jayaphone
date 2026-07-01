@@ -930,11 +930,44 @@ function applyCustomFilter(callbackName) {
 
 
 
+        
+        // ── CABANG FILTER HELPER ──
+        let _cabangFilterCache = null;
+        async function getCabangOptions() {
+            if (_cabangFilterCache) return _cabangFilterCache;
+            try {
+                const res = await API.cabang.list();
+                _cabangFilterCache = res.data || [];
+            } catch(e) { _cabangFilterCache = []; }
+            return _cabangFilterCache;
+        }
+
+        function renderCabangFilter(selectedCabang, onChangeFn) {
+            if (STATE.user.role !== 'owner') return '';
+            return `<select id="cabang-filter" class="bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs font-medium dark:text-zinc-300 text-zinc-600 outline-none" onchange="${onChangeFn}">
+                <option value="">Semua Cabang</option>
+            </select>`;
+        }
+
+        async function populateCabangFilter(selectedCabang) {
+            const sel = document.getElementById('cabang-filter');
+            if (!sel) return;
+            const cabangs = await getCabangOptions();
+            cabangs.forEach(cb => {
+                const opt = document.createElement('option');
+                opt.value = cb.kode;
+                opt.textContent = `${cb.nama || cb.kode}`;
+                if (cb.kode === selectedCabang) opt.selected = true;
+                sel.appendChild(opt);
+            });
+        }
+
         // ═══ VIEW: DASHBOARD ═══
         // Chart instance — destroy dulu sebelum recreate
         let _trendChart = null;
 
-async function renderDashboard() {
+let _dashCabangFilter = '';
+        async function renderDashboard() {
     const c = document.getElementById('view-container');
     setLoading(c, 6);
     try {
@@ -942,11 +975,12 @@ async function renderDashboard() {
 
         // Fetch stats & trend paralel
         const [statsRes, trendRes] = await Promise.allSettled([
-            API.dashboard.stats(),
-            API.dashboard.trend(params),
+            API.dashboard.stats(_dashCabangFilter),
+            API.dashboard.trend({...params, ...(_dashCabangFilter ? {cabang: _dashCabangFilter} : {})}),
         ]);
 
         if (statsRes.status === 'rejected') throw new Error(statsRes.reason.message);
+        if (STATE.user.role === 'owner') await populateCabangFilter(_dashCabangFilter);
         
         const { unit, keuangan: keu, recent_transaksi: trx } = statsRes.value.data;
         const trend = trendRes.status === 'fulfilled' ? trendRes.value.data : null;
@@ -969,6 +1003,7 @@ async function renderDashboard() {
                 <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
               </div>
               ${renderDateFilter('renderDashboard')}
+              ${STATE.user.role === 'owner' ? renderCabangFilter(_dashCabangFilter, '_dashCabangFilter=this.value;renderDashboard()') : ''}
             </div>
 
             <!-- STAT CARDS -->
@@ -1156,6 +1191,15 @@ async function renderDashboard() {
                     ${statuses.map((s,i)=>`<button onclick="filterStok('${s}')" class="filter-tab ${i===0?'active':''}">${s}</button>`).join('')}
                     ${cabangLabel}
                   </div>
+                  <div class="flex gap-2 items-center w-full mt-2">
+                    <div class="search-wrap flex-1">
+                      <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                      </svg>
+                      <input id="stok-search" type="text" placeholder="Cari merk, tipe, atau IMEI..." class="${input} search-field" oninput="searchStok(this.value)"/>
+                    </div>
+                    ${STATE.user.role === 'owner' ? renderCabangFilter(_stokCabangFilter, '_stokCabangFilter=this.value;filterStok(_stokFilter||"Semua")') : ''}
+                  </div>
                   <div class="flex gap-2">
                     ${STATE.user.role === 'kepala_cabang' ? `
                     <button onclick="navigate('transfer-stok')" class="btn btn-secondary" style="height:36px;padding:0 14px;font-size:0.75rem;">
@@ -1176,6 +1220,7 @@ async function renderDashboard() {
                 <div id="stok-table-wrap">${Array(4).fill('<div class="skeleton h-12 w-full mb-2"></div>').join('')}</div>
             </div>`;
             await loadStokTable('Semua');
+            if (STATE.user.role === 'owner') await populateCabangFilter(_stokCabangFilter);
         }
 
         async function filterStok(status) {
@@ -1186,7 +1231,13 @@ async function renderDashboard() {
             await loadStokTable(status);
         }
 
-async function loadStokTable(filter) {
+let _stokSearchTimer = null;
+        function searchStok(q) {
+            clearTimeout(_stokSearchTimer);
+            _stokSearchTimer = setTimeout(() => filterStok(_stokFilter || 'Semua'), 300);
+        }
+
+        async function loadStokTable(filter) {
   const wrap = document.getElementById('stok-table-wrap');
   if (!wrap) return;
   
@@ -1194,6 +1245,9 @@ async function loadStokTable(filter) {
   
   try {
     const params = filter !== 'Semua' ? { status: filter } : {};
+    const searchVal = document.getElementById('stok-search')?.value?.trim();
+    if (searchVal) params.q = searchVal;
+    if (_stokCabangFilter) params.cabang = _stokCabangFilter;
     const units = (await API.units.list(params)).data;
 
     wrap.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
@@ -1545,12 +1599,15 @@ function getKadaluarsaBadge(dateStr) {
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Unit'; btn.disabled = false; }
         }
 
-async function renderTransaksi() {
+let _trxCabangFilter = '';
+        async function renderTransaksi() {
   const c = document.getElementById('view-container');
   setLoading(c, 5);
   try {
     const params = getDateFilterParams();
+    if (_trxCabangFilter) params.cabang = _trxCabangFilter;
     const res = await API.transaksi.list(params);
+    if (STATE.user.role === 'owner') await populateCabangFilter(_trxCabangFilter);
     const list = res.data || [];
     const totalProfit = list.reduce((s, t) => s + (t.profit || 0), 0);
     
@@ -1560,6 +1617,7 @@ async function renderTransaksi() {
           <h2 class="text-lg font-semibold tracking-tight">Daftar Transaksi</h2>
         </div>
         ${renderDateFilter('renderTransaksi')}
+        ${STATE.user.role === 'owner' ? renderCabangFilter(_trxCabangFilter, '_trxCabangFilter=this.value;renderTransaksi()') : ''}
       </div>
       <div class="table-wrap rounded-2xl overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
@@ -1618,7 +1676,7 @@ async function renderTransaksi() {
             setLoading(c, 4);
             try {
                 // Backend auto-filter cabang dari JWT — owner lihat semua, kepala_cabang lihat cabangnya
-                const [sRes, tRes] = await Promise.all([API.dashboard.stats(), API.transaksi.list()]);
+                const [sRes, tRes] = await Promise.all([API.dashboard.stats(_dashCabangFilter), API.transaksi.list()]);
                 const keu = sRes.data.keuangan;
                 const list = tRes.data;
                 const cabangLabel = STATE.user.role === 'kepala_cabang' ? ` — Cabang ${STATE.user.cabang}` : '';
@@ -1656,13 +1714,31 @@ async function renderTransaksi() {
         }
 
         // ═══ VIEW: SERVICE (OWNER) ═══
+        let _svcCabangFilter = '';
         async function renderServiceOwner() {
             const c = document.getElementById('view-container');
             setLoading(c, 4);
             try {
                 // Backend auto-filter by cabang dari JWT
-                const list = (await API.service.list({ limit: 50 })).data;
-                c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+                const svcParams = { limit: 50 };
+                const svcDateParams = getDateFilterParams();
+                if (svcDateParams.date_from) svcParams.date_from = svcDateParams.date_from;
+                if (svcDateParams.date_to) svcParams.date_to = svcDateParams.date_to;
+                if (_svcCabangFilter) svcParams.cabang = _svcCabangFilter;
+                const list = (await API.service.list(svcParams)).data;
+                if (STATE.user.role === 'owner') await populateCabangFilter(_svcCabangFilter);
+                c.innerHTML = `<div class="space-y-5">
+                  <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <h2 class="text-lg font-semibold tracking-tight">Data Service</h2>
+                      <span class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} tiket</span>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                      ${renderDateFilter('renderServiceOwner')}
+                      ${STATE.user.role === 'owner' ? renderCabangFilter(_svcCabangFilter, '_svcCabangFilter=this.value;renderServiceOwner()') : ''}
+                    </div>
+                  </div>
+                <div class="table-wrap rounded-2xl overflow-hidden">
                   <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
                     <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Semua Data Service</p>
                     <span class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} tiket</span>
@@ -4295,6 +4371,7 @@ function modalDetailTransfer(transfer_id) {
         window.filterServiceTeknisi = filterServiceTeknisi;
         window.filterSpTrx = filterSpTrx;
         window.filterStok = filterStok;
+        window.searchStok = searchStok;
         window.filterStokKasir = filterStokKasir;
         window.filterTransfer = filterTransfer;
         window.filterTrfUnits = filterTrfUnits;

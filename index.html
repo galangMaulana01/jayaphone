@@ -980,7 +980,6 @@ let _dashCabangFilter = '';
         ]);
 
         if (statsRes.status === 'rejected') throw new Error(statsRes.reason.message);
-        if (STATE.user.role === 'owner') await populateCabangFilter(_dashCabangFilter);
         
         const { unit, keuangan: keu, recent_transaksi: trx } = statsRes.value.data;
         const trend = trendRes.status === 'fulfilled' ? trendRes.value.data : null;
@@ -1084,6 +1083,7 @@ let _dashCabangFilter = '';
               </div>
             </div>
         </div>`;
+        if (STATE.user.role === 'owner') await populateCabangFilter(_dashCabangFilter);
 
         // Render Chart.js setelah DOM ready
         if (trend && document.getElementById('trend-canvas')) {
@@ -1607,7 +1607,6 @@ let _trxCabangFilter = '';
     const params = getDateFilterParams();
     if (_trxCabangFilter) params.cabang = _trxCabangFilter;
     const res = await API.transaksi.list(params);
-    if (STATE.user.role === 'owner') await populateCabangFilter(_trxCabangFilter);
     const list = res.data || [];
     const totalProfit = list.reduce((s, t) => s + (t.profit || 0), 0);
     
@@ -1665,6 +1664,7 @@ let _trxCabangFilter = '';
         </div>
       </div>
     </div>`;
+    if (STATE.user.role === 'owner') await populateCabangFilter(_trxCabangFilter);
   } catch (e) {
     c.innerHTML = errorState(e.message, 'renderTransaksi()');
   }
@@ -1726,7 +1726,6 @@ let _trxCabangFilter = '';
                 if (svcDateParams.date_to) svcParams.date_to = svcDateParams.date_to;
                 if (_svcCabangFilter) svcParams.cabang = _svcCabangFilter;
                 const list = (await API.service.list(svcParams)).data;
-                if (STATE.user.role === 'owner') await populateCabangFilter(_svcCabangFilter);
                 c.innerHTML = `<div class="space-y-5">
                   <div class="flex items-center justify-between flex-wrap gap-4">
                     <div>
@@ -1778,6 +1777,7 @@ let _trxCabangFilter = '';
                   </div>
                 </div>
               </div>`;
+            if (STATE.user.role === 'owner') await populateCabangFilter(_svcCabangFilter);
             } catch (e) { c.innerHTML = errorState(e.message, 'renderServiceOwner()'); }
         }
 

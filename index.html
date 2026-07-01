@@ -1247,7 +1247,14 @@ let _stokSearchTimer = null;
     const searchVal = document.getElementById('stok-search')?.value?.trim();
     if (searchVal) params.q = searchVal;
     if (_stokCabangFilter) params.cabang = _stokCabangFilter;
-    const units = (await API.units.list(params)).data;
+    let res;
+    try {
+      res = await API.units.list(params);
+    } catch(apiErr) {
+      wrap.innerHTML = errorState('Gagal memuat data: ' + apiErr.message, 'loadStokTable');
+      return;
+    }
+    const units = (res && res.data) ? res.data : [];
 
     wrap.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
       <div class="overflow-x-auto">

@@ -1150,6 +1150,13 @@ let _dashCabangFilter = '';
                     },
                     scales: {
                         x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day',
+                                displayFormats: { day: 'd MMM' },
+                                tooltipFormat: 'd MMM yyyy',
+                                parser: 'd MMM',
+                            },
                             grid:  { color: gridColor, drawBorder: false },
                             ticks: { color: textColor, font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 },
                             border: { display: false },

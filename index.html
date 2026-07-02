@@ -1716,6 +1716,7 @@ let _trxCabangFilter = '';
 
         // ═══ VIEW: SERVICE (OWNER) ═══
         let _svcCabangFilter = '';
+let _svcStatusFilter = '';
         async function renderServiceOwner() {
             const c = document.getElementById('view-container');
             setLoading(c, 4);
@@ -1726,6 +1727,7 @@ let _trxCabangFilter = '';
                 if (svcDateParams.date_from) svcParams.date_from = svcDateParams.date_from;
                 if (svcDateParams.date_to) svcParams.date_to = svcDateParams.date_to;
                 if (_svcCabangFilter) svcParams.cabang = _svcCabangFilter;
+                if (_svcStatusFilter) svcParams.status = _svcStatusFilter;
                 const list = (await API.service.list(svcParams)).data;
                 c.innerHTML = `<div class="space-y-5">
                   <div class="flex items-center justify-between flex-wrap gap-4">
@@ -1733,9 +1735,17 @@ let _trxCabangFilter = '';
                       <h2 class="text-lg font-semibold tracking-tight">Data Service</h2>
                       <span class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} tiket</span>
                     </div>
-                    <div class="flex gap-2 items-center">
+                    <div class="flex gap-2 items-center flex-wrap flex gap-2 items-center">
                       ${renderDateFilter('renderServiceOwner')}
                       ${STATE.user.role === 'owner' ? renderCabangFilter(_svcCabangFilter, '_svcCabangFilter=this.value;renderServiceOwner()') : ''}
+                      ${STATE.user.role === 'owner' ? `
+                        <select id="svc-status-filter" class="bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs font-medium dark:text-zinc-300 text-zinc-600 outline-none" onchange="_svcStatusFilter=this.value;renderServiceOwner()">
+                          <option value="">Semua Status</option>
+                          <option value="Antrian">Antrian</option>
+                          <option value="Proses">Proses</option>
+                          <option value="Selesai">Selesai</option>
+                          <option value="Ditolak">Ditolak</option>
+                        </select>` : ''}
                     </div>
                   </div>
                 <div class="table-wrap rounded-2xl overflow-hidden">
@@ -1779,6 +1789,9 @@ let _trxCabangFilter = '';
                 </div>
               </div>`;
             if (STATE.user.role === 'owner') await populateCabangFilter(_svcCabangFilter);
+            // Set status filter dropdown value
+            const svcStatusEl = document.getElementById('svc-status-filter');
+            if (svcStatusEl) svcStatusEl.value = _svcStatusFilter;
             } catch (e) { c.innerHTML = errorState(e.message, 'renderServiceOwner()'); }
         }
 

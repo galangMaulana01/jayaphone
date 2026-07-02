@@ -1813,6 +1813,7 @@ let _trxCabangFilter = '';
                       <div class="space-y-2.5 text-xs">
                         <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Cabang</span><span class="dark:text-zinc-300 text-zinc-600 font-mono">${k.cabang||'—'}</span></div>
                         <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Bergabung</span><span class="dark:text-zinc-300 text-zinc-600">${k.bergabung}</span></div>
+                        ${(() => { const bd = new Date(k.bergabung); const now = new Date(); const dm = (now.getFullYear()-bd.getFullYear())*12+(now.getMonth()-bd.getMonth()); const y = Math.floor(dm/12); const m = dm%12; const txt = y > 0 ? y+" tahun "+m+" bulan" : m+" bulan"; return `<div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Lama Bekerja</span><span class="dark:text-zinc-300 text-zinc-600 font-medium">${txt}</span></div>`; })()}
                         <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Gaji Pokok</span><span class="font-semibold text-[#4FD1C5]">${rp(k.gaji)}</span></div>
                       </div>
                       <div class="flex gap-2 mt-3">

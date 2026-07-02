@@ -2207,7 +2207,6 @@ const c = document.getElementById('view-container');
         function filterStokKasir(q) { loadStokKasirTable(q); }
 
         // ═══ VIEW: INPUT TRANSAKSI ═══
-        let _trxTab = 'hp'; // 'hp' | 'sparepart'
         let _spCache = [];  // cache sparepart list
         let _spKeranjang = [];
         let _trxSelectedCustomer = null; // selected customer for points
@@ -2294,32 +2293,53 @@ const c = document.getElementById('view-container');
         function hitungPoin() {
             const poinDipakai = parseInt(document.getElementById('trx-poin')?.value) || 0;
             const maxPoin = _trxSelectedCustomer?.points || 0;
-            const hargaJual = _trxUnitHarga || 0;
+            const hargaUnit = _trxUnitHarga || 0;
+            let hargaSparepart = 0;
+            _spKeranjang.forEach(k => { hargaSparepart += k.harga_jual * k.jumlah; });
+            const totalHarga = hargaUnit + hargaSparepart;
             const poinValid = Math.min(poinDipakai, maxPoin);
             const diskon = poinValid * 1000;
-            const hargaFinal = Math.max(hargaJual - diskon, 0);
+            const hargaFinal = Math.max(totalHarga - diskon, 0);
             const poinDapat = Math.floor(hargaFinal / 100000);
 
             const breakdown = document.getElementById('trx-harga-breakdown');
-            const hargaAsli = document.getElementById('trx-harga-asli');
+            const hargaUnitRow = document.getElementById('trx-harga-unit-row');
+            const hargaUnitEl = document.getElementById('trx-harga-unit');
+            const hargaSpRow = document.getElementById('trx-harga-sp-row');
+            const hargaSpEl = document.getElementById('trx-harga-sp');
             const diskonRow = document.getElementById('trx-diskon-row');
             const diskonPoin = document.getElementById('trx-diskon-poin');
             const hargaFinalEl = document.getElementById('trx-harga-final');
             const poinDapatEl = document.getElementById('trx-poin-dapat');
 
-            if (hargaJual > 0) {
+            if (totalHarga > 0) {
                 breakdown?.classList.remove('hidden');
-                if (hargaAsli) hargaAsli.textContent = rp(hargaJual);
-                if (diskon > 0) {
-                    diskonRow?.classList.remove('hidden');
-                    if (diskonPoin) diskonPoin.textContent = '- ' + rp(diskon);
-                } else {
-                    diskonRow?.classList.add('hidden');
+                if (hargaUnitRow) {
+                    if (hargaUnit > 0) { hargaUnitRow.classList.remove('hidden'); if (hargaUnitEl) hargaUnitEl.textContent = rp(hargaUnit); }
+                    else { hargaUnitRow.classList.add('hidden'); }
                 }
+                if (hargaSpRow) {
+                    if (hargaSparepart > 0) { hargaSpRow.classList.remove('hidden'); if (hargaSpEl) hargaSpEl.textContent = rp(hargaSparepart); }
+                    else { hargaSpRow.classList.add('hidden'); }
+                }
+                if (diskon > 0) { diskonRow?.classList.remove('hidden'); if (diskonPoin) diskonPoin.textContent = '- ' + rp(diskon); }
+                else { diskonRow?.classList.add('hidden'); }
                 if (hargaFinalEl) hargaFinalEl.textContent = rp(hargaFinal);
                 if (poinDapatEl) poinDapatEl.textContent = poinDapat + ' poin';
+            } else {
+                breakdown?.classList.add('hidden');
             }
-        } 
+            updateItemCount();
+        }
+
+        function updateItemCount() {
+            const el = document.getElementById('trx-item-count');
+            if (!el) return;
+            let count = 0;
+            if (_trxUnitHarga > 0) count++;
+            count += _spKeranjang.length;
+            el.textContent = count > 0 ? `${count} item dipilih` : 'Pilih item untuk dijual';
+        }
 
         async function renderInputTransaksi() {
             const c = document.getElementById('view-container');
@@ -2327,26 +2347,25 @@ const c = document.getElementById('view-container');
             try { units = (await API.units.list({ status: 'Tersedia' })).data; } catch {}
             try { _spCache = (await API.sparepart.list({})).data; } catch {}
             _spKeranjang = [];
-            _trxTab = 'hp';
             _trxSelectedCustomer = null;
             _trxUnitHarga = 0;
             c.innerHTML = `<div class="max-w-lg space-y-4">
-                <!-- Tab switcher -->
-                <div class="flex gap-1.5 p-1 dark:bg-zinc-800/60 bg-zinc-100 rounded-2xl">
-                  <button id="tab-hp" onclick="switchTrxTab('hp')" class="flex-1 py-2.5 rounded-xl text-xs font-medium transition-all dark:bg-[#111113] bg-white dark:text-zinc-100 text-zinc-800 shadow-sm">
-                    📱 Jual HP
-                  </button>
-                  <button id="tab-sp" onclick="switchTrxTab('sparepart')" class="flex-1 py-2.5 rounded-xl text-xs font-medium transition-all dark:text-zinc-500 text-zinc-400 dark:hover:text-zinc-300">
-                    🔧 Jual Sparepart
-                  </button>
+                <!-- Header -->
+                <div class="panel rounded-2xl p-5">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Input Transaksi</p>
+                      <p id="trx-item-count" class="text-[11px] dark:text-zinc-600 text-zinc-400 mt-1">Pilih item untuk dijual</p>
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Form HP -->
-                <div id="form-trx-hp" class="panel rounded-2xl p-7">
-                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-6">Penjualan Unit HP</p>
-                  <div class="space-y-4">
+                <!-- Unit HP Section -->
+                <div class="panel rounded-2xl p-5">
+                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">📱 Unit HP <span class="text-[10px] normal-case tracking-normal dark:text-zinc-600 text-zinc-400">(opsional)</span></p>
+                  <div class="space-y-3">
                     <div>
-                      <label class="label">ID Produk <span class="text-red-400">*</span></label>
+                      <label class="label">ID Produk</label>
                       <div class="flex gap-2">
                         <input id="trx-unit-id" type="text" class="${input} flex-1" placeholder="JYP-IP-BN-001"
                           oninput="previewUnitById(this.value,${JSON.stringify(units).replace(/"/g,'&quot;')})"/>
@@ -2358,11 +2377,48 @@ const c = document.getElementById('view-container');
                       <div id="unit-preview-content"></div>
                     </div>
                     <div>
-                      <label class="label">Verifikasi IMEI <span class="text-red-400">*</span></label>
+                      <label class="label">Verifikasi IMEI</label>
                       <input id="trx-imei" type="text" class="${input}" placeholder="Masukkan IMEI unit"/>
                     </div>
+                  </div>
+                </div>
+
+                <!-- Sparepart Section -->
+                <div class="panel rounded-2xl p-5">
+                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">🔧 Sparepart <span class="text-[10px] normal-case tracking-normal dark:text-zinc-600 text-zinc-400">(opsional)</span></p>
+                  <div class="space-y-3">
+                    <div class="relative">
+                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 dark:text-zinc-500 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                      </svg>
+                      <input id="sp-trx-search" type="text" class="${input} pl-8" placeholder="Cari nama sparepart..." oninput="filterSpTrx(this.value)"/>
+                    </div>
+                    <div id="sp-trx-list" class="space-y-1.5 max-h-48 overflow-y-auto">
+                      ${_renderSpTrxList(_spCache)}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Keranjang -->
+                <div class="panel rounded-2xl p-5">
+                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Keranjang</p>
+                  <div id="sp-keranjang" class="space-y-2 min-h-[60px]">
+                    <p class="text-xs dark:text-zinc-600 text-zinc-400 text-center py-4">Belum ada item dipilih</p>
+                  </div>
+                  <div id="sp-total-wrap" class="hidden mt-4 pt-4 border-t border-divider">
+                    <div class="flex justify-between items-center">
+                      <span class="text-xs dark:text-zinc-400 text-zinc-600 font-medium">Total Sparepart</span>
+                      <span id="sp-total" class="text-sm font-bold text-[#4FD1C5]">Rp 0</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Customer Section -->
+                <div class="panel rounded-2xl p-5">
+                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Customer</p>
+                  <div class="space-y-3">
                     <div>
-                      <label class="label">Customer <span class="text-red-400">*</span></label>
+                      <label class="label">Nama Customer</label>
                       <div class="relative">
                         <input id="trx-customer-nama" type="text" class="${input}" placeholder="Ketik nama customer..."
                           oninput="searchCustomerTrx(this.value)" onfocus="searchCustomerTrx(this.value)" autocomplete="off"/>
@@ -2391,95 +2447,44 @@ const c = document.getElementById('view-container');
                         </div>
                       </div>
                     </div>
-
-                    <!-- Price Breakdown (hidden by default) -->
-                    <div id="trx-harga-breakdown" class="hidden p-4 rounded-xl dark:bg-zinc-800/40 bg-zinc-50 space-y-2 text-xs">
-                      <div class="flex justify-between">
-                        <span class="dark:text-zinc-500 text-zinc-400">Harga Unit</span>
-                        <span id="trx-harga-asli" class="dark:text-zinc-300 text-zinc-600 font-medium">Rp 0</span>
-                      </div>
-                      <div id="trx-diskon-row" class="hidden flex justify-between">
-                        <span class="dark:text-zinc-500 text-zinc-400">Diskon Poin</span>
-                        <span id="trx-diskon-poin" class="text-red-400 font-medium">- Rp 0</span>
-                      </div>
-                      <div class="border-t dark:border-zinc-700 border-zinc-200 pt-2 flex justify-between font-bold">
-                        <span class="dark:text-zinc-200 text-zinc-700">Harga Final</span>
-                        <span id="trx-harga-final" class="text-[#4FD1C5]">Rp 0</span>
-                      </div>
-                      <div class="flex justify-between">
-                        <span class="dark:text-zinc-500 text-zinc-400">Poin didapat</span>
-                        <span id="trx-poin-dapat" class="font-medium dark:text-amber-400 text-amber-500">0 poin</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label class="label">Catatan</label>
-                      <textarea id="trx-catatan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea>
-                    </div>
-                    <button id="btn-konfirmasi" onclick="konfirmasiTransaksi()" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">
-                      Konfirmasi Penjualan HP
-                    </button>
                   </div>
                 </div>
 
-                <!-- Form Sparepart (hidden default) -->
-                <div id="form-trx-sp" class="hidden space-y-4">
-                  <div class="panel rounded-2xl p-5">
-                    <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Pilih Sparepart</p>
-                    <div class="relative mb-3">
-                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 dark:text-zinc-500 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                      </svg>
-                      <input id="sp-trx-search" type="text" class="${input} pl-8" placeholder="Cari nama sparepart..." oninput="filterSpTrx(this.value)"/>
-                    </div>
-                    <div id="sp-trx-list" class="space-y-1.5 max-h-52 overflow-y-auto">
-                      ${_renderSpTrxList(_spCache)}
-                    </div>
+                <!-- Price Breakdown -->
+                <div id="trx-harga-breakdown" class="hidden panel rounded-2xl p-5 space-y-2 text-xs">
+                  <div id="trx-harga-unit-row" class="hidden flex justify-between">
+                    <span class="dark:text-zinc-500 text-zinc-400">Harga Unit</span>
+                    <span id="trx-harga-unit" class="dark:text-zinc-300 text-zinc-600 font-medium">Rp 0</span>
                   </div>
-
-                  <!-- Keranjang -->
-                  <div class="panel rounded-2xl p-5">
-                    <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Keranjang</p>
-                    <div id="sp-keranjang" class="space-y-2 min-h-[60px]">
-                      <p class="text-xs dark:text-zinc-600 text-zinc-400 text-center py-4">Belum ada item dipilih</p>
-                    </div>
-                    <div id="sp-total-wrap" class="hidden mt-4 pt-4 border-t border-divider">
-                      <div class="flex justify-between items-center">
-                        <span class="text-xs dark:text-zinc-400 text-zinc-600 font-medium">Total</span>
-                        <span id="sp-total" class="text-sm font-bold text-[#4FD1C5]">Rp 0</span>
-                      </div>
-                    </div>
+                  <div id="trx-harga-sp-row" class="hidden flex justify-between">
+                    <span class="dark:text-zinc-500 text-zinc-400">Harga Sparepart</span>
+                    <span id="trx-harga-sp" class="dark:text-zinc-300 text-zinc-600 font-medium">Rp 0</span>
                   </div>
-
-                  <div class="panel rounded-2xl p-5">
-                    <label class="label">Catatan</label>
-                    <textarea id="sp-catatan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea>
+                  <div id="trx-diskon-row" class="hidden flex justify-between">
+                    <span class="dark:text-zinc-500 text-zinc-400">Diskon Poin</span>
+                    <span id="trx-diskon-poin" class="text-red-400 font-medium">- Rp 0</span>
                   </div>
-
-                  <button id="btn-konfirmasi-sp" onclick="konfirmasiTrxSparepart()" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">
-                    Konfirmasi Penjualan Sparepart
-                  </button>
+                  <div class="border-t dark:border-zinc-700 border-zinc-200 pt-2 flex justify-between font-bold">
+                    <span class="dark:text-zinc-200 text-zinc-700">Harga Final</span>
+                    <span id="trx-harga-final" class="text-[#4FD1C5]">Rp 0</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="dark:text-zinc-500 text-zinc-400">Poin didapat</span>
+                    <span id="trx-poin-dapat" class="font-medium dark:text-amber-400 text-amber-500">0 poin</span>
+                  </div>
                 </div>
+
+                <!-- Catatan -->
+                <div class="panel rounded-2xl p-5">
+                  <label class="label">Catatan</label>
+                  <textarea id="trx-catatan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea>
+                </div>
+
+                <!-- Submit -->
+                <button id="btn-konfirmasi" onclick="konfirmasiTransaksi()" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">
+                  Konfirmasi Transaksi
+                </button>
             </div>`;
-        }
-
-        function switchTrxTab(tab) {
-            _trxTab = tab;
-            const tabHp = document.getElementById('tab-hp');
-            const tabSp = document.getElementById('tab-sp');
-            const formHp = document.getElementById('form-trx-hp');
-            const formSp = document.getElementById('form-trx-sp');
-            if (tab === 'hp') {
-                tabHp.className = 'flex-1 py-2.5 rounded-xl text-xs font-medium transition-all dark:bg-[#111113] bg-white dark:text-zinc-100 text-zinc-800 shadow-sm';
-                tabSp.className = 'flex-1 py-2.5 rounded-xl text-xs font-medium transition-all dark:text-zinc-500 text-zinc-400 dark:hover:text-zinc-300';
-                formHp.classList.remove('hidden');
-                formSp.classList.add('hidden');
-            } else {
-                tabSp.className = 'flex-1 py-2.5 rounded-xl text-xs font-medium transition-all dark:bg-[#111113] bg-white dark:text-zinc-100 text-zinc-800 shadow-sm';
-                tabHp.className = 'flex-1 py-2.5 rounded-xl text-xs font-medium transition-all dark:text-zinc-500 text-zinc-400 dark:hover:text-zinc-300';
-                formSp.classList.remove('hidden');
-                formHp.classList.add('hidden');
-            }
         }
 
         function _renderSpTrxList(list) {
@@ -2538,6 +2543,7 @@ const c = document.getElementById('view-container');
             if (!_spKeranjang.length) {
                 el.innerHTML = '<p class="text-xs dark:text-zinc-600 text-zinc-400 text-center py-4">Belum ada item dipilih</p>';
                 totWrap?.classList.add('hidden');
+                hitungPoin();
                 return;
             }
             let total = 0;
@@ -2558,21 +2564,7 @@ const c = document.getElementById('view-container');
             }).join('');
             totWrap?.classList.remove('hidden');
             if (totEl) totEl.textContent = rp(total);
-        }
-
-        async function konfirmasiTrxSparepart() {
-            if (!_spKeranjang.length) { showToast('Keranjang masih kosong', 'error'); return; }
-            const btn = document.getElementById('btn-konfirmasi-sp');
-            btn.innerHTML = `<span class="spinner"></span> Memproses...`;
-            btn.disabled = true;
-            try {
-                const items   = _spKeranjang.map(k => ({ sp_id: k.sp_id, jumlah: k.jumlah }));
-                const catatan = document.getElementById('sp-catatan').value;
-                const res     = await API.transaksi.createSparepart({ items, catatan });
-                _spKeranjang  = [];
-                closeModalBtn();
-                modalStrukKasir(res.data);
-            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Konfirmasi Penjualan Sparepart'; btn.disabled = false; }
+            hitungPoin();
         }
 
         function previewUnitById(id, units) {
@@ -2652,27 +2644,43 @@ const c = document.getElementById('view-container');
         }
 
         async function konfirmasiTransaksi() {
-            const unit_id = document.getElementById('trx-unit-id').value.trim();
-            const imei = document.getElementById('trx-imei').value.trim();
-            const catatan = document.getElementById('trx-catatan').value;
+            const unit_id = document.getElementById('trx-unit-id')?.value?.trim() || '';
+            const imei = document.getElementById('trx-imei')?.value?.trim() || '';
+            const catatan = document.getElementById('trx-catatan')?.value || '';
             const garansi_hari  = parseInt(document.getElementById('trx-garansi')?.value || '7');
             const biaya_garansi = parseInt(document.getElementById('trx-biaya-garansi')?.value || '0');
             const customer_nama = document.getElementById('trx-customer-nama')?.value?.trim() || '';
             const customer_kontak = document.getElementById('trx-customer-kontak')?.value?.trim() || '';
             const poin_dipakai = parseInt(document.getElementById('trx-poin')?.value) || 0;
+
+            // Validate: at least one item
+            if (!unit_id && _spKeranjang.length === 0) {
+                showToast('Pilih minimal satu item (unit atau sparepart)', 'error'); return;
+            }
+            // If unit selected, IMEI is required
+            if (unit_id && !imei) {
+                showToast('IMEI wajib diisi jika membeli unit', 'error'); return;
+            }
+
             const btn = document.getElementById('btn-konfirmasi');
-            if (!unit_id || !imei) { showToast('ID Produk dan IMEI wajib diisi', 'error'); return; }
-            if (!customer_nama) { showToast('Nama Customer wajib diisi', 'error'); return; }
             btn.innerHTML = `<span class="spinner"></span> Memproses...`;
             btn.disabled = true;
             try {
-                const payload = { unit_id, imei, catatan, garansi_hari, biaya_garansi, customer_nama, customer_kontak };
+                const payload = {};
+                if (unit_id) payload.unit_id = unit_id;
+                if (imei) payload.imei = imei;
+                if (catatan) payload.catatan = catatan;
+                payload.garansi_hari = garansi_hari;
+                payload.biaya_garansi = biaya_garansi;
+                if (customer_nama) payload.customer_nama = customer_nama;
+                if (customer_kontak) payload.customer_kontak = customer_kontak;
                 if (poin_dipakai > 0) payload.poin_dipakai = poin_dipakai;
+                if (_spKeranjang.length > 0) payload.sparepart_items = _spKeranjang.map(k => ({ sp_id: k.sp_id, jumlah: k.jumlah }));
                 const res = await API.transaksi.create(payload);
-                _stokKasirCache = [];
+                _spKeranjang = [];
                 closeModalBtn();
                 modalStrukKasir(res.data);
-            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Konfirmasi Penjualan'; btn.disabled = false; }
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Konfirmasi Transaksi'; btn.disabled = false; }
         }
 
         // ═══ PRINT STRUK — KASIR ONLY ════════════════════════════════════════
@@ -4382,7 +4390,6 @@ function modalDetailTransfer(transfer_id) {
         window.konfirmasiApproveRepair = konfirmasiApproveRepair;
         window.konfirmasiPecatKaryawan = konfirmasiPecatKaryawan;
         window.konfirmasiTransaksi = konfirmasiTransaksi;
-        window.konfirmasiTrxSparepart = konfirmasiTrxSparepart;
         window.loadSpRepairList = loadSpRepairList;
         window.loadStokKasirTable = loadStokKasirTable;
         window.loadStokTable = loadStokTable;
@@ -4451,7 +4458,6 @@ function modalDetailTransfer(transfer_id) {
         window.simpanUnit = simpanUnit;
         window.statCard = statCard;
         window.statusBar = statusBar;
-        window.switchTrxTab = switchTrxTab;
         window.tambahKeKeranjang = tambahKeKeranjang;
         window.toggleAktifCabang = toggleAktifCabang;
         window.toggleDimensiField = toggleDimensiField;

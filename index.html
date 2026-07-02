@@ -1197,7 +1197,7 @@ let _dashCabangFilter = '';
                       </svg>
                       <input id="stok-search" type="text" placeholder="Cari merk, tipe, atau IMEI..." class="${input} search-field" oninput="searchStok(this.value)"/>
                     </div>
-                    ${STATE.user.role === 'owner' ? renderCabangFilter(_stokCabangFilter, '_stokCabangFilter=this.value;filterStok(_stokFilter||"Semua")') : ''}
+                    ${STATE.user.role === 'owner' ? renderCabangFilter(_stokCabangFilter, '_stokCabangFilter=this.value;renderStok()') : ''}
                   </div>
                   <div class="flex gap-2">
                     ${STATE.user.role === 'kepala_cabang' ? `
@@ -1243,18 +1243,13 @@ let _stokSearchTimer = null;
   wrap.innerHTML = Array(4).fill('<div class="skeleton h-12 w-full mb-2"></div>').join('');
   
   try {
-    const params = filter !== 'Semua' ? { status: filter } : {};
+    const params = {};
+    if (filter && filter !== 'Semua') params.status = filter;
     const searchVal = document.getElementById('stok-search')?.value?.trim();
     if (searchVal) params.q = searchVal;
     if (_stokCabangFilter) params.cabang = _stokCabangFilter;
-    let res;
-    try {
-      res = await API.units.list(params);
-    } catch(apiErr) {
-      wrap.innerHTML = errorState('Gagal memuat data: ' + apiErr.message, 'loadStokTable');
-      return;
-    }
-    const units = (res && res.data) ? res.data : [];
+    
+    const units = (await API.units.list(params)).data;
 
     wrap.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
       <div class="overflow-x-auto">
@@ -2875,7 +2870,7 @@ const c = document.getElementById('view-container');
             btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
             btn.disabled = true;
             try {
-                await API.customers.create({ nama: document.getElementById('cu-nama').value, kontak: document.getElementById('cu-kontak').value, cabang: STATE.user.cabang });
+                await API.customers.create({ nama: document.getElementById('cu-nama').value, kontak: document.getElementById('cu-kontak').value });
                 closeModalBtn(); showToast('Customer berhasil ditambahkan'); await renderCustomers();
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Customer'; btn.disabled = false; }
         }

@@ -1805,7 +1805,7 @@ let _svcStatusFilter = '';
                     Teknisi: 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
                     Admin: 'bg-violet-500/8 text-violet-400 border border-violet-500/15'
                 };
-                <div class="space-y-5">
+                c.innerHTML = `<div class="space-y-5">
                   <div class="flex items-center justify-between">
                     <p class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} karyawan</p>
                     ${STATE.user.role === 'kepala_cabang' ? `<button onclick="modalTambahKaryawan()" class="btn btn-primary" style="height:36px;padding:0 16px;font-size:0.75rem;">+ Tambah Karyawan</button>` : ''}

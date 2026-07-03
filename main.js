@@ -53,7 +53,14 @@ async function request(method, path, body = null) {
 
   if (!res.ok) {
     if (res.status === 401) { Token.clear(); window.location.reload(); }
-    throw new APIError(res.status, data?.detail || data?.message || `Terjadi kesalahan (${res.status})`);
+    let msg = data?.detail || data?.message || `Terjadi kesalahan (${res.status})`;
+    // FastAPI 422 validation returns detail as array of objects
+    if (Array.isArray(msg)) {
+      msg = msg.map(e => e?.msg || String(e)).join('; ');
+    } else if (typeof msg === 'object') {
+      msg = msg?.msg || msg?.message || JSON.stringify(msg);
+    }
+    throw new APIError(res.status, msg);
   }
   return data;
 }
@@ -82,7 +89,15 @@ async function uploadFile(path, file) {
   }
   clearTimeout(timer);
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new APIError(res.status, data?.detail || data?.message || 'Upload gagal');
+  if (!res.ok) {
+    let msg = data?.detail || data?.message || 'Upload gagal';
+    if (Array.isArray(msg)) {
+      msg = msg.map(e => e?.msg || String(e)).join('; ');
+    } else if (typeof msg === 'object') {
+      msg = msg?.msg || msg?.message || JSON.stringify(msg);
+    }
+    throw new APIError(res.status, msg);
+  }
   return data;
 }
 

@@ -113,6 +113,7 @@ const API = {
     list:   (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/karyawan${q?`?${q}`:''}`) },
     create: (b)      => request('POST', '/karyawan', b),
     stats:  (id, p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/karyawan/${id}/stats${q?`?${q}`:''}`) },
+    resetPassword: (id, b) => request('PATCH', `/karyawan/${id}/password`, b),
   },
   log: {
     list: (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/log${q?`?${q}`:''}`) },

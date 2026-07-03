@@ -1805,7 +1805,7 @@ let _svcStatusFilter = '';
                     Teknisi: 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
                     Admin: 'bg-violet-500/8 text-violet-400 border border-violet-500/15'
                 };
-                c.innerHTML = `<div class="space-y-5">
+                <div class="space-y-5">
                   <div class="flex items-center justify-between">
                     <p class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} karyawan</p>
                     ${STATE.user.role === 'kepala_cabang' ? `<button onclick="modalTambahKaryawan()" class="btn btn-primary" style="height:36px;padding:0 16px;font-size:0.75rem;">+ Tambah Karyawan</button>` : ''}
@@ -1822,6 +1822,7 @@ let _svcStatusFilter = '';
                       </div>
                       <hr class="divider mb-4"/>
                       <div class="space-y-2.5 text-xs">
+                        <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Username</span><span class="dark:text-zinc-300 text-zinc-600 font-mono">${k.username||'—'}</span></div>
                         <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Cabang</span><span class="dark:text-zinc-300 text-zinc-600 font-mono">${k.cabang||'—'}</span></div>
                         <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Bergabung</span><span class="dark:text-zinc-300 text-zinc-600">${k.bergabung}</span></div>
                         ${(() => { const bd = new Date(k.bergabung); const now = new Date(); const dm = (now.getFullYear()-bd.getFullYear())*12+(now.getMonth()-bd.getMonth()); const y = Math.floor(dm/12); const m = dm%12; const txt = y > 0 ? y+" tahun "+m+" bulan" : m+" bulan"; return `<div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Lama Bekerja</span><span class="dark:text-zinc-300 text-zinc-600 font-medium">${txt}</span></div>`; })()}
@@ -1832,6 +1833,7 @@ let _svcStatusFilter = '';
                         <button onclick="modalKaryawanStats('${k.id}','${k.nama}','${k.jabatan}')" class="btn btn-ghost flex-1 text-xs" style="height:32px;">
                           📊 Detail
                         </button>` : '<div class="flex-1"></div>'}
+                        ${STATE.user.role === 'owner' && k.aktif ? `<button onclick="modalResetPassword('${k.id}','${k.nama}','${k.username||''}')" class="btn btn-ghost text-xs" style="height:32px;">🔑 Reset PW</button>` : ''}
                         ${STATE.user.role === 'owner' && k.aktif ? `<button onclick="konfirmasiPecatKaryawan('${k.id}','${k.nama}')" class="btn btn-ghost flex-1 text-xs text-red-400 dark:hover:bg-red-500/10" style="height:32px;">Pecat</button>` : ''}
                       </div>
                     </div>`).join('') : `<div class="col-span-3">${emptyState('Belum ada karyawan','👤')}</div>`}
@@ -1847,6 +1849,50 @@ let _svcStatusFilter = '';
                 showToast(`${nama} berhasil dipecat`);
                 await renderKaryawan();
             } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        function modalResetPassword(id, nama, username) {
+            openModal(`${modalHeader('Reset Password', `${nama} • @${username}`)}
+                <div class="space-y-4">
+                  <div class="dark:bg-zinc-800/50 bg-zinc-50 rounded-xl px-4 py-3 border dark:border-zinc-800 border-zinc-200">
+                    <div class="flex items-center gap-2.5">
+                      <svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                      <p class="text-xs dark:text-zinc-400 text-zinc-500">Password lama tidak bisa dilihat. Set password baru untuk karyawan ini.</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="label">Password Baru <span class="text-red-400">*</span></label>
+                    <div class="relative">
+                      <input id="rp-password" type="password" class="${input} pr-10" placeholder="Min. 6 karakter" autocomplete="new-password"/>
+                      <button type="button" onclick="togglePwVisibility('rp-password','rp-pw-eye')"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-zinc-400 hover:dark:text-zinc-300 transition-colors">
+                        <svg id="rp-pw-eye" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <button id="btn-reset-pw" onclick="simpanResetPassword('${id}','${nama}')" class="btn btn-primary w-full mt-5">Reset Password</button>`);
+        }
+
+        async function simpanResetPassword(id, nama) {
+            const btn = document.getElementById('btn-reset-pw');
+            const pw = document.getElementById('rp-password').value;
+            if (!pw) { showToast('Password wajib diisi', 'error'); return; }
+            if (pw.length < 6) { showToast('Password minimal 6 karakter', 'error'); return; }
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.disabled = true;
+            try {
+                await API.karyawan.resetPassword(id, { password: pw });
+                closeModalBtn();
+                showToast(`Password ${nama} berhasil direset`);
+            } catch (e) {
+                showToast(e.message, 'error');
+                btn.innerHTML = 'Reset Password';
+                btn.disabled = false;
+            }
         }
 
         function modalTambahKaryawan() {
@@ -2105,11 +2151,13 @@ let _svcStatusFilter = '';
             _loadKarStats();
         }
 
+let _logCabangFilter = '';
 async function renderLog() {
   const c = document.getElementById('view-container');
   setLoading(c, 6);
   try {
     const params = getDateFilterParams();
+    if (_logCabangFilter) params.cabang = _logCabangFilter;
     const list = (await API.log.list(params)).data;
     
     const actionColors = {
@@ -2122,12 +2170,16 @@ async function renderLog() {
       'Tambah Sparepart': 'bg-sky-500/8 text-sky-400 border border-sky-500/15',
       'Update Stok Sparepart': 'bg-sky-500/8 text-sky-400 border border-sky-500/15',
       'Pemakaian Sparepart Service': 'bg-amber-500/8 text-amber-400 border border-amber-500/15',
+      'Reset Password Karyawan': 'bg-red-500/8 text-red-400 border border-red-500/15',
     };
     
     c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
-          <div class="px-6 py-4 border-b border-divider flex items-center justify-between">
+          <div class="px-6 py-4 border-b border-divider flex items-center justify-between flex-wrap gap-3">
             <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Sistem</p>
-            ${renderDateFilter('renderLog')}
+            <div class="flex items-center gap-3 flex-wrap">
+              ${renderDateFilter('renderLog')}
+              ${STATE.user.role === 'owner' ? renderCabangFilter(_logCabangFilter, '_logCabangFilter=this.value;renderLog()') : ''}
+            </div>
           </div>
           <div>
             ${list.length ? list.map(l=>`<div class="log-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">
@@ -2136,6 +2188,7 @@ async function renderLog() {
                 <div class="flex items-center gap-2.5 flex-wrap">
                   <span class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${l.user}</span>
                   <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${actionColors[l.aksi]||'dark:bg-zinc-800 bg-zinc-100 dark:text-zinc-500 text-zinc-400'}"> ${l.aksi}</span>
+                  ${l.cabang ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium dark:bg-zinc-800/60 bg-zinc-100 text-zinc-400 dark:text-zinc-500">${l.cabang}</span>` : ''}
                 </div>
                 <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">${l.detail}</p>
               </div>
@@ -2143,6 +2196,7 @@ async function renderLog() {
             </div>`).join('') : emptyState('Belum ada log aktivitas')}
           </div>
         </div>`;
+    if (STATE.user.role === 'owner') populateCabangFilter(_logCabangFilter);
   } catch (e) {
     c.innerHTML = errorState(e.message, 'renderLog()');
   }
@@ -4413,6 +4467,7 @@ function modalDetailTransfer(transfer_id) {
         window.modalEditCabang = modalEditCabang;
         window.modalKaryawanStats = modalKaryawanStats;
         window.modalPilihUnit = modalPilihUnit;
+        window.modalResetPassword = modalResetPassword;
         window.modalResponRequest = modalResponRequest;
         window.modalResponTransfer = modalResponTransfer;
         window.modalTambahCabang = modalTambahCabang;
@@ -4466,6 +4521,7 @@ function modalDetailTransfer(transfer_id) {
         window.simpanRequestSparepart = simpanRequestSparepart;
         window.simpanResponRequest = simpanResponRequest;
         window.simpanSparepart = simpanSparepart;
+        window.simpanResetPassword = simpanResetPassword;
         window.simpanTransfer = simpanTransfer;
         window.simpanUnit = simpanUnit;
         window.statCard = statCard;

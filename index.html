@@ -1670,17 +1670,38 @@ let _trxCabangFilter = '';
 }
 
         // ═══ VIEW: LAPORAN ═══
+        let _lapCabangFilter = '';
         async function renderLaporan() {
             const c = document.getElementById('view-container');
             setLoading(c, 4);
             try {
-                // Backend auto-filter cabang dari JWT — owner lihat semua, kepala_cabang lihat cabangnya
-                const [sRes, tRes] = await Promise.all([API.dashboard.stats(_dashCabangFilter), API.transaksi.list()]);
+                const dateParams = getDateFilterParams();
+                const trxParams = { limit: 200 };
+                if (dateParams.date_from) trxParams.date_from = dateParams.date_from;
+                if (dateParams.date_to) trxParams.date_to = dateParams.date_to;
+                if (_lapCabangFilter) { trxParams.cabang = _lapCabangFilter; }
+                const statsParams = { ...(_lapCabangFilter ? { cabang: _lapCabangFilter } : {}) };
+
+                const [sRes, tRes] = await Promise.all([
+                    API.dashboard.stats(_lapCabangFilter),
+                    API.transaksi.list(trxParams),
+                ]);
                 const keu = sRes.data.keuangan;
                 const list = tRes.data;
                 const cabangLabel = STATE.user.role === 'kepala_cabang' ? ` — Cabang ${STATE.user.cabang}` : '';
                 c.innerHTML = `<div class="space-y-6">
                   ${cabangLabel ? `<p class="text-xs dark:text-zinc-500 text-zinc-400">Data laporan${cabangLabel}</p>` : ''}
+                  <!-- HEADER + FILTER -->
+                  <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <h2 class="text-lg font-semibold tracking-tight">Laporan Keuangan</h2>
+                      <span class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} transaksi</span>
+                    </div>
+                    <div class="flex items-center gap-3 flex-wrap">
+                      ${renderDateFilter('renderLaporan')}
+                      ${STATE.user.role === 'owner' ? renderCabangFilter(_lapCabangFilter, '_lapCabangFilter=this.value;renderLaporan()') : ''}
+                    </div>
+                  </div>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                    ${statCard('Total Revenue', rp(keu.total_revenue), 'semua transaksi', 'blue')}
                     ${statCard('Total Modal',   rp(keu.total_modal),   'harga beli',        'red')}
@@ -1701,7 +1722,7 @@ let _trxCabangFilter = '';
                         ${list.length ? list.map(t=>`<div class="flex justify-between items-center py-3 border-b border-divider last:border-0">
                           <div>
                             <div class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${t.unit_label}</div>
-                            <div class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-0.5">${t.waktu}</div>
+                            <div class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-0.5">${t.waktu}${t.cabang ? ' • ' + t.cabang : ''}</div>
                           </div>
                           <span class="text-xs font-semibold text-[#4FD1C5]">${rp(t.profit)}</span>
                         </div>`).join('') : emptyState('Belum ada transaksi')}
@@ -1709,6 +1730,7 @@ let _trxCabangFilter = '';
                     </div>
                   </div>
                 </div>`;
+                if (STATE.user.role === 'owner') await populateCabangFilter(_lapCabangFilter);
             } catch (e) { c.innerHTML = errorState(e.message, 'renderLaporan()'); }
         }
 

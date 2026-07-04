@@ -752,6 +752,7 @@
                 { page: 'karyawan',          label: 'Karyawan',          d: karyawanSvg },
                 { page: 'cabang',            label: 'Manajemen Cabang',  d: stokSvg2 },
                 { page: 'log',               label: 'Log Aktivitas',     d: logSvg },
+                { page: 'influencer-monitor', label: 'Monitor Influencer', d: karyawanSvg },
             ],
             kepala_cabang: [
                 { page: 'dashboard',         label: 'Dashboard',         d: dashboardSvg },
@@ -777,6 +778,12 @@
             teknisi: [
                 { page: 'service-list', label: 'Data Service', d: settingSvg },
             ],
+            influencer: [
+                { page: 'influencer-dashboard', label: 'Dashboard', d: dashboardSvg },
+                { page: 'influencer-catalog', label: 'Katalog Produk', d: stokSvg1 },
+                { page: 'influencer-videos',  label: 'Video Saya', d: transaksiSvg },
+                { page: 'influencer-profile', label: 'Profil', d: karyawanSvg },
+            ],
         };
 
         const PAGE_META = {
@@ -797,6 +804,11 @@
             'service-list':    ['Data Service'],
             'request-sparepart': ['Request Sparepart'],
             'transfer-stok':     ['Transfer Stok Antar Cabang'],
+            'influencer-dashboard': ['Dashboard Influencer'],
+            'influencer-catalog':   ['Katalog Produk'],
+            'influencer-videos':    ['Video Saya'],
+            'influencer-profile':   ['Profil Influencer'],
+            'influencer-monitor':   ['Monitor Influencer'],
         };
 
         // ── SHOW APP ──
@@ -808,7 +820,7 @@
             document.getElementById('user-name').textContent = user.name;
             document.getElementById('user-role-label').textContent = user.role;
             
-            const first = { owner: 'dashboard', kepala_cabang: 'dashboard', kasir: 'stok-kasir', teknisi: 'service-list' };
+            const first = { owner: 'dashboard', kepala_cabang: 'dashboard', kasir: 'stok-kasir', teknisi: 'service-list', influencer: 'influencer-dashboard' };
             const activePage = first[user.role] || 'dashboard';
 
             const items = NAV[user.role] || [];
@@ -847,6 +859,11 @@
             'service-list':    renderServiceTeknisi,
             'request-sparepart': renderRequestSparepart,
             'transfer-stok':     renderTransferStok,
+            'influencer-dashboard': renderInfluencerDashboard,
+            'influencer-catalog':   renderInfluencerCatalog,
+            'influencer-videos':    renderInfluencerVideos,
+            'influencer-profile':   renderInfluencerProfile,
+            'influencer-monitor':   renderInfluencerMonitor,
         };
 
         function navigate(page) {
@@ -4269,7 +4286,591 @@ function modalDetailTransfer(transfer_id) {
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Set sebagai Kepala Cabang'; btn.disabled = false; }
         }
 
-        // ═══ NOTIFIKASI REAL-TIME (Polling) ═══
+        // ═══════════════════════════════════════════════════════════════
+//  INFLUENCER VIEWS
+// ═══════════════════════════════════════════════════════════════
+
+async function renderInfluencerDashboard() {
+    const c = document.getElementById('view-container');
+    setLoading(c, 5);
+    try {
+        const res = await API.influencer.dashboard(90);
+        const s = res.data;
+
+        c.innerHTML = `<div class="space-y-6">
+            <p class="text-xs dark:text-zinc-500 text-zinc-400">Dashboard Influencer — Cabang ${STATE.user.cabang}</p>
+
+            <!-- STAT CARDS -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                ${statCard('Total Video', s.total_video, 'video dibuat', 'blue')}
+                ${statCard('Total Views', s.total_views.toLocaleString('id-ID'), 'penonton', 'green')}
+                ${statCard('Total Likes', s.total_likes.toLocaleString('id-ID'), 'interaksi', 'red')}
+                ${statCard('Produk Dipromosikan', s.produk_dipromosikan, 'unit unik', 'purple')}
+            </div>
+
+            <!-- TREND CHART -->
+            <div class="panel rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+                    <div>
+                        <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 tracking-tight">Trend Views per Minggu</p>
+                        <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">90 hari terakhir</p>
+                    </div>
+                </div>
+                ${s.trend_views && s.trend_views.length > 0
+                    ? `<div class="relative" style="height:220px"><canvas id="inf-trend-canvas"></canvas></div>`
+                    : `<div class="h-[220px] flex items-center justify-center text-xs dark:text-zinc-600 text-zinc-400">Belum ada data video</div>`
+                }
+            </div>
+
+            <!-- TOP 5 VIDEOS -->
+            <div class="panel rounded-2xl p-6">
+                <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Top 5 Video Terbanyak Dilihat</p>
+                ${s.top_videos && s.top_videos.length > 0 ? `
+                <div class="space-y-3">
+                    ${s.top_videos.map((v, i) => `
+                        <div class="flex items-center gap-3 p-3 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50 hover:dark:bg-zinc-800 hover:bg-zinc-100 transition-colors">
+                            <span class="w-8 text-center font-bold text-sm dark:text-zinc-400 text-zinc-500">${i+1}</span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium dark:text-zinc-100 text-zinc-800 truncate">${v.unit_label}</p>
+                                <p class="text-xs dark:text-zinc-500 text-zinc-400 capitalize">${v.platform} • ${v.views.toLocaleString('id-ID')} views • ${v.likes.toLocaleString('id-ID')} likes</p>
+                            </div>
+                            <span class="badge badge-service">${v.platform}</span>
+                        </div>
+                    `).join('')}
+                </div>` : `<div class="text-center py-8 text-xs dark:text-zinc-600 text-zinc-400">Belum ada video</div>`
+                }
+            </div>
+        </div>`;
+
+        // Render chart
+        if (s.trend_views && s.trend_views.length > 0) {
+            const ctx = document.getElementById('inf-trend-canvas')?.getContext('2d');
+            if (ctx && window.Chart) {
+                const isDark = document.documentElement.classList.contains('dark');
+                const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                const textColor = isDark ? '#71717a' : '#a1a1aa';
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: s.trend_views.map(t => t.periode),
+                        datasets: [{
+                            label: 'Views',
+                            data: s.trend_views.map(t => t.views),
+                            borderColor: '#4FD1C5',
+                            backgroundColor: 'rgba(79,209,197,0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+                            y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 }, callback: v => v.toLocaleString('id-ID') } }
+                        }
+                    }
+                });
+            }
+        }
+
+    } catch (e) {
+        c.innerHTML = errorState(e.message, 'renderInfluencerDashboard()');
+    }
+}
+
+
+async function renderInfluencerCatalog() {
+    const c = document.getElementById('view-container');
+    setLoading(c, 4);
+    try {
+        const res = await API.influencer.catalog({});
+        const items = res.data || [];
+
+        c.innerHTML = `<div class="space-y-5">
+            <p class="text-xs dark:text-zinc-500 text-zinc-400">Katalog Produk Tersedia — Cabang ${STATE.user.cabang}</p>
+
+            <!-- FILTER -->
+            <div class="flex flex-wrap gap-3">
+                <input type="text" id="inf-cat-search" placeholder="Cari merk, tipe, unit..." class="flex-1 min-w-[200px] ${input} text-sm" onkeyup="filterInfluencerCatalog()">
+                <select id="inf-cat-kategori" class="bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs font-medium dark:text-zinc-300 text-zinc-600 outline-none" onchange="filterInfluencerCatalog()">
+                    <option value="">Semua Kategori</option>
+                    <option value="iPhone">iPhone</option>
+                    <option value="Android">Android</option>
+                    <option value="Tablet">Tablet</option>
+                </select>
+            </div>
+
+            <div id="inf-cat-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+        </div>`;
+
+        window._inf_catalog_all = items;
+        renderInfluencerCatalogList(items);
+
+    } catch (e) {
+        c.innerHTML = errorState(e.message, 'renderInfluencerCatalog()');
+    }
+}
+
+function filterInfluencerCatalog() {
+    const q = document.getElementById('inf-cat-search')?.value?.toLowerCase() || '';
+    const kat = document.getElementById('inf-cat-kategori')?.value || '';
+    const items = window._inf_catalog_all || [];
+    const filtered = items.filter(i => {
+        const matchQ = !q || i.merk.toLowerCase().includes(q) || i.tipe.toLowerCase().includes(q) || i.unit_id.toLowerCase().includes(q);
+        const matchKat = !kat || i.kategori === kat;
+        return matchQ && matchKat;
+    });
+    renderInfluencerCatalogList(filtered);
+}
+
+function renderInfluencerCatalogList(items) {
+    const c = document.getElementById('inf-cat-list');
+    if (!c) return;
+    if (!items.length) {
+        c.innerHTML = emptyState('Tidak ada produk tersedia', '📦');
+        return;
+    }
+    c.innerHTML = items.map(item => `
+        <div class="svc-card">
+            <div class="flex items-start justify-between mb-3">
+                <span class="text-xs font-medium dark:text-zinc-400 text-zinc-500">${item.kategori}</span>
+                ${item.has_video ? '<span class="badge badge-diambil">Sudah Video</span>' : '<span class="badge badge-sold">Belum Video</span>'}
+            </div>
+            <p class="text-base font-semibold dark:text-zinc-100 text-zinc-900 mb-1">${item.merk} ${item.tipe}</p>
+            <p class="text-sm dark:text-zinc-500 text-zinc-400 mb-2">${item.storage} • ${item.warna}</p>
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-lg font-bold dark:text-zinc-100 text-zinc-900">${rp(item.harga_jual)}</span>
+                <span class="text-xs font-mono dark:text-zinc-500 text-zinc-400">${item.unit_id}</span>
+            </div>
+            ${!item.has_video ? `
+                <button onclick="modalBuatVideo('${item.unit_id}', '${item.merk} ${item.tipe} ${item.storage} ${item.warna}')" class="btn btn-primary w-full text-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    Buat Video
+                </button>` : `
+                <button class="btn btn-ghost w-full text-xs" disabled>Video sudah dibuat (${item.video_id || ''})</button>
+            `}
+        </div>
+    `).join('');
+}
+
+
+// Modal Buat Video
+function modalBuatVideo(unitId, unitLabel) {
+    openModal(`${modalHeader('Buat Video Baru', unitLabel)}
+    <form id="form-buat-video" class="space-y-4">
+        <input type="hidden" name="unit_id" value="${unitId}">
+        <div>
+            <label class="label">Platform</label>
+            <select name="platform" class="${input}" required>
+                <option value="">Pilih platform</option>
+                <option value="tiktok">TikTok</option>
+                <option value="instagram">Instagram</option>
+                <option value="youtube">YouTube</option>
+            </select>
+        </div>
+        <div>
+            <label class="label">Link Video</label>
+            <input type="url" name="url" class="${input}" placeholder="https://tiktok.com/@user/video/..." required>
+        </div>
+        <div>
+            <label class="label">Tanggal Upload (opsional, default hari ini)</label>
+            <input type="date" name="uploaded_at" class="${input}">
+        </div>
+        <div class="flex gap-3 mt-6">
+            <button type="button" onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
+            <button type="submit" class="btn btn-primary flex-1">Simpan Video</button>
+        </div>
+    </form>`);
+
+    document.getElementById('form-buat-video').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const payload = {
+            unit_id: fd.get('unit_id'),
+            platform: fd.get('platform'),
+            url: fd.get('url'),
+            uploaded_at: fd.get('uploaded_at') || new Date().toISOString(),
+        };
+        const btn = e.target.querySelector('button[type=submit]');
+        btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
+        try {
+            await API.influencer.createVideo(payload);
+            closeModalBtn();
+            showToast('Video berhasil disimpan');
+            renderInfluencerCatalog();
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.innerHTML = 'Simpan Video'; btn.disabled = false;
+        }
+    });
+}
+
+
+// ═══ VIDEO SAYA ═══
+let _inf_videos_all = [];
+
+async function renderInfluencerVideos() {
+    const c = document.getElementById('view-container');
+    setLoading(c, 4);
+    try {
+        const res = await API.influencer.listVideos({});
+        const items = res.data || [];
+        _inf_videos_all = items;
+
+        c.innerHTML = `<div class="space-y-5">
+            <p class="text-xs dark:text-zinc-500 text-zinc-400">Video Saya — Cabang ${STATE.user.cabang}</p>
+
+            <!-- FILTER -->
+            <div class="flex flex-wrap gap-3">
+                <input type="text" id="inf-vid-search" placeholder="Cari produk..." class="flex-1 min-w-[200px] ${input} text-sm" onkeyup="filterInfluencerVideos()">
+                <select id="inf-vid-platform" class="bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs font-medium dark:text-zinc-300 text-zinc-600 outline-none" onchange="filterInfluencerVideos()">
+                    <option value="">Semua Platform</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="youtube">YouTube</option>
+                </select>
+            </div>
+
+            <div id="inf-vid-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>`;
+
+        renderInfluencerVideosList(items);
+
+    } catch (e) {
+        c.innerHTML = errorState(e.message, 'renderInfluencerVideos()');
+    }
+}
+
+function filterInfluencerVideos() {
+    const q = document.getElementById('inf-vid-search')?.value?.toLowerCase() || '';
+    const plat = document.getElementById('inf-vid-platform')?.value || '';
+    const filtered = _inf_videos_all.filter(v => {
+        const matchQ = !q || v.unit_label.toLowerCase().includes(q) || v.unit_id.toLowerCase().includes(q);
+        const matchP = !plat || v.platform === plat;
+        return matchQ && matchP;
+    });
+    renderInfluencerVideosList(filtered);
+}
+
+function renderInfluencerVideosList(items) {
+    const c = document.getElementById('inf-vid-list');
+    if (!c) return;
+    if (!items.length) {
+        c.innerHTML = emptyState('Belum ada video', '🎬');
+        return;
+    }
+    c.innerHTML = items.map(v => `
+        <div class="svc-card">
+            <div class="flex items-start justify-between mb-3">
+                <span class="badge badge-service">${v.platform}</span>
+                <span class="text-xs dark:text-zinc-500 text-zinc-400">${v.video_id}</span>
+            </div>
+            <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 mb-1">${v.unit_label}</p>
+            <p class="text-xs dark:text-zinc-500 text-zinc-400 mb-3">${v.unit_id}</p>
+            <div class="divider mb-3"></div>
+            <div class="grid grid-cols-2 gap-2 text-center mb-3">
+                <div class="p-2 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">
+                    <p class="text-lg font-bold dark:text-zinc-100 text-zinc-800">${v.views.toLocaleString('id-ID')}</p>
+                    <p class="text-[10px] dark:text-zinc-500 text-zinc-400">Views</p>
+                </div>
+                <div class="p-2 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">
+                    <p class="text-lg font-bold dark:text-zinc-100 text-zinc-800">${v.likes.toLocaleString('id-ID')}</p>
+                    <p class="text-[10px] dark:text-zinc-500 text-zinc-400">Likes</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-center mb-3">
+                <div class="p-2 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">
+                    <p class="text-lg font-bold dark:text-zinc-100 text-zinc-800">${v.comments.toLocaleString('id-ID')}</p>
+                    <p class="text-[10px] dark:text-zinc-500 text-zinc-400">Comments</p>
+                </div>
+                <div class="p-2 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">
+                    <p class="text-lg font-bold dark:text-zinc-100 text-zinc-800">${v.shares.toLocaleString('id-ID')}</p>
+                    <p class="text-[10px] dark:text-zinc-500 text-zinc-400">Shares</p>
+                </div>
+            </div>
+            <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mb-3">Upload: ${v.uploaded_at}</p>
+            <div class="flex gap-2">
+                <button onclick="modalUpdateVideoMetrics('${v.video_id}', ${v.views}, ${v.likes}, ${v.comments}, ${v.shares})" class="btn btn-ghost flex-1 text-xs">Update Metrics</button>
+                <a href="${v.url}" target="_blank" class="btn btn-primary flex-1 text-xs">Buka Video</a>
+            </div>
+        </div>
+    `).join('');
+}
+
+
+// Modal Update Metrics
+function modalUpdateVideoMetrics(videoId, views, likes, comments, shares) {
+    openModal(`${modalHeader('Update Metrics Video', videoId)}
+    <form id="form-update-metrics" class="space-y-4">
+        <input type="hidden" name="video_id" value="${videoId}">
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="label">Views</label>
+                <input type="number" name="views" class="${input}" value="${views}" min="0" required>
+            </div>
+            <div>
+                <label class="label">Likes</label>
+                <input type="number" name="likes" class="${input}" value="${likes}" min="0" required>
+            </div>
+            <div>
+                <label class="label">Comments</label>
+                <input type="number" name="comments" class="${input}" value="${comments}" min="0" required>
+            </div>
+            <div>
+                <label class="label">Shares</label>
+                <input type="number" name="shares" class="${input}" value="${shares}" min="0" required>
+            </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+            <button type="button" onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
+            <button type="submit" class="btn btn-primary flex-1">Simpan</button>
+        </div>
+    </form>`);
+
+    document.getElementById('form-update-metrics').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const payload = {
+            views: parseInt(fd.get('views')),
+            likes: parseInt(fd.get('likes')),
+            comments: parseInt(fd.get('comments')),
+            shares: parseInt(fd.get('shares')),
+        };
+        const btn = e.target.querySelector('button[type=submit]');
+        btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
+        try {
+            await API.influencer.updateVideo(fd.get('video_id'), payload);
+            closeModalBtn();
+            showToast('Metrics berhasil diupdate');
+            renderInfluencerVideos();
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.innerHTML = 'Simpan'; btn.disabled = false;
+        }
+    });
+}
+
+
+// ═══ PROFIL INFLUENCER ═══
+async function renderInfluencerProfile() {
+    const c = document.getElementById('view-container');
+    setLoading(c, 3);
+    try {
+        const res = await API.influencer.getProfile();
+        const p = res.data;
+
+        c.innerHTML = `<div class="max-w-xl mx-auto space-y-6">
+            <div class="text-center">
+                <div class="w-24 h-24 rounded-2xl bg-[#4FD1C5] flex items-center justify-center mx-auto mb-4">
+                    ${avatarSvg}
+                </div>
+                <h2 class="text-xl font-bold dark:text-zinc-100 text-zinc-800">${p.name}</h2>
+                <p class="text-sm dark:text-zinc-500 text-zinc-400">@${p.username} • ${p.cabang}</p>
+            </div>
+
+            <div class="panel rounded-2xl p-6 space-y-4">
+                <h3 class="text-sm font-semibold dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Social Media Links</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3 p-3 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">
+                        <svg class="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                        <input type="url" id="pf-tiktok" class="flex-1 ${input} text-sm" placeholder="TikTok URL" value="${p.tiktok_url || ''}">
+                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">
+                        <svg class="w-5 h-5 text-pink-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                        <input type="url" id="pf-instagram" class="flex-1 ${input} text-sm" placeholder="Instagram URL" value="${p.instagram_url || ''}">
+                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">
+                        <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.166 3.166 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377 2.505c-.85.42-1.498 1.067-1.65 1.929a3.164 3.164 0 0 0-.537 2.294C.505 12.478.505 19.183.505 19.183s0 6.705 2.505 8.87c.42.85 1.067 1.498 1.929 1.65a3.166 3.166 0 0 0 2.294.537C12.478 23.495 19.183 23.495 19.183 23.495s6.705 0 8.87-2.505c.85-.42 1.498-1.067 1.65-1.929a3.166 3.166 0 0 0 .537-2.294C23.495 19.522 23.495 12.817 23.495 12.817S23.495 6.186 23.498 6.186zM12 17.3c-2.918 0-5.288-2.37-5.288-5.3 0-2.93 2.37-5.3 5.288-5.3 2.918 0 5.288 2.37 5.288 5.3 0 2.93-2.37 5.3-5.288 5.3zm0-7.8c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5zm0 1.8c-.99 0-1.8-.81-1.8-1.8 0-.99.81-1.8 1.8-1.8s1.8.81 1.8 1.8c0 .99-.81 1.8-1.8 1.8z"/></svg>
+                        <input type="url" id="pf-youtube" class="flex-1 ${input} text-sm" placeholder="YouTube URL" value="${p.youtube_url || ''}">
+                    </div>
+                </div>
+                <button onclick="simpanProfilInfluencer()" class="btn btn-primary w-full">Simpan Perubahan</button>
+            </div>
+
+            <div class="panel rounded-2xl p-6 space-y-4">
+                <h3 class="text-sm font-semibold dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Bio</h3>
+                <textarea id="pf-bio" rows="4" class="${input} text-sm" placeholder="Tulis bio Anda...">${p.bio || ''}</textarea>
+            </div>
+        </div>`;
+
+    } catch (e) {
+        c.innerHTML = errorState(e.message, 'renderInfluencerProfile()');
+    }
+}
+
+async function simpanProfilInfluencer() {
+    const payload = {
+        tiktok_url: document.getElementById('pf-tiktok')?.value || '',
+        instagram_url: document.getElementById('pf-instagram')?.value || '',
+        youtube_url: document.getElementById('pf-youtube')?.value || '',
+        bio: document.getElementById('pf-bio')?.value || '',
+    };
+    try {
+        await API.influencer.updateProfile(payload);
+        showToast('Profil berhasil diupdate');
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+
+// ═══ OWNER MONITOR INFLUENCER ═══
+let _owner_inf_videos_all = [];
+
+async function renderInfluencerMonitor() {
+    const c = document.getElementById('view-container');
+    setLoading(c, 5);
+    try {
+        const [dashRes, infRes] = await Promise.all([
+            API.ownerInfluencer.dashboard(),
+            API.ownerInfluencer.listInfluencers(),
+        ]);
+        const dash = dashRes.data;
+        const influencers = infRes.data || [];
+
+        c.innerHTML = `<div class="space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">Monitor Influencer</h1>
+                    <p class="text-xs dark:text-zinc-500 text-zinc-400">Overview performa semua influencer</p>
+                </div>
+            </div>
+
+            <!-- STAT CARDS -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                ${statCard('Total Influencer', dash.total_influencers, 'aktif', 'blue')}
+                ${statCard('Total Video', dash.total_videos, 'semua cabang', 'green')}
+                ${statCard('Total Views', dash.total_views.toLocaleString('id-ID'), 'gabungan', 'red')}
+                ${statCard('Total Likes', dash.total_likes.toLocaleString('id-ID'), 'gabungan', 'purple')}
+            </div>
+
+            <!-- BY CABANG -->
+            <div class="panel rounded-2xl p-6">
+                <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Performa per Cabang</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+                                <th class="px-5 py-3.5 font-medium">Cabang</th>
+                                <th class="px-5 py-3.5 font-medium text-center">Video</th>
+                                <th class="px-5 py-3.5 font-medium text-right">Views</th>
+                                <th class="px-5 py-3.5 font-medium text-right">Likes</th>
+                                <th class="px-5 py-3.5 font-medium text-center">Influencer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dash.by_cabang.map(b => `
+                                <tr class="tbl-row">
+                                    <td class="px-5 py-4 font-medium dark:text-zinc-100 text-zinc-800">${b.cabang}</td>
+                                    <td class="px-5 py-4 text-center">${b.video_count}</td>
+                                    <td class="px-5 py-4 text-right font-mono dark:text-zinc-300 text-zinc-600">${b.views.toLocaleString('id-ID')}</td>
+                                    <td class="px-5 py-4 text-right font-mono dark:text-zinc-300 text-zinc-600">${b.likes.toLocaleString('id-ID')}</td>
+                                    <td class="px-5 py-4 text-center">${b.influencer_count}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TOP INFLUENCERS -->
+            <div class="panel rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+                    <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Top Influencer by Views</p>
+                    <select id="owner-inf-filter-inf" class="bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs font-medium dark:text-zinc-300 text-zinc-600 outline-none" onchange="filterOwnerInfluencerVideos()">
+                        <option value="">Semua Influencer</option>
+                        ${influencers.map(i => `<option value="${i.influencer_id}">${i.name} (${i.cabang})</option>`).join('')}
+                    </select>
+                </div>
+                <div class="space-y-3">
+                    ${dash.top_influencers.map((inf, i) => `
+                        <div class="flex items-center gap-3 p-3 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50 hover:dark:bg-zinc-800 hover:bg-zinc-100 transition-colors">
+                            <span class="w-8 text-center font-bold text-sm dark:text-zinc-400 text-zinc-500">${i+1}</span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium dark:text-zinc-100 text-zinc-800 truncate">${inf.influencer_name}</p>
+                                <p class="text-xs dark:text-zinc-500 text-zinc-400">${inf.cabang} • ${inf.total_video} video • ${inf.produk_dipromosikan} produk</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold dark:text-zinc-100 text-zinc-800">${inf.total_views.toLocaleString('id-ID')}</p>
+                                <p class="text-[10px] dark:text-zinc-500 text-zinc-400">views • ${inf.total_likes.toLocaleString('id-ID')} likes</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- RECENT VIDEOS -->
+            <div class="panel rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+                    <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Video Terbaru (Semua Influencer)</p>
+                    <select id="owner-inf-filter-platform" class="bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs font-medium dark:text-zinc-300 text-zinc-600 outline-none" onchange="filterOwnerInfluencerVideos()">
+                        <option value="">Semua Platform</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="instagram">Instagram</option>
+                        <option value="youtube">YouTube</option>
+                    </select>
+                </div>
+                <div id="owner-inf-vid-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+        </div>`;
+
+        _owner_inf_videos_all = dash.recent_videos || [];
+        renderOwnerInfluencerVideosList(_owner_inf_videos_all);
+
+    } catch (e) {
+        c.innerHTML = errorState(e.message, 'renderInfluencerMonitor()');
+    }
+}
+
+function filterOwnerInfluencerVideos() {
+    const infId = document.getElementById('owner-inf-filter-inf')?.value || '';
+    const platform = document.getElementById('owner-inf-filter-platform')?.value || '';
+    const filtered = _owner_inf_videos_all.filter(v => {
+        const matchInf = !infId || v.influencer_id === infId;
+        const matchPlat = !platform || v.platform === platform;
+        return matchInf && matchPlat;
+    });
+    renderOwnerInfluencerVideosList(filtered);
+}
+
+function renderOwnerInfluencerVideosList(items) {
+    const c = document.getElementById('owner-inf-vid-list');
+    if (!c) return;
+    if (!items.length) {
+        c.innerHTML = emptyState('Tidak ada video', '🎬');
+        return;
+    }
+    c.innerHTML = items.map(v => `
+        <div class="svc-card">
+            <div class="flex items-start justify-between mb-3">
+                <span class="badge badge-service">${v.platform}</span>
+                <span class="text-xs dark:text-zinc-500 text-zinc-400">${v.video_id}</span>
+            </div>
+            <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 mb-1">${v.unit_label}</p>
+            <p class="text-xs dark:text-zinc-500 text-zinc-400 mb-2">${v.unit_id} • ${v.cabang || ''}</p>
+            <div class="grid grid-cols-2 gap-2 text-center mb-3">
+                <div class="p-2 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">
+                    <p class="text-lg font-bold dark:text-zinc-100 text-zinc-800">${v.views.toLocaleString('id-ID')}</p>
+                    <p class="text-[10px] dark:text-zinc-500 text-zinc-400">Views</p>
+                </div>
+                <div class="p-2 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">
+                    <p class="text-lg font-bold dark:text-zinc-100 text-zinc-800">${v.likes.toLocaleString('id-ID')}</p>
+                    <p class="text-[10px] dark:text-zinc-500 text-zinc-400">Likes</p>
+                </div>
+            </div>
+            <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mb-2">Influencer: ${v.influencer_name} (${v.cabang})</p>
+            <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mb-3">Upload: ${v.uploaded_at}</p>
+            <a href="${v.url}" target="_blank" class="btn btn-primary w-full text-xs">Buka Video</a>
+        </div>
+    `).join('');
+}
         const NOTIF = {
             _items: JSON.parse(localStorage.getItem('jyp_notif') || '[]'),
             _interval: null,
@@ -4530,6 +5131,11 @@ function modalDetailTransfer(transfer_id) {
         window.renderStokKasir = renderStokKasir;
         window.renderTambahUnit = renderTambahUnit;
         window.renderTransaksi = renderTransaksi;
+        window.renderInfluencerDashboard = renderInfluencerDashboard;
+        window.renderInfluencerCatalog = renderInfluencerCatalog;
+        window.renderInfluencerVideos = renderInfluencerVideos;
+        window.renderInfluencerProfile = renderInfluencerProfile;
+        window.renderInfluencerMonitor = renderInfluencerMonitor;
         window.renderTransferStok = renderTransferStok;
         window.renderTransferTable = renderTransferTable;
         window.searchCustomer = searchCustomer;

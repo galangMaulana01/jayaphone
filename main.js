@@ -169,6 +169,20 @@ const API = {
     notifPending: ()       => request('GET', '/transfer-stok/notif/pending'),
     cabangList:   ()       => request('GET',  '/transfer-stok/cabang-list'),
   },
+  influencer: {
+    dashboard: (hari = 90) => request('GET', `/influencer/dashboard/stats?hari=${hari}`),
+    catalog:   (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/influencer/catalog${q?`?${q}`:''}`) },
+    createVideo: (b) => request('POST', '/influencer/videos', b),
+    listVideos:  (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/influencer/videos${q?`?${q}`:''}`) },
+    updateVideo: (id, b) => request('PATCH', `/influencer/videos/${id}`, b),
+    getProfile: () => request('GET', '/influencer/profile'),
+    updateProfile: (b) => request('PATCH', '/influencer/profile', b),
+  },
+  ownerInfluencer: {
+    dashboard: () => request('GET', '/owner/influencers/dashboard'),
+    listVideos: (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/owner/influencers/videos${q?`?${q}`:''}`) },
+    listInfluencers: () => request('GET', '/owner/influencers/influencers'),
+  },
 };
 
 window.API      = API;

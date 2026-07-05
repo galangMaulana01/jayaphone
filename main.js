@@ -176,12 +176,11 @@ const API = {
     listVideos:  (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/influencer/videos${q?`?${q}`:''}`) },
     updateVideo: (id, b) => request('PATCH', `/influencer/videos/${id}`, b),
     getProfile: () => request('GET', '/influencer/profile'),
-    updateProfile: (b) => request('PATCH', '/influencer/profile', b),
   },
   ownerInfluencer: {
-    dashboard: () => request('GET', '/owner/influencers/dashboard'),
-    listVideos: (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/owner/influencers/videos${q?`?${q}`:''}`) },
-    listInfluencers: () => request('GET', '/owner/influencers/influencers'),
+    dashboard: () => request('GET', '/influencer/owner/dashboard'),
+    listVideos: (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/influencer/owner/videos${q?`?${q}`:''}`) },
+    listInfluencers: () => request('GET', '/influencer/owner/influencers'),
   },
 };
 

@@ -2346,8 +2346,7 @@ const c = document.getElementById('view-container');
                         dropdown.innerHTML = '<div class="px-4 py-3 text-xs dark:text-zinc-500 text-zinc-400">Tidak ditemukan — ketik nama baru</div>';
                     } else {
                         dropdown.innerHTML = list.map(cu => `
-                          <div onclick="selectCustomerTrx(${JSON.stringify(cu).replace(/"/g,'&quot;')})"
-                            class="flex items-center justify-between px-4 py-3 cursor-pointer dark:hover:bg-zinc-800 hover:bg-zinc-50 transition-colors">
+                                                  <div data-customer='${JSON.stringify(cu).replace(/'/g, "'")}' class="flex items-center justify-between px-4 py-3 cursor-pointer dark:hover:bg-zinc-800 hover:bg-zinc-50 transition-colors" onclick="selectCustomerTrx(this.dataset.customer)">
                             <div>
                               <div class="text-xs font-medium dark:text-zinc-100 text-zinc-800">${cu.nama}</div>
                               <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${cu.kontak || '-'}</div>
@@ -2374,6 +2373,9 @@ const c = document.getElementById('view-container');
 
         // ── SELECT CUSTOMER ──
         function selectCustomerTrx(cu) {
+            if (typeof cu === 'string') {
+                cu = JSON.parse(cu);
+            }
             _trxSelectedCustomer = cu;
             document.getElementById('trx-customer-nama').value = cu.nama;
             document.getElementById('trx-customer-kontak').value = cu.kontak || '';
@@ -2476,8 +2478,8 @@ const c = document.getElementById('view-container');
                       <label class="label">ID Produk</label>
                       <div class="flex gap-2">
                         <input id="trx-unit-id" type="text" class="${input} flex-1" placeholder="JYP-IP-BN-001"
-                          oninput="previewUnitById(this.value,${JSON.stringify(units).replace(/"/g,'&quot;')})"/>
-                        <button onclick="modalPilihUnit(${JSON.stringify(units).replace(/"/g,'&quot;')})" class="btn btn-ghost flex-shrink-0">Pilih</button>
+                                                  oninput="previewUnitById(this.value, window._modalUnits)"/>
+                                                <button onclick="modalPilihUnit()" class="btn btn-ghost flex-shrink-0">Pilih</button>
                       </div>
                     </div>
                     <div id="unit-preview" class="hidden panel rounded-xl p-4 border-divider">
@@ -2702,7 +2704,7 @@ const c = document.getElementById('view-container');
         let _modalUnits = [];
 
         function modalPilihUnit(units) {
-            _modalUnits = units;
+            _modalUnits = units || window._modalUnits || [];
             openModal(`${modalHeader('Pilih Unit')}
                 <div class="mb-3">
                   <div class="relative">
@@ -2812,8 +2814,8 @@ const c = document.getElementById('view-container');
                 </div>
                 <div class="flex gap-3 mt-5">
                   <button onclick="closeModalBtn(); navigate('stok-kasir');" class="btn btn-ghost flex-1">Tutup</button>
-                  <button onclick="printStruk(${JSON.stringify(trx).replace(/'/g, '&#39;')})" class="btn btn-primary flex-1">
-                    🖨️ Cetak Struk
+                  <button onclick="printStruk(window._lastTrx)" class="btn btn-primary flex-1">
+                                      🖨️ Cetak Struk
                   </button>
                 </div>
             `);
@@ -3679,6 +3681,13 @@ async function renderTransferStok() {
     const transfers = transfersRes.data || [];
 
     window._trf_all = transfers;
+    // Build transfer units map for modalResponTransfer
+    window._transferUnitsMap = {};
+    transfers.forEach(t => {
+      if (t.transfer_id && t.units) {
+        window._transferUnitsMap[t.transfer_id] = t.units;
+      }
+    });
 
     c.innerHTML = `
       <div class="space-y-5">
@@ -3782,12 +3791,10 @@ function renderTransferTable(list, canRespond) {
             <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell">${t.dibuat_oleh || '-'}</td>
             <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden xl:table-cell text-[11px]">${t.created_at || '-'}</td>
             ${canRespond ? `
-            <td class="px-5 py-4 text-center">
-              ${bisBisaRespon
-                ? `<button onclick="modalResponTransfer('${t.transfer_id}', ${JSON.stringify(t.units||[]).replace(/"/g,'&quot;')})"
-                     class="btn btn-primary text-xs px-4 py-1.5">Proses</button>`
-                : `<button onclick="modalDetailTransfer('${t.transfer_id}')"
-                     class="text-xs dark:text-zinc-600 text-zinc-400 underline underline-offset-2">Detail</button>`}
+                        <td class="px-5 py-4 text-center">
+                          ${bisBisaRespon
+                            ? `<button onclick="modalResponTransfer('${t.transfer_id}', window._transferUnitsMap['${t.transfer_id}'])" class="btn btn-primary text-xs px-4 py-1.5">Proses</button>`
+                            : `<button onclick="modalDetailTransfer('${t.transfer_id}')" class="text-xs dark:text-zinc-600 text-zinc-400 underline underline-offset-2">Detail</button>`}
             </td>` : ''}
           </tr>`;
         }).join('')}

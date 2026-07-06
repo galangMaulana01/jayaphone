@@ -1568,7 +1568,7 @@ function getKadaluarsaBadge(dateStr) {
                 return;
             }
 
-            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             btn.disabled = true;
             try {
                 const payload = {
@@ -1924,7 +1924,7 @@ let _svcStatusFilter = '';
             const pw = document.getElementById('rp-password').value;
             if (!pw) { showToast('Password wajib diisi', 'error'); return; }
             if (pw.length < 6) { showToast('Password minimal 6 karakter', 'error'); return; }
-            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             btn.disabled = true;
             try {
                 await API.karyawan.resetPassword(id, { password: pw });
@@ -1987,7 +1987,7 @@ let _svcStatusFilter = '';
             if (!username) { showToast('Username wajib diisi', 'error'); return; }
             if (!password) { showToast('Password wajib diisi', 'error'); return; }
             if (password.length < 6) { showToast('Password minimal 6 karakter', 'error'); return; }
-            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             btn.disabled  = true;
             try {
                 await API.karyawan.create({
@@ -2178,7 +2178,7 @@ let _svcStatusFilter = '';
                 <div class="flex gap-3 mt-6">
                   <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
                   <button onclick="_applyKarCustomDate()" class="btn btn-primary flex-1">Terapkan</button>
-                </div>`);
+                </div>`;
         }
 
         function _applyKarCustomDate() {
@@ -2715,7 +2715,7 @@ const c = document.getElementById('view-container');
                 </div>
                 <div id="modal-unit-list" class="space-y-2 max-h-64 overflow-y-auto -mx-1 px-1">
                   ${_renderUnitList(units)}
-                </div>`);
+                </div>`;
             // Auto focus search
             setTimeout(() => document.getElementById('modal-unit-search')?.focus(), 100);
         }
@@ -2983,7 +2983,7 @@ const c = document.getElementById('view-container');
 
         async function simpanCustomer() {
             const btn = document.getElementById('btn-simpan-cu');
-            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             btn.disabled = true;
             try {
                 await API.customers.create({ nama: document.getElementById('cu-nama').value, kontak: document.getElementById('cu-kontak').value });
@@ -3113,7 +3113,7 @@ const svc = (await API.service.get(service_id)).data;
 
         async function updateService(service_id) {
             const btn = document.getElementById('btn-update-svc');
-            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             btn.disabled = true;
             try {
                 // Payload sesuai ServiceUpdateRequest backend: status, catatan_kerusakan, teknisi
@@ -3178,7 +3178,7 @@ const svc = (await API.service.get(service_id)).data;
                     <span class="spinner"></span>
                     <span class="text-xs dark:text-zinc-500 text-zinc-400 ml-2">Memuat data unit...</span>
                   </div>
-                </div>`);
+                </div>`;
 
             // Fetch data unit untuk dapat harga_modal
             let harga_modal = 0;
@@ -3368,7 +3368,7 @@ const svc = (await API.service.get(service_id)).data;
             const btn  = document.getElementById('btn-simpan-sp');
             const nama = document.getElementById('sp-nama').value.trim();
             if (!nama) { showToast('Nama sparepart wajib diisi', 'error'); return; }
-            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             btn.disabled  = true;
             try {
                 const satuan = document.getElementById('sp-satuan').value;
@@ -4114,7 +4114,7 @@ function modalDetailTransfer(transfer_id) {
             const btn   = document.getElementById('btn-update-stok-sp');
             const delta = parseInt(document.getElementById('sp-delta').value) || 0;
             if (delta === 0) { showToast('Perubahan stok tidak boleh 0', 'error'); return; }
-            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`;
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             btn.disabled  = true;
             try {
                 await API.sparepart.updateStok(sp_id, {
@@ -4229,7 +4229,7 @@ function modalDetailTransfer(transfer_id) {
 
         async function updateCabang(kode) {
             const btn = document.getElementById('btn-edit-cab');
-            btn.innerHTML = `<span class="spinner"></span>`; btn.disabled = true;
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             try {
                 await API.cabang.update(kode, {
                     nama:   document.getElementById('edit-cab-nama').value,
@@ -4669,7 +4669,7 @@ async function renderInfluencerProfile() {
         const res = await API.influencer.getProfile();
         const profile = res.data;
         
-        c.innerHTML = `\`<div class="space-y-6 max-w-2xl">
+        c.innerHTML = `<div class="space-y-6 max-w-2xl">
             <div class="flex items-center justify-between">
                 <h1 class="text-2xl font-bold tracking-tight">Profil Sosial Media</h1>
                 <span class="text-xs dark:text-zinc-500 text-zinc-400">Isi username untuk auto-sync tiap jam</span>
@@ -4738,7 +4738,7 @@ async function renderInfluencerProfile() {
                     <li>Unit auto-match dari caption/keywords di video</li>
                 </ul>
             </div>
-        </div>\``;
+        </div>`;
 
         // Form handler
         document.getElementById('form-social-profile').addEventListener('submit', async (e) => {
@@ -4750,7 +4750,7 @@ async function renderInfluencerProfile() {
                 facebook_page: fd.get('facebook_page')?.trim() || null,
             };
             const btn = e.target.querySelector('button[type=submit]');
-            btn.innerHTML = \`<span class="spinner"></span> Menyimpan...\`; btn.disabled = true;
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             try {
                 await API.influencer.updateSocial(payload);
                 closeModalBtn();

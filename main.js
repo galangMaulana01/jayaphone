@@ -176,6 +176,8 @@ const API = {
     listVideos:  (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/influencer/videos${q?`?${q}`:''}`) },
     updateVideo: (id, b) => request('PATCH', `/influencer/videos/${id}`, b),
     getProfile: () => request('GET', '/influencer/profile'),
+    updateSocial: (b) => request('PATCH', '/influencer/social', b),
+    sync: () => request('POST', '/influencer/sync'),
   },
   ownerInfluencer: {
     dashboard: () => request('GET', '/influencer/owner/dashboard'),

@@ -179,6 +179,8 @@
         .badge-diambil  { background: rgba(79,209,197,0.08);  color: #4FD1C5; border-color: rgba(79,209,197,0.18); }
         /* Ditolak = unit tidak bisa diperbaiki */
         .badge-ditolak  { background: rgba(239,68,68,0.08);   color: #ef4444; border-color: rgba(239,68,68,0.18); }
+        /* Facebook platform badge */
+        .badge-facebook { background: rgba(24,119,242,0.08);  color: #1877F2; border-color: rgba(24,119,242,0.18); }
 
         /* ── SKELETON ── */
         .dark .skeleton {
@@ -4331,7 +4333,7 @@ async function renderInfluencerDashboard() {
                                 <p class="text-sm font-medium dark:text-zinc-100 text-zinc-800 truncate">${v.unit_label}</p>
                                 <p class="text-xs dark:text-zinc-500 text-zinc-400 capitalize">${v.platform} • ${v.views.toLocaleString('id-ID')} views • ${v.likes.toLocaleString('id-ID')} likes</p>
                             </div>
-                            <span class="badge badge-service">${v.platform}</span>
+                            <span class="badge badge-${v.platform}">${v.platform}</span>
                         </div>
                     `).join('')}
                 </div>` : `<div class="text-center py-8 text-xs dark:text-zinc-600 text-zinc-400">Belum ada video</div>`
@@ -4467,6 +4469,7 @@ function modalBuatVideo(unitId, unitLabel) {
                 <option value="">Pilih platform</option>
                 <option value="tiktok">TikTok</option>
                 <option value="instagram">Instagram</option>
+                <option value="facebook">Facebook</option>
                 <option value="youtube">YouTube</option>
             </select>
         </div>
@@ -4525,6 +4528,7 @@ async function renderInfluencerVideos() {
                     <option value="">Semua Platform</option>
                     <option value="tiktok">TikTok</option>
                     <option value="instagram">Instagram</option>
+                    <option value="facebook">Facebook</option>
                     <option value="youtube">YouTube</option>
                 </select>
             </div>
@@ -4560,7 +4564,7 @@ function renderInfluencerVideosList(items) {
     c.innerHTML = items.map(v => `
         <div class="svc-card">
             <div class="flex items-start justify-between mb-3">
-                <span class="badge badge-service">${v.platform}</span>
+                <span class="badge badge-${v.platform}">${v.platform}</span>
                 <span class="text-xs dark:text-zinc-500 text-zinc-400">${v.video_id}</span>
             </div>
             <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 mb-1">${v.unit_label}</p>
@@ -4743,6 +4747,7 @@ async function renderInfluencerMonitor() {
                         <option value="">Semua Platform</option>
                         <option value="tiktok">TikTok</option>
                         <option value="instagram">Instagram</option>
+                        <option value="facebook">Facebook</option>
                         <option value="youtube">YouTube</option>
                     </select>
                 </div>
@@ -4779,7 +4784,7 @@ function renderOwnerInfluencerVideosList(items) {
     c.innerHTML = items.map(v => `
         <div class="svc-card">
             <div class="flex items-start justify-between mb-3">
-                <span class="badge badge-service">${v.platform}</span>
+                <span class="badge badge-${v.platform}">${v.platform}</span>
                 <span class="text-xs dark:text-zinc-500 text-zinc-400">${v.video_id}</span>
             </div>
             <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 mb-1">${v.unit_label}</p>

@@ -4602,70 +4602,12 @@ function renderInfluencerVideosList(items) {
             </div>
             <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mb-3">Upload: ${v.uploaded_at}</p>
             <div class="flex gap-2">
-                <button onclick="modalUpdateVideoMetrics('${v.video_id}', ${v.views}, ${v.likes}, ${v.comments}, ${v.shares})" class="btn btn-ghost flex-1 text-xs">Update Metrics</button>
                 <a href="${v.url}" target="_blank" class="btn btn-primary flex-1 text-xs">Buka Video</a>
             </div>
         </div>
     `).join('');
 }
 
-
-// Modal Update Metrics
-function modalUpdateVideoMetrics(videoId, views, likes, comments, shares) {
-    openModal(`${modalHeader('Update Metrics Video', videoId)}
-    <form id="form-update-metrics" class="space-y-4">
-        <input type="hidden" name="video_id" value="${videoId}">
-        <div class="grid grid-cols-2 gap-3">
-            <div>
-                <label class="label">Views</label>
-                <input type="number" name="views" class="${input}" value="${views}" min="0" required>
-            </div>
-            <div>
-                <label class="label">Likes</label>
-                <input type="number" name="likes" class="${input}" value="${likes}" min="0" required>
-            </div>
-            <div>
-                <label class="label">Comments</label>
-                <input type="number" name="comments" class="${input}" value="${comments}" min="0" required>
-            </div>
-            <div>
-                <label class="label">Shares</label>
-                <input type="number" name="shares" class="${input}" value="${shares}" min="0" required>
-            </div>
-        </div>
-        <div class="flex gap-3 mt-6">
-            <button type="button" onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
-            <button type="submit" class="btn btn-primary flex-1">Simpan</button>
-        </div>
-    </form>`);
-
-    document.getElementById('form-update-metrics').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        const payload = {
-            views: parseInt(fd.get('views')),
-            likes: parseInt(fd.get('likes')),
-            comments: parseInt(fd.get('comments')),
-            shares: parseInt(fd.get('shares')),
-        };
-        const btn = e.target.querySelector('button[type=submit]');
-        btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
-        try {
-            await API.influencer.updateVideo(fd.get('video_id'), payload);
-            closeModalBtn();
-            showToast('Metrics berhasil diupdate');
-            renderInfluencerVideos();
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            btn.innerHTML = 'Simpan'; btn.disabled = false;
-        }
-    });
-}
-
-
-window.renderInfluencerVideos = renderInfluencerVideos;
-window.renderInfluencerProfile = renderInfluencerProfile;
 
 // ═══ INFLUENCER PROFILE (SOCIAL MEDIA SETTINGS) ═══
 async function renderInfluencerProfile() {

@@ -2189,7 +2189,7 @@ let _svcStatusFilter = '';
             closeModalBtn();
             // Re-open stats modal
             const { id, nama, jabatan } = _karStatsCurrent;
-            openModal(`${modalHeader('📊 Statistik ' + nama)}<div id="kar-stats-body"><div class="flex justify-center py-8"><span class="spinner"></span></div></div>`, 'max-w-2xl');
+            openModal(modalHeader('📊 Statistik ' + nama) + '<div id="kar-stats-body"><div class="flex justify-center py-8"><span class="spinner"></span></div></div>', 'max-w-2xl');
             _loadKarStats();
         }
 

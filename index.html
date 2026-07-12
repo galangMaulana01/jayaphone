@@ -4399,6 +4399,8 @@ async function renderInfluencerCatalog() {
     try {
         const res = await API.influencer.catalog({});
         const items = res.data || [];
+        console.log('📦 Catalog API response:', res);
+        console.log('📦 Catalog items:', items);
 
         c.innerHTML = `<div class="space-y-5">
             <div class="flex items-center justify-between">
@@ -4448,10 +4450,17 @@ function renderInfluencerCatalogList(items) {
     const c = document.getElementById('inf-cat-list');
     if (!c) return;
     if (!items.length) {
-        c.innerHTML = emptyState('Tidak ada produk tersedia', '📦');
+        const debugMsg = items.length === 0 ? '<p class="text-xs text-red-500 mt-4">⚠️ API returned empty catalog. Check console for details.</p>' : '';
+    c.innerHTML = emptyState('Tidak ada produk tersedia', '📦') + debugMsg;
         return;
     }
-    c.innerHTML = items.map(item => `
+    c.innerHTML = items.map(item => {
+        if (!item || !item.unit_id) return ''; // Skip invalid items
+        const productName = item.product_name || item.unit_id || 'Product';
+        const price = item.price || 0;
+        const videoCount = item.videos_count || 0;
+        const needsContent = item.needs_content || (videoCount === 0);
+        return `
         <div class="svc-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
@@ -4459,14 +4468,14 @@ function renderInfluencerCatalogList(items) {
                 </div>
                 <span class="text-xs font-mono dark:text-zinc-500 text-zinc-400">${item.videos_count} video${item.videos_count !== 1 ? 's' : ''}</span>
             </div>
-            <p class="text-base font-semibold dark:text-zinc-100 text-zinc-900 mb-1">${item.product_name}</p>
-            <p class="text-sm dark:text-zinc-500 text-zinc-400 mb-2">${rp(item.price)}</p>
+            <p class="text-base font-semibold dark:text-zinc-100 text-zinc-900 mb-1">${(item.product_name || item.unit_id || 'Product')}</p>
+            <p class="text-sm dark:text-zinc-500 text-zinc-400 mb-2">${typeof rp === 'function' ? rp(item.price || 0) : '💰 ' + (item.price || 0)}</p>
             ${item.latest_video_date ? `<p class="text-xs dark:text-zinc-500 text-zinc-400 mb-3">Last: ${new Date(item.latest_video_date).toLocaleDateString()}</p>` : ''}
-            <button onclick="modalUploadVideo('${item.unit_id}', '${item.product_name.replace(/'/g, "\\'")}')" class="btn ${item.needs_content ? 'btn-primary' : 'btn-ghost'} w-full text-xs">
+            <button onclick="modalUploadVideo('${item.unit_id}', '${(item.product_name || 'Product').replace(/'/g, "\\'")}')" class="btn ${item.needs_content ? 'btn-primary' : 'btn-ghost'} w-full text-xs">
                 📹 ${item.needs_content ? 'Upload First Video' : `Upload Again (${item.videos_count})`}
             </button>
         </div>
-    `).join('');
+    `;}).filter(Boolean).join('');
 }
 
 
@@ -4619,7 +4628,7 @@ function renderInfluencerVideosList(items) {
                 <a href="${v.url}" target="_blank" class="btn btn-primary flex-1 text-xs">Buka Video</a>
             </div>
         </div>
-    `).join('');
+    `;}).filter(Boolean).join('');
 }
 
 
@@ -4877,7 +4886,7 @@ function renderOwnerInfluencerVideosList(items) {
             <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mb-3">Upload: ${v.uploaded_at}</p>
             <a href="${v.url}" target="_blank" class="btn btn-primary w-full text-xs">Buka Video</a>
         </div>
-    `).join('');
+    `;}).filter(Boolean).join('');
 }
         const NOTIF = {
             _items: JSON.parse(localStorage.getItem('jyp_notif') || '[]'),

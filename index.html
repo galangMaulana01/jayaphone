@@ -4868,10 +4868,11 @@ function renderOwnerInfluencerVideosList(items) {
         c.innerHTML = emptyState('Tidak ada video', '🎬');
         return;
     }
+    
     c.innerHTML = items.map(v => `
         <div class="svc-card">
             <div class="flex items-start justify-between mb-3">
-                <span class="badge badge-${v.platform}">${v.platform}</span>
+                <span class="badge badge-\( {v.platform}"> \){v.platform}</span>
                 <span class="text-xs dark:text-zinc-500 text-zinc-400">${v.video_id}</span>
             </div>
             <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 mb-1">${v.unit_label}</p>
@@ -4886,11 +4887,11 @@ function renderOwnerInfluencerVideosList(items) {
                     <p class="text-[10px] dark:text-zinc-500 text-zinc-400">Likes</p>
                 </div>
             </div>
-            <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mb-2">Influencer: ${v.influencer_name} (${v.cabang})</p>
+            <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mb-2">Influencer: \( {v.influencer_name} ( \){v.cabang})</p>
             <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mb-3">Upload: ${v.uploaded_at}</p>
             <a href="${v.url}" target="_blank" class="btn btn-primary w-full text-xs">Buka Video</a>
         </div>
-    `;}).filter(Boolean).join('');
+    `).filter(Boolean).join(''); // ← Backtick dipindah ke sini
 }
         const NOTIF = {
             _items: JSON.parse(localStorage.getItem('jyp_notif') || '[]'),

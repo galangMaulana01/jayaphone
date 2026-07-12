@@ -4471,7 +4471,7 @@ function renderInfluencerCatalogList(items) {
             <p class="text-base font-semibold dark:text-zinc-100 text-zinc-900 mb-1">${(item.product_name || item.unit_id || 'Product')}</p>
             <p class="text-sm dark:text-zinc-500 text-zinc-400 mb-2">${typeof rp === 'function' ? rp(item.price || 0) : '💰 ' + (item.price || 0)}</p>
             ${item.latest_video_date ? `<p class="text-xs dark:text-zinc-500 text-zinc-400 mb-3">Last: ${new Date(item.latest_video_date).toLocaleDateString()}</p>` : ''}
-            <button onclick="modalUploadVideo('${item.unit_id}', '${(item.product_name || 'Product').replace(/'/g, "\\'")}')" class="btn ${item.needs_content ? 'btn-primary' : 'btn-ghost'} w-full text-xs">
+            <button onclick="modalUploadVideo('${item.unit_id}', encodeURIComponent('${item.product_name || item.unit_id || 'Product'}'))" class="btn ${item.needs_content ? 'btn-primary' : 'btn-ghost'} w-full text-xs">
                 📹 ${item.needs_content ? 'Upload First Video' : `Upload Again (${item.videos_count})`}
             </button>
         </div>
@@ -4481,6 +4481,10 @@ function renderInfluencerCatalogList(items) {
 
 // Modal Upload Video (Flexible - with optional product linkage)
 function modalUploadVideo(preselectedUnitId = null, preselectedLabel = null) {
+    // Decode product name if encoded
+    if (preselectedLabel && typeof preselectedLabel === 'string') {
+        try { preselectedLabel = decodeURIComponent(preselectedLabel); } catch(e) {}
+    }
     const catalog = window._inf_catalog_all || [];
     const naked = catalog.filter(p => p.needs_content);
     const hasContent = catalog.filter(p => !p.needs_content);

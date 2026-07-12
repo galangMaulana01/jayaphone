@@ -4456,23 +4456,22 @@ function renderInfluencerCatalogList(items) {
     }
     c.innerHTML = items.map(item => {
         if (!item || !item.unit_id) return ''; // Skip invalid items
-        const productName = item.product_name || item.unit_id || 'Product';
-        const price = item.price || 0;
+        const productName = `${item.merk || ''} ${item.tipe || ''} ${item.storage || ''}`.trim() || item.unit_id || 'Product';
+        const price = item.harga_jual || 0;
         const videoCount = item.videos_count || 0;
-        const needsContent = item.needs_content || (videoCount === 0);
+        const needsContent = !item.has_video;
         return `
         <div class="svc-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
-                    ${item.needs_content ? '<span class="badge badge-sold">⚠️ Needs Content</span>' : '<span class="badge badge-diambil">✅ Has Content</span>'}
+                    ${needsContent ? '<span class="badge badge-sold">⚠️ Needs Content</span>' : '<span class="badge badge-diambil">✅ Has Content</span>'}
                 </div>
-                <span class="text-xs font-mono dark:text-zinc-500 text-zinc-400">${item.videos_count} video${item.videos_count !== 1 ? 's' : ''}</span>
+                <span class="text-xs font-mono dark:text-zinc-500 text-zinc-400">${videoCount} video${videoCount !== 1 ? 's' : ''}</span>
             </div>
-            <p class="text-base font-semibold dark:text-zinc-100 text-zinc-900 mb-1">${(item.product_name || item.unit_id || 'Product')}</p>
-            <p class="text-sm dark:text-zinc-500 text-zinc-400 mb-2">${typeof rp === 'function' ? rp(item.price || 0) : '💰 ' + (item.price || 0)}</p>
-            ${item.latest_video_date ? `<p class="text-xs dark:text-zinc-500 text-zinc-400 mb-3">Last: ${new Date(item.latest_video_date).toLocaleDateString()}</p>` : ''}
-            <button onclick="modalUploadVideo('${item.unit_id}', encodeURIComponent('${item.product_name || item.unit_id || 'Product'}'))" class="btn ${item.needs_content ? 'btn-primary' : 'btn-ghost'} w-full text-xs">
-                📹 ${item.needs_content ? 'Upload First Video' : `Upload Again (${item.videos_count})`}
+            <p class="text-base font-semibold dark:text-zinc-100 text-zinc-900 mb-1">${productName}</p>
+            <p class="text-sm dark:text-zinc-500 text-zinc-400 mb-2">${typeof rp === 'function' ? rp(price) : '💰 ' + price}</p>
+            <button onclick="modalUploadVideo('${item.unit_id}', encodeURIComponent('${productName}'))" class="btn ${needsContent ? 'btn-primary' : 'btn-ghost'} w-full text-xs">
+                📹 ${needsContent ? 'Upload First Video' : `Upload Again (${videoCount})`}
             </button>
         </div>
     `;}).filter(Boolean).join('');
@@ -4486,17 +4485,18 @@ function modalUploadVideo(preselectedUnitId = null, preselectedLabel = null) {
         try { preselectedLabel = decodeURIComponent(preselectedLabel); } catch(e) {}
     }
     const catalog = window._inf_catalog_all || [];
-    const naked = catalog.filter(p => p.needs_content);
-    const hasContent = catalog.filter(p => !p.needs_content);
-    
+    const naked = catalog.filter(p => !p.has_video);
+    const hasContent = catalog.filter(p => p.has_video);
+    const labelOf = p => `${p.merk} ${p.tipe} ${p.storage}`.trim();
+
     openModal(`${modalHeader('Upload Video', 'Link to product or upload general content')}
     <form id="form-upload-video" class="space-y-4">
         <div>
             <label class="label">Product (Optional)</label>
             <select name="unit_id" class="${input}">
                 <option value="">No product (general content)</option>
-                ${naked.map(p => `<option value="${p.unit_id}" ${preselectedUnitId === p.unit_id ? 'selected' : ''}>⚠️ ${p.product_name}</option>`).join('')}
-                ${hasContent.map(p => `<option value="${p.unit_id}" ${preselectedUnitId === p.unit_id ? 'selected' : ''}>✅ ${p.product_name} (${p.videos_count} videos)</option>`).join('')}
+                ${naked.map(p => `<option value="${p.unit_id}" ${preselectedUnitId === p.unit_id ? 'selected' : ''}>⚠️ ${labelOf(p)}</option>`).join('')}
+                ${hasContent.map(p => `<option value="${p.unit_id}" ${preselectedUnitId === p.unit_id ? 'selected' : ''}>✅ ${labelOf(p)} (${p.videos_count} videos)</option>`).join('')}
             </select>
             <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-1">⚠️ Products without content shown first</p>
         </div>
@@ -4521,13 +4521,13 @@ function modalUploadVideo(preselectedUnitId = null, preselectedLabel = null) {
     document.getElementById('form-upload-video').addEventListener('submit', async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
+        const unitId = fd.get('unit_id');
         const payload = {
             platform: fd.get('platform'),
             url: fd.get('url'),
+            unit_id: unitId || null,  // always send the field - null means general content
         };
-        const unitId = fd.get('unit_id');
-        if (unitId) payload.unit_id = unitId;
-        
+
         const btn = e.target.querySelector('button[type=submit]');
         btn.innerHTML = `<span class="spinner"></span> Uploading...`; btn.disabled = true;
         try {

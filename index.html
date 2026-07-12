@@ -4401,16 +4401,21 @@ async function renderInfluencerCatalog() {
         const items = res.data || [];
 
         c.innerHTML = `<div class="space-y-5">
-            <p class="text-xs dark:text-zinc-500 text-zinc-400">Katalog Produk Tersedia — Cabang ${STATE.user.cabang}</p>
+            <div class="flex items-center justify-between">
+                <p class="text-xs dark:text-zinc-500 text-zinc-400">Product Catalog — ${STATE.user.cabang}</p>
+                <button onclick="modalUploadVideo()" class="btn btn-primary text-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Upload Video
+                </button>
+            </div>
 
             <!-- FILTER -->
             <div class="flex flex-wrap gap-3">
                 <input type="text" id="inf-cat-search" placeholder="Cari merk, tipe, unit..." class="flex-1 min-w-[200px] ${input} text-sm" onkeyup="filterInfluencerCatalog()">
-                <select id="inf-cat-kategori" class="bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs font-medium dark:text-zinc-300 text-zinc-600 outline-none" onchange="filterInfluencerCatalog()">
-                    <option value="">Semua Kategori</option>
-                    <option value="iPhone">iPhone</option>
-                    <option value="Android">Android</option>
-                    <option value="Tablet">Tablet</option>
+                <select id="inf-cat-filter" class="${input} text-xs" onchange="filterInfluencerCatalog()">
+                    <option value="all">All Products</option>
+                    <option value="naked">⚠️ Needs Content</option>
+                    <option value="has-content">✅ Has Content</option>
                 </select>
             </div>
 
@@ -4427,12 +4432,14 @@ async function renderInfluencerCatalog() {
 
 function filterInfluencerCatalog() {
     const q = document.getElementById('inf-cat-search')?.value?.toLowerCase() || '';
-    const kat = document.getElementById('inf-cat-kategori')?.value || '';
+    const filter = document.getElementById('inf-cat-filter')?.value || 'all';
     const items = window._inf_catalog_all || [];
     const filtered = items.filter(i => {
-        const matchQ = !q || i.merk.toLowerCase().includes(q) || i.tipe.toLowerCase().includes(q) || i.unit_id.toLowerCase().includes(q);
-        const matchKat = !kat || i.kategori === kat;
-        return matchQ && matchKat;
+        const matchQ = !q || i.product_name.toLowerCase().includes(q) || i.unit_id.toLowerCase().includes(q);
+        let matchFilter = true;
+        if (filter === 'naked') matchFilter = i.needs_content;
+        else if (filter === 'has-content') matchFilter = !i.needs_content;
+        return matchQ && matchFilter;
     });
     renderInfluencerCatalogList(filtered);
 }
@@ -4447,71 +4454,78 @@ function renderInfluencerCatalogList(items) {
     c.innerHTML = items.map(item => `
         <div class="svc-card">
             <div class="flex items-start justify-between mb-3">
-                <span class="text-xs font-medium dark:text-zinc-400 text-zinc-500">${item.kategori}</span>
-                ${item.has_video ? '<span class="badge badge-diambil">Sudah Video</span>' : '<span class="badge badge-sold">Belum Video</span>'}
+                <div>
+                    ${item.needs_content ? '<span class="badge badge-sold">⚠️ Needs Content</span>' : '<span class="badge badge-diambil">✅ Has Content</span>'}
+                </div>
+                <span class="text-xs font-mono dark:text-zinc-500 text-zinc-400">${item.videos_count} video${item.videos_count !== 1 ? 's' : ''}</span>
             </div>
-            <p class="text-base font-semibold dark:text-zinc-100 text-zinc-900 mb-1">${item.merk} ${item.tipe}</p>
-            <p class="text-sm dark:text-zinc-500 text-zinc-400 mb-2">${item.storage} • ${item.warna}</p>
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-lg font-bold dark:text-zinc-100 text-zinc-900">${rp(item.harga_jual)}</span>
-                <span class="text-xs font-mono dark:text-zinc-500 text-zinc-400">${item.unit_id}</span>
-            </div>
-            ${!item.has_video ? `
-                <button onclick="modalBuatVideo('${item.unit_id}', '${item.merk} ${item.tipe} ${item.storage} ${item.warna}')" class="btn btn-primary w-full text-xs">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                    Buat Video
-                </button>` : `
-                <button class="btn btn-ghost w-full text-xs" disabled>Video sudah dibuat (${item.video_id || ''})</button>
-            `}
+            <p class="text-base font-semibold dark:text-zinc-100 text-zinc-900 mb-1">${item.product_name}</p>
+            <p class="text-sm dark:text-zinc-500 text-zinc-400 mb-2">${rp(item.price)}</p>
+            ${item.latest_video_date ? `<p class="text-xs dark:text-zinc-500 text-zinc-400 mb-3">Last: ${new Date(item.latest_video_date).toLocaleDateString()}</p>` : ''}
+            <button onclick="modalUploadVideo('${item.unit_id}', '${item.product_name.replace(/'/g, "\\'")}')" class="btn ${item.needs_content ? 'btn-primary' : 'btn-ghost'} w-full text-xs">
+                📹 ${item.needs_content ? 'Upload First Video' : `Upload Again (${item.videos_count})`}
+            </button>
         </div>
     `).join('');
 }
 
 
-// Modal Buat Video
-function modalBuatVideo(unitId, unitLabel) {
-    openModal(`${modalHeader('Buat Video Baru', unitLabel)}
-    <form id="form-buat-video" class="space-y-4">
-        <input type="hidden" name="unit_id" value="${unitId}">
+// Modal Upload Video (Flexible - with optional product linkage)
+function modalUploadVideo(preselectedUnitId = null, preselectedLabel = null) {
+    const catalog = window._inf_catalog_all || [];
+    const naked = catalog.filter(p => p.needs_content);
+    const hasContent = catalog.filter(p => !p.needs_content);
+    
+    openModal(`${modalHeader('Upload Video', 'Link to product or upload general content')}
+    <form id="form-upload-video" class="space-y-4">
+        <div>
+            <label class="label">Product (Optional)</label>
+            <select name="unit_id" class="${input}">
+                <option value="">No product (general content)</option>
+                ${naked.map(p => `<option value="${p.unit_id}" ${preselectedUnitId === p.unit_id ? 'selected' : ''}>⚠️ ${p.product_name}</option>`).join('')}
+                ${hasContent.map(p => `<option value="${p.unit_id}" ${preselectedUnitId === p.unit_id ? 'selected' : ''}>✅ ${p.product_name} (${p.videos_count} videos)</option>`).join('')}
+            </select>
+            <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-1">⚠️ Products without content shown first</p>
+        </div>
         <div>
             <label class="label">Platform</label>
             <select name="platform" class="${input}" required>
-                <option value="">Pilih platform</option>
+                <option value="">Select platform</option>
                 <option value="tiktok">TikTok</option>
                 <option value="instagram">Instagram</option>
-                <option value="facebook">Facebook</option>
-                <option value="youtube">YouTube</option>
             </select>
         </div>
         <div>
-            <label class="label">Link Video</label>
+            <label class="label">Video URL</label>
             <input type="url" name="url" class="${input}" placeholder="https://tiktok.com/@user/video/..." required>
         </div>
-        <div class="flex gap-3 mt-6">
-            <button type="button" onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
-            <button type="submit" class="btn btn-primary flex-1">Simpan Video</button>
+        <div class="flex gap-3 mt-6 pt-4 border-t dark:border-zinc-800 border-zinc-200">
+            <button type="button" onclick="closeModalBtn()" class="btn btn-ghost flex-1">Cancel</button>
+            <button type="submit" class="btn btn-primary flex-1">📹 Upload Video</button>
         </div>
     </form>`);
 
-    document.getElementById('form-buat-video').addEventListener('submit', async (e) => {
+    document.getElementById('form-upload-video').addEventListener('submit', async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
         const payload = {
-            unit_id: fd.get('unit_id'),
             platform: fd.get('platform'),
             url: fd.get('url'),
         };
+        const unitId = fd.get('unit_id');
+        if (unitId) payload.unit_id = unitId;
+        
         const btn = e.target.querySelector('button[type=submit]');
-        btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
+        btn.innerHTML = `<span class="spinner"></span> Uploading...`; btn.disabled = true;
         try {
             await API.influencer.createVideo(payload);
             closeModalBtn();
-            showToast('Video berhasil disimpan');
+            showToast('Video uploaded successfully');
             renderInfluencerCatalog();
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
-            btn.innerHTML = 'Simpan Video'; btn.disabled = false;
+            btn.innerHTML = '📹 Upload Video'; btn.disabled = false;
         }
     });
 }

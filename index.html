@@ -1290,6 +1290,7 @@ let _stokSearchTimer = null;
               <th class="px-5 py-3.5 font-medium">Status</th>
               <th class="px-5 py-3.5 font-medium">Kondisi HP</th>
               <th class="px-5 py-3.5 font-medium text-center">Umur Stok</th>
+              <th class="px-5 py-3.5 font-medium text-center">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -1322,6 +1323,9 @@ let _stokSearchTimer = null;
                   </div>
                 </td>
                 <td class="px-5 py-4 text-center">${kadaluarsaHTML}</td>
+                <td class="px-5 py-4 text-center">
+                  <button onclick="modalDetailUnit('${u.unit_id}')" class="btn btn-ghost text-xs px-3 py-1">Detail</button>
+                </td>
               </tr>`;
             }).join('') : `<tr><td colspan="10">${emptyState('Tidak ada unit untuk filter ini')}</td></tr>`}
           </tbody>
@@ -1453,7 +1457,9 @@ function getKadaluarsaBadge(dateStr) {
                 <div id="sp-repair-keranjang" class="mt-2 space-y-1.5"></div>
               </div>
               <div class="mt-3"><label class="label">Catatan</label>
-                <textarea id="u-catatan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea></div>`;
+                <textarea id="u-catatan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea></div>
+              <!-- Upload Foto Unit (max 1 foto) -->
+              <div class="mt-3">${imageUploaderHTML({ id: 'unit-foto', maxFiles: 1, required: false, label: 'Foto Unit HP', capture: 'environment', folder: 'jayaphone/units', helper: 'Opsional. Foto utama unit untuk katalog.' })}</div>`;
         }
 
         let _spRepairKeranjang = [];
@@ -1575,28 +1581,29 @@ function getKadaluarsaBadge(dateStr) {
             btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             btn.disabled = true;
             try {
-                const payload = {
-                    kat_kode:       document.getElementById('u-kat').value,
-                    kondisi_kode:   document.getElementById('u-kondisi-kode').value,
-                    kondisi_hp,
-                    merk,
-                    tipe,
-                    storage:        document.getElementById('u-storage').value || '-',
-                    ram:            document.getElementById('u-ram').value || '-',
-                    warna:          document.getElementById('u-warna').value || '-',
-                    imei:           document.getElementById('u-imei').value || '-',
-                    imei2:          document.getElementById('u-imei2')?.value || '-',
-                    tipe_sim:       document.getElementById('u-tipe-sim')?.value || 'Single SIM',
-                    keamanan:       document.getElementById('u-keamanan')?.value || 'Tidak Ada',
-                    speaker:        document.getElementById('u-speaker')?.value || 'Normal',
-                    lcd:            document.getElementById('u-lcd')?.value || 'Original',
-                    harga_modal:    parseInt(document.getElementById('u-modal').value) || 0,
-                    battery:        parseInt(document.getElementById('u-battery').value) || 100,
-                    battery_health: parseInt(document.getElementById('u-battery-health')?.value) || 0,
-                    garansi_toko:   parseInt(document.getElementById('u-garansi')?.value) || 7,
-                    catatan:        document.getElementById('u-catatan').value,
-                    cabang:         STATE.user.cabang || 'JYP',
-                };
+                payload: {
+                                    kat_kode:       document.getElementById('u-kat').value,
+                                    kondisi_kode:   document.getElementById('u-kondisi-kode').value,
+                                    kondisi_hp,
+                                    merk,
+                                    tipe,
+                                    storage:        document.getElementById('u-storage').value || '-',
+                                    ram:            document.getElementById('u-ram').value || '-',
+                                    warna:          document.getElementById('u-warna').value || '-',
+                                    imei:           document.getElementById('u-imei').value || '-',
+                                    imei2:          document.getElementById('u-imei2')?.value || '-',
+                                    tipe_sim:       document.getElementById('u-tipe-sim')?.value || 'Single SIM',
+                                    keamanan:       document.getElementById('u-keamanan')?.value || 'Tidak Ada',
+                                    speaker:        document.getElementById('u-speaker')?.value || 'Normal',
+                                    lcd:            document.getElementById('u-lcd')?.value || 'Original',
+                                    harga_modal:    parseInt(document.getElementById('u-modal').value) || 0,
+                                    battery:        parseInt(document.getElementById('u-battery').value) || 100,
+                                    battery_health: parseInt(document.getElementById('u-battery-health')?.value) || 0,
+                                    garansi_toko:   parseInt(document.getElementById('u-garansi')?.value) || 7,
+                                    catatan:        document.getElementById('u-catatan').value,
+                                    cabang:         STATE.user.cabang || 'JYP',
+                                    foto_url:       (window._uploads['unit-foto']?.[0] || null),
+                                };
                 // harga_jual hanya relevan untuk Mulus; Repair diisi nanti via approve-repair
                 if (kondisi_hp === 'Mulus') {
                     payload.harga_jual = parseInt(document.getElementById('u-jual').value) || 0;
@@ -1659,25 +1666,25 @@ let _trxCabangFilter = '';
               </tr>
             </thead>
             <tbody>
-              ${list.length ? list.map(t => `
-                <tr class="tbl-row">
-                  <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${t.trx_id}</td>
-                  <td class="px-6 py-4">
-                    <div class="font-medium dark:text-zinc-100 text-zinc-800">${t.unit_label}</div>
-                    <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${t.unit_id}</div>
-                    ${(t.poin_dipakai > 0 || t.poin_dapat > 0) ? `<div class="flex gap-2 mt-1">
-                      ${t.poin_dipakai > 0 ? `<span class="text-[9px] px-1.5 py-0.5 rounded-full dark:bg-red-500/10 bg-red-50 text-red-400 border dark:border-red-500/20 border-red-200">-${t.poin_dipakai} poin</span>` : ''}
-                      ${t.poin_dapat > 0 ? `<span class="text-[9px] px-1.5 py-0.5 rounded-full dark:bg-amber-500/10 bg-amber-50 text-amber-500 border dark:border-amber-500/20 border-amber-200">+${t.poin_dapat} poin</span>` : ''}
-                    </div>` : ''}
-                  </td>
-                  <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
-                  <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
-                  <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(t.harga_modal)}</td>
-                  <td class="px-6 py-4 font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
-                  <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${t.waktu}</td>
-                </tr>
-              `).join('') : `<tr><td colspan="7">${emptyState('Belum ada transaksi')}</td></tr>`}
-            </tbody>
+                          ${list.length ? list.map(t => `
+                            <tr class="tbl-row cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50" onclick="modalDetailTransaksi('${t.trx_id}')">
+                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${t.trx_id}</td>
+                              <td class="px-6 py-4">
+                                <div class="font-medium dark:text-zinc-100 text-zinc-800">${t.unit_label}</div>
+                                <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${t.unit_id}</div>
+                                ${(t.poin_dipakai > 0 || t.poin_dapat > 0) ? `<div class="flex gap-2 mt-1">
+                                  ${t.poin_dipakai > 0 ? `<span class="text-[9px] px-1.5 py-0.5 rounded-full dark:bg-red-500/10 bg-red-50 text-red-400 border dark:border-red-500/20 border-red-200">-${t.poin_dipakai} poin</span>` : ''}
+                                  ${t.poin_dapat > 0 ? `<span class="text-[9px] px-1.5 py-0.5 rounded-full dark:bg-amber-500/10 bg-amber-50 text-amber-400 border dark:border-amber-500/20 border-amber-200">+${t.poin_dapat} poin</span>` : ''}
+                                </div>` : ''}
+                              </td>
+                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
+                              <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
+                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(t.harga_modal)}</td>
+                              <td class="px-6 py-4 font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
+                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${t.waktu}</td>
+                            </tr>
+                          `).join('') : `<tr><td colspan="7">${emptyState('Belum ada transaksi')}</td></tr>`}
+                        </tbody>
           </table>
         </div>
         <div class="px-6 py-4 border-t border-divider flex justify-between items-center">
@@ -1811,7 +1818,7 @@ let _svcStatusFilter = '';
                         </tr>
                       </thead>
                       <tbody>
-                        ${list.length ? list.map(s=>`<tr class="tbl-row">
+                        ${list.length ? list.map(s=>`<tr class="tbl-row cursor-pointer" onclick="modalDetailService('${s.service_id}')">
                           <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${s.service_id}</td>
                           <td class="px-6 py-4">
                             <div class="font-medium dark:text-zinc-100 text-zinc-800">${s.unit_label}</div>
@@ -1837,6 +1844,99 @@ let _svcStatusFilter = '';
             const svcStatusEl = document.getElementById('svc-status-filter');
             if (svcStatusEl) svcStatusEl.value = _svcStatusFilter;
             } catch (e) { c.innerHTML = errorState(e.message, 'renderServiceOwner()'); }
+        }
+
+        } catch (e) { c.innerHTML = errorState(e.message, 'renderServiceOwner()'); }
+        }
+
+        // ═══ MODAL DETAIL SERVICE (Owner) ═══
+        async function modalDetailService(service_id) {
+            openModal(`${modalHeader('Detail Service', service_id)}<div class="flex items-center justify-center h-64"><span class="spinner"></span><span class="ml-2 text-xs dark:text-zinc-500 text-zinc-400">Memuat detail...</span></div>`);
+            try {
+                const s = (await API.service.detail(service_id)).data;
+                if (!s) { showToast('Service tidak ditemukan', 'error'); closeModalBtn(); return; }
+                
+                const beforeGallery = imageGalleryHTML(s.foto_before_urls || [], { target: 'svc-before-main' });
+                const afterGallery = imageGalleryHTML(s.foto_after_urls || [], { target: 'svc-after-main' });
+                const spareparts = (s.sparepart_items || []).map(sp => `
+                    <div class="flex justify-between text-xs">
+                        <span class="dark:text-zinc-500 text-zinc-400">${sp.nama || sp.sp_id}</span>
+                        <span class="font-medium dark:text-zinc-200 text-zinc-700">x${sp.jumlah}</span>
+                    </div>`).join('');
+                
+                const duration = s.updated_at && s.created_at ? 
+                    `${Math.round((new Date(s.updated_at) - new Date(s.created_at)) / (1000*60*60))} jam` : '—';
+                
+                document.getElementById('modal-body').innerHTML = `
+                    <div class="space-y-4">
+                        <!-- Header Info -->
+                        <div class="grid grid-cols-3 gap-3 text-center">
+                            <div class="p-3 rounded-xl dark:bg-blue-500/8 bg-blue-50 border dark:border-blue-500/20 border-blue-200">
+                                <p class="text-[10px] dark:text-blue-500 text-blue-600 uppercase tracking-widest mb-1">Service ID</p>
+                                <p class="font-semibold dark:text-blue-400 text-blue-700">${s.service_id}</p>
+                            </div>
+                            <div class="p-3 rounded-xl dark:bg-emerald-500/8 bg-emerald-50 border dark:border-emerald-500/20 border-emerald-200">
+                                <p class="text-[10px] dark:text-emerald-500 text-emerald-600 uppercase tracking-widest mb-1">Status</p>
+                                <span class="badge ${s.status === 'Selesai' ? 'badge-tersedia' : s.status === 'Proses' ? 'badge-service' : s.status === 'Ditolak' ? 'badge-sold' : ''}">${s.status}</span>
+                            </div>
+                            <div class="p-3 rounded-xl dark:bg-amber-500/8 bg-amber-50 border dark:border-amber-500/20 border-amber-200">
+                                <p class="text-[10px] dark:text-amber-500 text-amber-600 uppercase tracking-widest mb-1">Turnaround</p>
+                                <p class="font-semibold dark:text-amber-400 text-amber-700">${duration}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t dark:border-zinc-700 border-zinc-200 pt-3">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-2">Unit</p>
+                            <div class="p-3 rounded-xl dark:bg-zinc-800/50 bg-zinc-50">
+                                <p class="font-medium dark:text-zinc-100 text-zinc-800">${s.unit_label}</p>
+                                <p class="text-xs dark:text-zinc-500 text-zinc-400 font-mono">${s.unit_id}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t dark:border-zinc-700 border-zinc-200 pt-3">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-2">Teknisi & Timeline</p>
+                            <div class="grid grid-cols-2 gap-3 text-xs">
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Teknisi</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${s.teknisi || '—'}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Tgl Masuk</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${s.created_at}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Mulai Kerja</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${s.updated_at || '—'}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Selesai</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${s.updated_at || '—'}</p></div>
+                            </div>
+                        </div>
+                        
+                        ${s.foto_before_urls && s.foto_before_urls.length ? `
+                        <div class="border-t dark:border-zinc-700 border-zinc-200 pt-3">
+                            <p class="text-[10px] dark:text-emerald-500 text-emerald-600 uppercase tracking-widest mb-2">FOTO BEFORE (${s.foto_before_taken_at || ''})</p>
+                            ${imageGalleryHTML(s.foto_before_urls, { target: 'svc-before-main' })}
+                        </div>` : ''}
+                        
+                        ${s.foto_after_urls && s.foto_after_urls.length ? `
+                        <div class="border-t dark:border-zinc-700 border-zinc-200 pt-3">
+                            <p class="text-[10px] dark:text-blue-500 text-blue-600 uppercase tracking-widest mb-2">FOTO AFTER (${s.foto_after_taken_at || ''})</p>
+                            ${imageGalleryHTML(s.foto_after_urls, { target: 'svc-after-main' })}
+                        </div>` : ''}
+                        
+                        ${s.catatan_kerusakan ? `
+                        <div class="border-t dark:border-zinc-700 border-zinc-200 pt-3">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-2">Catatan Kerusakan</p>
+                            <p class="text-xs dark:text-zinc-300 text-zinc-600 p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50">${s.catatan_kerusakan}</p>
+                        </div>` : ''}
+                        
+                        ${s.sparepart_items && s.sparepart_items.length ? `
+                        <div class="border-t dark:border-zinc-700 border-zinc-200 pt-3">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-2">Sparepart Digunakan</p>
+                            <div class="space-y-1">
+                                ${spareparts}
+                            </div>
+                        </div>` : ''}
+                        
+                        <div class="flex gap-2 mt-4 pt-3 border-t dark:border-zinc-700 border-zinc-200">
+                            <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Tutup</button>
+                        </div>
+                    </div>`;
+            } catch (e) {
+                showToast(e.message, 'error');
+                closeModalBtn();
+            }
         }
 
         // ═══ VIEW: KARYAWAN ═══
@@ -1954,6 +2054,8 @@ let _svcStatusFilter = '';
                         <option value="Kasir">Kasir</option><option value="Teknisi">Teknisi</option><option value="Admin">Admin</option><option value="Influencer">Influencer</option>
                       </select></div>
                   </div>
+                  <!-- Upload Foto Profil -->
+                  <div class="mt-3">${imageUploaderHTML({ id: 'kar-foto', maxFiles: 1, required: false, label: 'Foto Profil', capture: 'user', folder: 'jayaphone/users', helper: 'Opsional. Foto profil karyawan untuk tampilan sistem.' })}</div>
                   <div><label class="label">Password <span class="text-red-400">*</span></label>
                     <div class="relative">
                       <input id="k-password" type="password" class="${input} pr-10" placeholder="Min. 6 karakter" autocomplete="new-password"/>
@@ -2001,6 +2103,7 @@ let _svcStatusFilter = '';
                     jabatan: document.getElementById('k-jabatan').value,
                     gaji:    parseInt(document.getElementById('k-gaji').value) || 0,
                     cabang:  STATE.user.cabang || 'JYP',
+                    foto_profil_url: (window._uploads['kar-foto']?.[0] || null),
                 });
                 closeModalBtn();
                 showToast('Karyawan berhasil ditambahkan & akun login dibuat');
@@ -2305,7 +2408,10 @@ const c = document.getElementById('view-container');
                           <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${u.imei}</td>
                           <td class="px-5 py-4 font-semibold text-[#4FD1C5]">${rp(u.harga_jual)}</td>
                           <td class="px-5 py-4 hidden sm:table-cell">${batteryBar(u.battery)}</td>
-                        </tr>`).join('') : `<tr><td colspan="6">${emptyState('Tidak ada unit tersedia','📦')}</td></tr>`}
+                          <td class="px-5 py-4 text-center">
+                            <button onclick="modalDetailUnit('${u.unit_id}')" class="btn btn-ghost text-xs px-3 py-1">Detail</button>
+                          </td>
+                        </tr>`).join('') : `<tr><td colspan="7">${emptyState('Tidak ada unit tersedia','📦')}</td></tr>`}
                       </tbody>
                     </table>
                   </div>
@@ -2317,6 +2423,99 @@ const c = document.getElementById('view-container');
         }
 
         function filterStokKasir(q) { loadStokKasirTable(q); }
+
+        // ═══ MODAL DETAIL UNIT ═══
+        async function modalDetailUnit(unit_id) {
+            const c = document.getElementById('view-container');
+            const loading = `<div class="flex items-center justify-center h-64"><span class="spinner"></span><span class="ml-2 text-xs dark:text-zinc-500 text-zinc-400">Memuat detail...</span></div>`;
+            openModal(`${modalHeader('Detail Unit')}${loading}`);
+            try {
+                const u = (await API.units.detail(unit_id)).data;
+                if (!u) { showToast('Unit tidak ditemukan', 'error'); closeModalBtn(); return; }
+                
+                const photoGallery = imageGalleryHTML(u.foto_urls || [u.foto_url].filter(Boolean), { target: 'unit-detail-main' });
+                
+                const margin = u.harga_jual && u.harga_modal ? u.harga_jual - u.harga_modal : 0;
+                const marginPct = u.harga_jual && u.harga_modal ? ((margin / u.harga_jual) * 100).toFixed(1) : 0;
+                
+                document.getElementById('modal-body').innerHTML = `
+                    <div class="space-y-4">
+                        <!-- Photo Gallery -->
+                        ${photoGallery}
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="p-3 rounded-xl dark:bg-zinc-800/50 bg-zinc-50">
+                                <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-1">ID Unit</p>
+                                <p class="font-mono text-xs font-medium dark:text-zinc-200 text-zinc-700">${u.unit_id}</p>
+                            </div>
+                            <div class="p-3 rounded-xl dark:bg-zinc-800/50 bg-zinc-50">
+                                <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-1">Status</p>
+                                <span class="badge ${u.status === 'Tersedia' ? 'badge-tersedia' : u.status === 'Sold' ? 'badge-sold' : 'badge-service'}">${u.status}</span>
+                            </div>
+                            <div class="p-3 rounded-xl dark:bg-zinc-800/50 bg-zinc-50">
+                                <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-1">Kategori</p>
+                                <p class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${u.kategori}</p>
+                            </div>
+                            <div class="p-3 rounded-xl dark:bg-zinc-800/50 bg-zinc-50">
+                                <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-1">Kondisi</p>
+                                <p class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${u.kondisi}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t dark:border-zinc-700 border-zinc-200 pt-3">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-2">Spesifikasi</p>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Merk</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${u.merk}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Tipe</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${u.tipe}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Storage</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${u.storage}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">RAM</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${u.ram}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Warna</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${u.warna}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">IMEI 1</p><p class="font-mono font-medium dark:text-zinc-200 text-zinc-700">${u.imei}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">IMEI 2</p><p class="font-mono font-medium dark:text-zinc-200 text-zinc-700">${u.imei2 || '—'}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Tipe SIM</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${u.tipe_sim}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Keamanan</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${u.keamanan}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Speaker</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${u.speaker}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">LCD</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${u.lcd}</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Battery</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${u.battery}%</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Battery Health</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${u.battery_health || 0}%</p></div>
+                                <div class="dark:bg-zinc-800/50 bg-zinc-50 p-2 rounded-lg"><p class="dark:text-zinc-500 text-zinc-400">Tipe SIM</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${u.tipe_sim}</p></div>
+                            </div>
+                        </div>
+                        
+                        ${STATE.user.role === 'owner' && u.harga_modal ? `
+                        <div class="border-t dark:border-zinc-700 border-zinc-200 pt-3">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-2">Finansial (Owner Only)</p>
+                            <div class="grid grid-cols-3 gap-2 text-center">
+                                <div class="p-3 rounded-xl dark:bg-blue-500/8 bg-blue-50 border dark:border-blue-500/20 border-blue-200">
+                                    <p class="text-[10px] dark:text-blue-500 text-blue-600 uppercase tracking-widest mb-1">Harga Modal</p>
+                                    <p class="font-semibold dark:text-blue-400 text-blue-700">${rp(u.harga_modal)}</p>
+                                </div>
+                                <div class="p-3 rounded-xl dark:bg-emerald-500/8 bg-emerald-50 border dark:border-emerald-500/20 border-emerald-200">
+                                    <p class="text-[10px] dark:text-emerald-500 text-emerald-600 uppercase tracking-widest mb-1">Harga Jual</p>
+                                    <p class="font-semibold dark:text-emerald-400 text-emerald-700">${rp(u.harga_jual)}</p>
+                                </div>
+                                <div class="p-3 rounded-xl dark:bg-amber-500/8 bg-amber-50 border dark:border-amber-500/20 border-amber-200">
+                                    <p class="text-[10px] dark:text-amber-500 text-amber-600 uppercase tracking-widest mb-1">Margin</p>
+                                    <p class="font-semibold dark:text-amber-400 text-amber-700">${rp(margin)} (${marginPct}%)</p>
+                                </div>
+                            </div>
+                        </div>` : ''}
+                        
+                        ${u.keluhan ? `
+                        <div class="border-t dark:border-zinc-700 border-zinc-200 pt-3">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-2">Keluhan / Catatan</p>
+                            <p class="text-xs dark:text-zinc-300 text-zinc-600 p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50">${u.keluhan}</p>
+                        </div>` : ''}
+                        
+                        <div class="flex gap-2 mt-4 pt-3 border-t dark:border-zinc-700 border-zinc-200">
+                            <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Tutup</button>
+                        </div>
+                    </div>`;
+            } catch (e) {
+                showToast(e.message, 'error');
+                closeModalBtn();
+            }
+        }
 
         // ═══ VIEW: INPUT TRANSAKSI ═══
         let _spCache = [];  // cache sparepart list
@@ -2594,6 +2793,13 @@ const c = document.getElementById('view-container');
                   <textarea id="trx-catatan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea>
                 </div>
 
+                <!-- Foto Bukti Serah Terima (WAJIB jika ada unit) -->
+                <div class="panel rounded-2xl p-5" id="trx-foto-section">
+                  <label class="label">Foto Bukti Serah Terima <span class="text-red-400">*</span></label>
+                  <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1 mb-2">Wajib ambil foto kondisi HP sebelum diserahkan ke customer. Minimal 1 foto.</p>
+                  ${imageUploaderHTML({ id: 'trx-foto', maxFiles: 1, required: true, label: 'Foto Bukti Serah Terima', capture: 'environment', folder: 'jayaphone/transactions', helper: 'Ambil foto kondisi HP dari berbagai sudut (depan, belakang, samping).' })}
+                </div>
+
                 <!-- Submit -->
                 <button id="btn-konfirmasi" onclick="konfirmasiTransaksi()" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">
                   Konfirmasi Transaksi
@@ -2775,6 +2981,14 @@ const c = document.getElementById('view-container');
             if (unit_id && !imei) {
                 showToast('IMEI wajib diisi jika membeli unit', 'error'); return;
             }
+            // If unit selected, foto bukti is MANDATORY
+            if (unit_id) {
+                const fotoUrls = window._uploads['trx-foto'] || [];
+                if (!fotoUrls.length) {
+                    showToast('Foto bukti serah terima WAJIB diupload jika ada unit!', 'error');
+                    return;
+                }
+            }
 
             const btn = document.getElementById('btn-konfirmasi');
             btn.innerHTML = `<span class="spinner"></span> Memproses...`;
@@ -2790,6 +3004,11 @@ const c = document.getElementById('view-container');
                 if (customer_kontak) payload.customer_kontak = customer_kontak;
                 if (poin_dipakai > 0) payload.poin_dipakai = poin_dipakai;
                 if (_spKeranjang.length > 0) payload.sparepart_items = _spKeranjang.map(k => ({ sp_id: k.sp_id, jumlah: k.jumlah }));
+                // Add foto_serah_terima if unit selected
+                if (unit_id) {
+                    const fotoUrls = window._uploads['trx-foto'] || [];
+                    payload.foto_serah_terima = fotoUrls[0] || null;
+                }
                 const res = await API.transaksi.create(payload);
                 _spKeranjang = [];
                 closeModalBtn();
@@ -2797,7 +3016,88 @@ const c = document.getElementById('view-container');
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Konfirmasi Transaksi'; btn.disabled = false; }
         }
 
-        // ═══ PRINT STRUK — KASIR ONLY ════════════════════════════════════════
+        } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Konfirmasi Transaksi'; btn.disabled = false; }
+        }
+
+        // ═══ MODAL DETAIL TRANSAKSI (Owner) ═══
+        async function modalDetailTransaksi(trx_id) {
+            openModal(`${modalHeader('Detail Transaksi', trx_id)}<div class="flex items-center justify-center h-64"><span class="spinner"></span><span class="ml-2 text-xs dark:text-zinc-500 text-zinc-400">Memuat detail...</span></div>`);
+            try {
+                const t = (await API.transaksi.detail(trx_id)).data;
+                if (!t) { showToast('Transaksi tidak ditemukan', 'error'); closeModalBtn(); return; }
+                
+                const margin = t.harga_jual && t.harga_modal ? t.harga_jual - t.harga_modal : 0;
+                const marginPct = t.harga_jual && t.harga_modal ? ((margin / t.harga_jual) * 100).toFixed(1) : 0;
+                const diskonPoin = (t.poin_dipakai || 0) * 1000;
+                const totalBayar = (t.harga_jual || 0) + (t.biaya_garansi || 0) - diskonPoin;
+                
+                const productPhoto = imageGalleryHTML(t.foto_produk ? [t.foto_produk] : [], { target: 'trx-detail-main' });
+                const proofPhoto = imageGalleryHTML(t.foto_serah_terima ? [t.foto_serah_terima] : [], { target: 'trx-proof-main' });
+                
+                document.getElementById('modal-body').innerHTML = `
+                    <div class="space-y-4">
+                        <!-- Product Info -->
+                        <div class="panel rounded-2xl p-5">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Informasi Produk</p>
+                            <div class="flex gap-4">
+                                <div class="w-32 h-32 rounded-xl dark:bg-zinc-800/50 bg-zinc-100 flex-shrink-0 overflow-hidden">
+                                    ${productPhoto}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-semibold dark:text-zinc-100 text-zinc-800">${t.unit_label}</p>
+                                    <p class="text-xs dark:text-zinc-500 text-zinc-400 font-mono">${t.unit_id}</p>
+                                    <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-1">${t.imei || '—'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${t.foto_serah_terima ? `
+                        <!-- Foto Bukti Serah Terima -->
+                        <div class="panel rounded-2xl p-5">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Foto Bukti Serah Terima</p>
+                            ${proofPhoto}
+                        </div>` : ''}
+                        
+                        <!-- Financial Breakdown -->
+                        <div class="panel rounded-2xl p-5">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Rincian Keuangan</p>
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Harga Modal</span><span class="font-medium dark:text-blue-400 text-blue-600">${rp(t.harga_modal || 0)}</span></div>
+                                <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Harga Jual</span><span class="font-medium dark:text-emerald-400 text-emerald-600">${rp(t.harga_jual || 0)}</span></div>
+                                ${t.biaya_garansi ? `<div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Biaya Garansi ${t.garansi_hari}h</span><span>${rp(t.biaya_garansi)}</span></div>` : ''}
+                                ${t.poin_dipakai ? `<div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Diskon Poin (${t.poin_dipakai} poin)</span><span class="text-red-400">-${rp(diskonPoin)}</span></div>` : ''}
+                                <div class="border-t dark:border-zinc-700 border-zinc-200 pt-2 flex justify-between font-bold"><span>Total Bayar</span><span class="text-[#4FD1C5]">${rp(totalBayar)}</span></div>
+                                <div class="border-t dark:border-zinc-700 border-zinc-200 pt-2 flex justify-between font-bold text-[#4FD1C5]"><span>Profit</span><span>${rp(t.profit || 0)} (${marginPct}%)</span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Info -->
+                        <div class="panel rounded-2xl p-5">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Pembayaran</p>
+                            <div class="grid grid-cols-2 gap-3 text-xs">
+                                <div class="p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50"><p class="dark:text-zinc-500 text-zinc-400">Metode</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${t.metode_bayar || 'Cash'}</p></div>
+                                <div class="p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50"><p class="dark:text-zinc-500 text-zinc-400">Status</p><p class="font-medium text-emerald-400">${t.status_bayar || 'Lunas'}</p></div>
+                                <div class="p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50"><p class="dark:text-zinc-500 text-zinc-400">Kasir</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${t.kasir || '—'}</p></div>
+                                <div class="p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50"><p class="dark:text-zinc-500 text-zinc-400">Waktu</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${t.waktu || '—'}</p></div>
+                            </div>
+                        </div>
+                        
+                        ${t.catatan ? `
+                        <div class="panel rounded-2xl p-5">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-2">Catatan</p>
+                            <p class="text-xs dark:text-zinc-300 text-zinc-600 p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50">${t.catatan}</p>
+                        </div>` : ''}
+                        
+                        <div class="flex gap-2 mt-4 pt-3 border-t dark:border-zinc-700 border-zinc-200">
+                            <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Tutup</button>
+                            <button onclick="printStruk(window._lastTrx)" class="btn btn-primary flex-1">🖨️ Cetak Struk</button>
+                        </div>
+                    </div>`;
+            } catch (e) {
+                showToast(e.message, 'error');
+                closeModalBtn();
+            }
+        }
 
         function modalStrukKasir(trx) {
             // Tampilkan modal sukses + tombol cetak
@@ -3060,45 +3360,68 @@ const c = document.getElementById('view-container');
         }
 
         async function modalUpdateService(service_id)  {
-            try {
-const svc = (await API.service.get(service_id)).data;
-            const role = STATE.user?.role;
+                    try {
+        const svc = (await API.service.get(service_id)).data;
+                    const role = STATE.user?.role;
 
-            // Tentukan opsi status yang boleh dipilih sesuai role dan status saat ini
-            // Backend: teknisi hanya boleh Antrian→Proses, Proses→Selesai, Antrian/Proses→Ditolak
-            let statusOptions = [];
-            if (role === 'teknisi') {
-                if (svc.status === 'Antrian') statusOptions = ['Antrian','Proses','Ditolak'];
-                else if (svc.status === 'Proses') statusOptions = ['Proses','Selesai','Ditolak'];
-                else statusOptions = [svc.status]; // locked, tidak bisa ubah
-            } else {
-                // Owner bisa lihat semua, tapi approve via endpoint terpisah
-                statusOptions = ['Antrian','Proses','Selesai','Ditolak'];
-            }
+                    // Tentukan opsi status yang boleh dipilih sesuai role dan status saat ini
+                    // Backend: teknisi hanya boleh Antrian→Proses, Proses→Selesai, Antrian/Proses→Ditolak
+                    let statusOptions = [];
+                    if (role === 'teknisi') {
+                        if (svc.status === 'Antrian') statusOptions = ['Antrian','Proses','Ditolak'];
+                        else if (svc.status === 'Proses') statusOptions = ['Proses','Selesai','Ditolak'];
+                        else statusOptions = [svc.status]; // locked, tidak bisa ubah
+                    } else {
+                        // Owner bisa lihat semua, tapi approve via endpoint terpisah
+                        statusOptions = ['Antrian','Proses','Selesai','Ditolak'];
+                    }
 
-            openModal(`${modalHeader('Update Service', `${svc.service_id} · ${svc.unit_label}`)}
-                <div class="space-y-3">
-                  <div><label class="label">Status Pengerjaan</label>
-                    <select id="svc-status" class="${input}">
-                      ${statusOptions.map(st=>`<option ${svc.status===st?'selected':''}>${st}</option>`).join('')}
-                    </select>
-                    <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">Teknisi: Antrian→Proses→Selesai atau Ditolak. Approved hanya via kasir/owner.</p>
-                  </div>
-                  <div><label class="label">Catatan Kerusakan</label>
-                    <textarea id="svc-catatan" rows="3" class="${input} resize-none" style="height:auto;">${svc.catatan_kerusakan||''}</textarea></div>
-                  <div><label class="label">Nama Teknisi</label>
-                    <input id="svc-teknisi" type="text" class="${input}" value="${svc.teknisi||STATE.user?.name||''}" placeholder="Nama teknisi pengerjaan"/></div>
-                  <div>
-                    <label class="label">Tambah Foto (via URL)</label>
-                    <div class="flex gap-2">
-                      <input id="svc-foto-url" type="url" class="${input} flex-1" placeholder="data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23ddd" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="%23999" font-size="12">No Image</text></svg>"/>
-                      <button onclick="addFotoUrlService('${service_id}')" class="btn btn-ghost flex-shrink-0">Tambah</button>
-                    </div>
-                    <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">Upload foto ke ImgBB/Imgur lalu paste URL-nya.</p>
-                    ${svc.foto_urls && svc.foto_urls.length ? `<div class="flex gap-2 mt-2 flex-wrap">${svc.foto_urls.map(p=>`<img src="${p}" class="w-14 h-14 rounded-xl object-cover dark:border dark:border-zinc-800" onclick="window.open('${p}')" style="cursor:pointer;"/>`).join('')}</div>` : ''}
-                  </div>
-                </div>
-                <button id="btn-update-svc" onclick="updateService('${service_id}')" class="btn btn-primary w-full mt-5">Update Service</button>`);
+                    openModal(`${modalHeader('Update Service', `${svc.service_id} · ${svc.unit_label}`)}
+                        <div class="space-y-3">
+                          <div><label class="label">Status Pengerjaan</label>
+                            <select id="svc-status" class="${input}">
+                              ${statusOptions.map(st=>`<option ${svc.status===st?'selected':''}>${st}</option>`).join('')}
+                            </select>
+                            <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">Teknisi: Antrian→Proses→Selesai atau Ditolak. Approved hanya via kasir/owner.</p>
+                          </div>
+                  
+                          <!-- Foto BEFORE (wajib saat Antrian → Proses) -->
+                          ${svc.status === 'Antrian' ? `
+                          <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
+                            <label class="label text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                              FOTO BEFORE (WAJIB sebelum mulai service)
+                            </label>
+                            <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1">Ambil foto kondisi unit SEBELUM dikerjakan. Minimal 1 foto.</p>
+                            ${imageUploaderHTML({ id: 'svc-foto-before', maxFiles: 5, required: true, label: 'Foto Before Service', capture: 'environment', folder: 'jayaphone/service/before', helper: 'Foto kondisi unit sebelum dikerjakan (min 1, max 5).' })}
+                          </div>` : ''}
+                  
+                          <!-- Foto AFTER (wajib saat Proses → Selesai) -->
+                          ${svc.status === 'Proses' ? `
+                          <div class="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20">
+                            <label class="label text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                              FOTO AFTER (WAJIB saat service selesai)
+                            </label>
+                            <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1">Ambil foto kondisi unit SETELAH dikerjakan. Minimal 1 foto.</p>
+                            ${imageUploaderHTML({ id: 'svc-foto-after', maxFiles: 5, required: true, label: 'Foto After Service', capture: 'environment', folder: 'jayaphone/service/after', helper: 'Foto kondisi unit setelah dikerjakan (min 1, max 5).' })}
+                          </div>` : ''}
+                  
+                          <div><label class="label">Catatan Kerusakan</label>
+                            <textarea id="svc-catatan" rows="3" class="${input} resize-none" style="height:auto;">${svc.catatan_kerusakan||''}</textarea></div>
+                          <div><label class="label">Nama Teknisi</label>
+                            <input id="svc-teknisi" type="text" class="${input}" value="${svc.teknisi||STATE.user?.name||''}" placeholder="Nama teknisi pengerjaan"/></div>
+                          <div>
+                            <label class="label">Tambah Foto (via URL)</label>
+                            <div class="flex gap-2">
+                              <input id="svc-foto-url" type="url" class="${input} flex-1" placeholder="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect fill='%23ddd' width='100' height='100'/><text x='50' y='55' text-anchor='middle' fill='%23999' font-size='12'>No Image</text></svg>"/>
+                              <button onclick="addFotoUrlService('${service_id}')" class="btn btn-ghost flex-shrink-0">Tambah</button>
+                            </div>
+                            <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">Upload foto ke ImgBB/Imgur lalu paste URL-nya.</p>
+                            ${svc.foto_urls && svc.foto_urls.length ? `<div class="flex gap-2 mt-2 flex-wrap">${svc.foto_urls.map(p=>`<img src="${p}" class="w-14 h-14 rounded-xl object-cover dark:border dark:border-zinc-800" onclick="window.open('${p}')" style="cursor:pointer;"/></div>`).join('')}` : ''}
+                          </div>
+                        </div>
+                        <button id="btn-update-svc" onclick="updateService('${service_id}')" class="btn btn-primary w-full mt-5">Update Service</button>`);
             } catch (e) {
                 showToast('Gagal update service: ' + e.message, 'error');
             }
@@ -3122,13 +3445,23 @@ const svc = (await API.service.get(service_id)).data;
             btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             btn.disabled = true;
             try {
-                // Payload sesuai ServiceUpdateRequest backend: status, catatan_kerusakan, teknisi
-                // TIDAK ADA estimasi_biaya di schema backend
+                const svc = (await API.service.get(service_id)).data;
                 const payload = {
                     status:            document.getElementById('svc-status').value,
                     catatan_kerusakan: document.getElementById('svc-catatan').value,
                     teknisi:           document.getElementById('svc-teknisi').value || undefined,
                 };
+                // Add before/after photos if status is changing
+                if (svc.status === 'Antrian' && payload.status === 'Proses') {
+                    const beforeUrls = window._uploads['svc-foto-before'] || [];
+                    if (!beforeUrls.length) { showToast('Foto BEFORE wajib diupload!', 'error'); btn.innerHTML = 'Update Service'; btn.disabled = false; return; }
+                    payload.foto_before_urls = beforeUrls;
+                }
+                if (svc.status === 'Proses' && payload.status === 'Selesai') {
+                    const afterUrls = window._uploads['svc-foto-after'] || [];
+                    if (!afterUrls.length) { showToast('Foto AFTER wajib diupload!', 'error'); btn.innerHTML = 'Update Service'; btn.disabled = false; return; }
+                    payload.foto_after_urls = afterUrls;
+                }
                 await API.service.update(service_id, payload);
                 closeModalBtn();
                 showToast('Service berhasil diupdate');

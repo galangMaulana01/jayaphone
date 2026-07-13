@@ -780,12 +780,12 @@
             teknisi: [
                 { page: 'service-list', label: 'Data Service', d: settingSvg },
             ],
-            influencer: [
-                { page: 'influencer-dashboard', label: 'Dashboard', d: dashboardSvg },
-                { page: 'influencer-catalog', label: 'Katalog Produk', d: stokSvg1 },
-                { page: 'influencer-videos',  label: 'Video Saya', d: transaksiSvg },
-                { page: 'influencer-profile', label: 'Profil Sosial', d: clientSvg },
-            ],
+            'influencer': [
+                            { page: 'influencer-dashboard', label: 'Dashboard', d: dashboardSvg },
+                            { page: 'influencer-catalog', label: 'Katalog Produk', d: stokSvg1 },
+                            { page: 'influencer-videos',  label: 'Video Saya', d: transaksiSvg },
+                            { page: 'influencer-log',       label: 'Log Aktivitas', d: settingSvg },
+                        ],
         };
 
         const PAGE_META = {
@@ -809,7 +809,7 @@
             'influencer-dashboard': ['Dashboard Influencer'],
             'influencer-catalog':   ['Katalog Produk'],
             'influencer-videos':    ['Video Saya'],
-            'influencer-profile':   ['Profil Sosial'],
+            'influencer-log':       ['Log Aktivitas'],
             'influencer-monitor':   ['Monitor Influencer'],
         };
 
@@ -864,7 +864,7 @@
             'influencer-dashboard': renderInfluencerDashboard,
             'influencer-catalog':   renderInfluencerCatalog,
             'influencer-videos':    renderInfluencerVideos,
-            'influencer-profile':   renderInfluencerProfile,
+            'influencer-log':       renderInfluencerLog,
             'influencer-monitor':   renderInfluencerMonitor,
         };
 
@@ -4303,11 +4303,20 @@ async function renderInfluencerDashboard() {
     const c = document.getElementById('view-container');
     setLoading(c, 5);
     try {
-        const res = await API.influencer.dashboard(90);
+        const params = getDateFilterParams();
+        const res = await API.influencer.dashboard(params.hari || 90);
         const s = res.data;
 
         c.innerHTML = `<div class="space-y-6">
-            <p class="text-xs dark:text-zinc-500 text-zinc-400">Dashboard Influencer — Cabang ${STATE.user.cabang}</p>
+            <div class="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">Dashboard Influencer</h1>
+                    <p class="text-xs dark:text-zinc-500 text-zinc-400">Cabang ${STATE.user.cabang}</p>
+                </div>
+            </div>
+
+            <!-- DATE FILTER -->
+            ${renderDateFilter('renderInfluencerDashboard')}
 
             <!-- STAT CARDS -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -4322,7 +4331,7 @@ async function renderInfluencerDashboard() {
                 <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
                     <div>
                         <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 tracking-tight">Trend Views per Minggu</p>
-                        <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">90 hari terakhir</p>
+                        <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">${currentFilter.preset === 'custom' ? `${currentFilter.start} - ${currentFilter.end}` : `${currentFilter.preset === '7d' ? '7' : currentFilter.preset === '30d' ? '30' : currentFilter.preset === '90d' ? '90' : '365'} hari terakhir`}</p>
                     </div>
                 </div>
                 ${s.trend_views && s.trend_views.length > 0
@@ -4607,7 +4616,7 @@ function renderInfluencerVideosList(items) {
             <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 mb-1">${v.unit_label}</p>
             <p class="text-xs dark:text-zinc-500 text-zinc-400 mb-3">${v.unit_id}</p>
             <div class="divider mb-3"></div>
-            <div class="grid grid-cols-2 gap-2 text-center mb-3">
+            <div class="grid grid-cols-3 gap-2 text-center mb-3">
                 <div class="p-2 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">
                     <p class="text-lg font-bold dark:text-zinc-100 text-zinc-800">${v.views.toLocaleString('id-ID')}</p>
                     <p class="text-[10px] dark:text-zinc-500 text-zinc-400">Views</p>
@@ -4616,15 +4625,9 @@ function renderInfluencerVideosList(items) {
                     <p class="text-lg font-bold dark:text-zinc-100 text-zinc-800">${v.likes.toLocaleString('id-ID')}</p>
                     <p class="text-[10px] dark:text-zinc-500 text-zinc-400">Likes</p>
                 </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2 text-center mb-3">
                 <div class="p-2 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">
                     <p class="text-lg font-bold dark:text-zinc-100 text-zinc-800">${v.comments.toLocaleString('id-ID')}</p>
                     <p class="text-[10px] dark:text-zinc-500 text-zinc-400">Comments</p>
-                </div>
-                <div class="p-2 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">
-                    <p class="text-lg font-bold dark:text-zinc-100 text-zinc-800">${v.shares.toLocaleString('id-ID')}</p>
-                    <p class="text-[10px] dark:text-zinc-500 text-zinc-400">Shares</p>
                 </div>
             </div>
             <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mb-3">Upload: ${v.uploaded_at}</p>
@@ -4636,114 +4639,52 @@ function renderInfluencerVideosList(items) {
 }
 
 
-// ═══ INFLUENCER PROFILE (SOCIAL MEDIA SETTINGS) ═══
-async function renderInfluencerProfile() {
+// ═══ INFLUENCER LOG ═══
+async function renderInfluencerLog() {
     const c = document.getElementById('view-container');
-    setLoading(c, 3);
+    setLoading(c, 4);
     try {
-        // Get current profile
-        const res = await API.influencer.getProfile();
-        const profile = res.data;
+        const params = getDateFilterParams();
+        const list = (await API.influencer.listLog(params)).data;
         
-        c.innerHTML = `<div class="space-y-6 max-w-2xl">
-            <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold tracking-tight">Profil Sosial Media</h1>
-                <span class="text-xs dark:text-zinc-500 text-zinc-400">Isi username untuk auto-sync tiap jam</span>
-            </div>
-            
-            <div class="panel rounded-2xl p-6">
-                <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Informasi Akun</p>
-                <div class="space-y-3 text-sm">
-                    <div class="flex justify-between py-2 border-b border-divider">
-                        <span class="dark:text-zinc-500 text-zinc-400">Nama</span>
-                        <span class="font-medium dark:text-zinc-100 text-zinc-800">${profile.name}</span>
-                    </div>
-                    <div class="flex justify-between py-2 border-b border-divider">
-                        <span class="dark:text-zinc-500 text-zinc-400">Username</span>
-                        <span class="font-medium dark:text-zinc-100 text-zinc-800">@${profile.username}</span>
-                    </div>
-                    <div class="flex justify-between py-2 border-b border-divider">
-                        <span class="dark:text-zinc-500 text-zinc-400">Cabang</span>
-                        <span class="font-medium dark:text-zinc-100 text-zinc-800">${profile.cabang}</span>
-                    </div>
+        const actionColors = {
+            'Video': 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
+            'Upload': 'bg-blue-500/8 text-blue-400 border border-blue-500/15',
+            'Auto-Fetch': 'bg-teal-500/8 text-teal-400 border border-teal-500/15',
+            'TikTok': 'bg-pink-500/8 text-pink-400 border border-pink-500/15',
+            'Instagram': 'bg-purple-500/8 text-purple-400 border border-purple-500/15',
+            'Sync': 'bg-amber-500/8 text-amber-400 border border-amber-500/15',
+            'Influencer': 'bg-indigo-500/8 text-indigo-400 border border-indigo-500/15',
+        };
+        
+        c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-divider flex items-center justify-between flex-wrap gap-3">
+                <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Influencer</p>
+                <div class="flex items-center gap-3 flex-wrap">
+                    ${renderDateFilter('renderInfluencerLog')}
                 </div>
             </div>
-            
-            <div class="panel rounded-2xl p-6">
-                <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Social Media (untuk Auto-Sync)</p>
-                <p class="text-xs dark:text-zinc-500 text-zinc-400 mb-4">Sistem akan scrape feed tiap 1 jam dan update metrics otomatis. Isi username tanpa @.</p>
-                
-                <form id="form-social-profile" class="space-y-4">
-                    <div>
-                        <label class="label">TikTok Username</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-zinc-400">@</span>
-                            <input name="tiktok_username" type="text" class="${input} pl-8" placeholder="contoh: johndoe" value="${profile.tiktok_username || ''}">
+            <div>
+                ${list.length ? list.map(l=>`<div class="log-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">
+                    <div class="w-1.5 h-1.5 rounded-full dark:bg-zinc-600 bg-zinc-300 mt-2 flex-shrink-0"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2.5 flex-wrap">
+                            <span class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${l.user}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${actionColors[Object.keys(actionColors).find(k => l.aksi.includes(k))]||'dark:bg-zinc-800 bg-zinc-100 dark:text-zinc-500 text-zinc-400'}"> ${l.aksi}</span>
                         </div>
-                        <p class="text-[11px] dark:text-zinc-600 text-zinc-300 mt-1">URL: https://tiktok.com/@username</p>
+                        <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">${l.detail}</p>
                     </div>
-                    
-                    <div>
-                        <label class="label">Instagram Username</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-zinc-400">@</span>
-                            <input name="instagram_username" type="text" class="${input} pl-8" placeholder="contoh: johndoe" value="${profile.instagram_username || ''}">
-                        </div>
-                        <p class="text-[11px] dark:text-zinc-600 text-zinc-300 mt-1">URL: https://instagram.com/username</p>
-                    </div>
-                    
-                    <div>
-                        <label class="label">Facebook Page</label>
-                        <input name="facebook_page" type="text" class="${input}" placeholder="contoh: jayaphonestore" value="${profile.facebook_page || ''}">
-                        <p class="text-[11px] dark:text-zinc-600 text-zinc-300 mt-1">Nama page Facebook (bukan URL penuh). Contoh: jayaphonestore dari facebook.com/jayaphonestore</p>
-                    </div>
-                    
-                    <div class="flex gap-3 mt-6">
-                        <button type="submit" class="btn btn-primary flex-1">Simpan Social Media</button>
-                    </div>
-                </form>
-            </div>
-            
-            <div class="panel rounded-2xl p-6 bg-amber-500/8 border border-amber-500/20">
-                <p class="text-xs font-medium text-amber-800 dark:text-amber-200 mb-2">⚠️ Catatan Penting</p>
-                <ul class="text-xs text-amber-700 dark:text-amber-300 space-y-1 list-disc list-inside">
-                    <li>TikTok butuh env TIKTOK_MS_TOKEN di server (cookie dari browser)</li>
-                    <li>Instagram pakai public endpoint (rate limit ketat, bisa gagal)</li>
-                    <li>Facebook pakai facebook-scraper (public page only)</li>
-                    <li>Sync jalan tiap jam via cron job</li>
-                    <li>Unit auto-match dari caption/keywords di video</li>
-                </ul>
+                    <span class="text-[10px] dark:text-zinc-600 text-zinc-400 whitespace-nowrap flex-shrink-0">${l.waktu}</span>
+                </div>`).join('') : emptyState('Belum ada log aktivitas')}
             </div>
         </div>`;
-
-        // Form handler
-        document.getElementById('form-social-profile').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const fd = new FormData(e.target);
-            const payload = {
-                tiktok_username: fd.get('tiktok_username')?.trim() || null,
-                instagram_username: fd.get('instagram_username')?.trim() || null,
-                facebook_page: fd.get('facebook_page')?.trim() || null,
-            };
-            const btn = e.target.querySelector('button[type=submit]');
-            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
-            try {
-                await API.influencer.updateSocial(payload);
-                closeModalBtn();
-                showToast('Social media berhasil disimpan');
-                renderInfluencerProfile();
-            } catch (err) {
-                showToast(err.message, 'error');
-            } finally {
-                btn.innerHTML = 'Simpan Social Media'; btn.disabled = false;
-            }
-        });
-        
     } catch (e) {
-        c.innerHTML = errorState(e.message, 'renderInfluencerProfile()');
+        c.innerHTML = errorState(e.message, 'renderInfluencerLog()');
     }
 }
 
+
+// ═══ INFLUENCER MONITOR (OWNER ONLY) ═══
 async function renderInfluencerMonitor() {
     const c = document.getElementById('view-container');
     setLoading(c, 5);
@@ -5156,7 +5097,7 @@ function renderOwnerInfluencerVideosList(items) {
         window.renderInfluencerDashboard = renderInfluencerDashboard;
         window.renderInfluencerCatalog = renderInfluencerCatalog;
         window.renderInfluencerVideos = renderInfluencerVideos;
-        window.renderInfluencerProfile = renderInfluencerProfile;
+        window.renderInfluencerLog = renderInfluencerLog;
         window.renderInfluencerMonitor = renderInfluencerMonitor;
         window.renderTransferStok = renderTransferStok;
         window.renderTransferTable = renderTransferTable;

@@ -174,8 +174,7 @@ const API = {
     catalog:   (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/influencer/catalog${q?`?${q}`:''}`) },
     createVideo: (b) => request('POST', '/influencer/videos', b),
     listVideos:  (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/influencer/videos${q?`?${q}`:''}`) },
-    getProfile: () => request('GET', '/influencer/profile'),
-    updateSocial: (b) => request('PATCH', '/influencer/social', b),
+    listLog:     (p = {}) => { const q = new URLSearchParams(p).toString(); return request('GET', `/influencer/log${q?`?${q}`:''}`) },
     sync: () => request('POST', '/influencer/sync'),
   },
   ownerInfluencer: {

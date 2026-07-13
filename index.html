@@ -778,8 +778,10 @@
                 { page: 'customers',         label: 'Data Customer',     d: clientSvg },
             ],
             teknisi: [
-                { page: 'service-list', label: 'Data Service', d: settingSvg },
-            ],
+                           { page: 'service-list',    label: 'Data Service',       d: settingSvg },
+                           { page: 'request-sparepart', label: 'Request Sparepart', d: stokSvg2 },
+                           { page: 'teknisi-log',       label: 'Log Aktivitas',     d: settingSvg },
+                       ],
             'influencer': [
                             { page: 'influencer-dashboard', label: 'Dashboard', d: dashboardSvg },
                             { page: 'influencer-catalog', label: 'Katalog Produk', d: stokSvg1 },
@@ -804,6 +806,7 @@
             'tambah-unit':     ['Tambah Unit'],
             'customers':       ['Data Customer'],
             'service-list':    ['Data Service'],
+            'teknisi-log':       ['Log Aktivitas'],
             'request-sparepart': ['Request Sparepart'],
             'transfer-stok':     ['Transfer Stok Antar Cabang'],
             'influencer-dashboard': ['Dashboard Influencer'],
@@ -859,6 +862,7 @@
             'tambah-unit':     renderTambahUnit,
             'customers':       renderCustomers,
             'service-list':    renderServiceTeknisi,
+            'teknisi-log':       renderTeknisiLog,
             'request-sparepart': renderRequestSparepart,
             'transfer-stok':     renderTransferStok,
             'influencer-dashboard': renderInfluencerDashboard,
@@ -3132,6 +3136,48 @@ const svc = (await API.service.get(service_id)).data;
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Update Service'; btn.disabled = false; }
         }
 
+        // ═══ VIEW: TEKNISI LOG ═══
+        async function renderTeknisiLog() {
+            const c = document.getElementById('view-container');
+            setLoading(c, 4);
+            try {
+                const params = getDateFilterParams();
+                const list = (await API.log.list({ ...params, role_filter: 'teknisi' })).data;
+                
+                const actionColors = {
+                    'Service': 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
+                    'Update': 'bg-blue-500/8 text-blue-400 border border-blue-500/15',
+                    'Request': 'bg-amber-500/8 text-amber-400 border border-amber-500/15',
+                    'Sparepart': 'bg-purple-500/8 text-purple-400 border border-purple-500/15',
+                    'Teknisi': 'bg-indigo-500/8 text-indigo-400 border border-indigo-500/15',
+                };
+                
+                c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+                    <div class="px-6 py-4 border-b border-divider flex items-center justify-between flex-wrap gap-3">
+                        <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Teknisi</p>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            ${renderDateFilter('renderTeknisiLog')}
+                        </div>
+                    </div>
+                    <div>
+                        ${list.length ? list.map(l=>`<div class="log-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">
+                            <div class="w-1.5 h-1.5 rounded-full dark:bg-zinc-600 bg-zinc-300 mt-2 flex-shrink-0"></div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2.5 flex-wrap">
+                                    <span class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${l.user}</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${actionColors[Object.keys(actionColors).find(k => l.aksi.includes(k))]||'dark:bg-zinc-800 bg-zinc-100 dark:text-zinc-500 text-zinc-400'}"> ${l.aksi}</span>
+                                </div>
+                                <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">${l.detail}</p>
+                            </div>
+                            <span class="text-[10px] dark:text-zinc-600 text-zinc-400 whitespace-nowrap flex-shrink-0">${l.waktu}</span>
+                        </div>`).join('') : emptyState('Belum ada log aktivitas')}
+                    </div>
+                </div>`;
+            } catch (e) {
+                c.innerHTML = errorState(e.message, 'renderTeknisiLog()');
+            }
+        }
+
         // ═══ VIEW: APPROVAL REPAIR (Kasir / Owner) ═══
         // Endpoint: GET /service/pending-approval → list tiket status Selesai
         // Endpoint: POST /units/{unit_id}/approve-repair → set harga jual, unit ke Tersedia
@@ -5088,6 +5134,7 @@ function renderOwnerInfluencerVideosList(items) {
         window.renderServiceList = renderServiceList;
         window.renderServiceOwner = renderServiceOwner;
         window.renderServiceTeknisi = renderServiceTeknisi;
+        window.renderTeknisiLog = renderTeknisiLog;
         window.renderSpRepairKeranjang = renderSpRepairKeranjang;
         window.renderSparepart = renderSparepart;
         window.renderStok = renderStok;

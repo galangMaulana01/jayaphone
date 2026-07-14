@@ -1581,7 +1581,7 @@ function getKadaluarsaBadge(dateStr) {
             btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             btn.disabled = true;
             try {
-                payload: {
+                const payload = {
                                     kat_kode:       document.getElementById('u-kat').value,
                                     kondisi_kode:   document.getElementById('u-kondisi-kode').value,
                                     kondisi_hp,

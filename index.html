@@ -1846,9 +1846,6 @@ let _svcStatusFilter = '';
             } catch (e) { c.innerHTML = errorState(e.message, 'renderServiceOwner()'); }
         }
 
-        } catch (e) { c.innerHTML = errorState(e.message, 'renderServiceOwner()'); }
-        }
-
         // ═══ MODAL DETAIL SERVICE (Owner) ═══
         async function modalDetailService(service_id) {
             openModal(`${modalHeader('Detail Service', service_id)}<div class="flex items-center justify-center h-64"><span class="spinner"></span><span class="ml-2 text-xs dark:text-zinc-500 text-zinc-400">Memuat detail...</span></div>`);
@@ -3014,9 +3011,6 @@ const c = document.getElementById('view-container');
                 closeModalBtn();
                 modalStrukKasir(res.data);
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Konfirmasi Transaksi'; btn.disabled = false; }
-        }
-
-        } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Konfirmasi Transaksi'; btn.disabled = false; }
         }
 
         // ═══ MODAL DETAIL TRANSAKSI (Owner) ═══

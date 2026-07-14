@@ -298,7 +298,6 @@ var API = {
     get: function(id) { return request('GET', '/service/' + id); },
     update: function(id, b) { return request('PUT', '/service/' + id, b); },
     pendingApproval: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/service/pending-approval' + (q ? '?' + q : '')); },
-    addFotoUrl: function(id, url) { return request('POST', '/service/' + id + '/foto', { url: url }); },
     detail: function(id) { return request('GET', '/service/' + id + '/detail'); },
   },
   customers: {
@@ -331,7 +330,7 @@ var API = {
     cabangList: function() { return request('GET', '/transfer-stok/cabang-list'); },
   },
   influencer: {
-    dashboard: function(hari) { return request('GET', '/influencer/dashboard/stats?hari=' + (hari || 90)); },
+    dashboard: function(hari, platform) { var q = 'hari=' + (hari || 90); if (platform) q += '&platform=' + platform; return request('GET', '/influencer/dashboard/stats?' + q); },
     catalog: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/influencer/catalog' + (q ? '?' + q : '')); },
     createVideo: function(b) { return request('POST', '/influencer/videos', b); },
     listVideos: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/influencer/videos' + (q ? '?' + q : '')); },

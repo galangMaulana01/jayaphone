@@ -839,7 +839,12 @@
             ).join('');
 
             const ava = document.getElementById("avatar");
-            ava.innerHTML = avatarSvg
+            const foto = STATE.user?.foto_profil_url;
+            if (foto) {
+                ava.innerHTML = `<img src="${foto}" class="w-10 h-10 rounded-xl object-cover border dark:border-zinc-700 border-zinc-200" alt="Profile" />`;
+            } else {
+                ava.innerHTML = avatarSvg;
+            }
 
             navigate(activePage);
             NOTIF.start(); // mulai polling notifikasi
@@ -1663,6 +1668,7 @@ let _trxCabangFilter = '';
                 <th class="px-6 py-3.5 font-medium hidden md:table-cell">Modal</th>
                 <th class="px-6 py-3.5 font-medium">Profit</th>
                 <th class="px-6 py-3.5 font-medium hidden lg:table-cell">Waktu</th>
+                <th class="px-6 py-3.5 font-medium">Detail</th>
               </tr>
             </thead>
             <tbody>
@@ -1682,8 +1688,11 @@ let _trxCabangFilter = '';
                               <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(t.harga_modal)}</td>
                               <td class="px-6 py-4 font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
                               <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${t.waktu}</td>
+                              <td class="px-6 py-4 text-center">
+                                <button class="btn btn-ghost text-xs px-3 py-1" onclick="event.stopPropagation(); modalDetailTransaksi('${t.trx_id}')">Detail</button>
+                              </td>
                             </tr>
-                          `).join('') : `<tr><td colspan="7">${emptyState('Belum ada transaksi')}</td></tr>`}
+                          `).join('') : `<tr><td colspan="8">${emptyState('Belum ada transaksi')}</td></tr>`}
                         </tbody>
           </table>
         </div>
@@ -1956,7 +1965,7 @@ let _svcStatusFilter = '';
                   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     ${list.length ? list.map(k=>`<div class="panel rounded-2xl p-5 hover:-translate-y-0.5 transition-all duration-200">
                       <div class="flex items-start gap-3 mb-4">
-                        <div class="w-10 h-10 rounded-xl dark:bg-zinc-800 bg-zinc-100 flex items-center justify-center text-sm font-bold dark:text-zinc-300 text-zinc-600 flex-shrink-0">${k.nama[0]}</div>
+                        ${k.foto_profil_url ? `<img src="${k.foto_profil_url}" class="w-10 h-10 rounded-xl object-cover border dark:border-zinc-700 border-zinc-200 flex-shrink-0" alt="Profile" />` : `<div class="w-10 h-10 rounded-xl dark:bg-zinc-800 bg-zinc-100 flex items-center justify-center text-sm font-bold dark:text-zinc-300 text-zinc-600 flex-shrink-0">${k.nama[0]}</div>`}
                         <div class="flex-1 min-w-0">
                           <div class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 truncate tracking-tight">${k.nama}</div>
                           <span class="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium ${roleColors[k.jabatan]||'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'}">${k.jabatan}</span>
@@ -2655,6 +2664,7 @@ const c = document.getElementById('view-container');
             const c = document.getElementById('view-container');
             let units = [];
             try { units = (await API.units.list({ status: 'Tersedia' })).data; } catch {}
+            window._modalUnits = units;  // Expose ke global untuk modal & preview
             try { _spCache = (await API.sparepart.list({})).data; } catch {}
             _spKeranjang = [];
             _trxSelectedCustomer = null;
@@ -2679,7 +2689,7 @@ const c = document.getElementById('view-container');
                       <div class="flex gap-2">
                         <input id="trx-unit-id" type="text" class="${input} flex-1" placeholder="JYP-IP-BN-001"
                                                   oninput="previewUnitById(this.value, window._modalUnits)"/>
-                                                <button onclick="modalPilihUnit()" class="btn btn-ghost flex-shrink-0">Pilih</button>
+                                                <button onclick="modalPilihUnit(window._modalUnits || [])" class="btn btn-ghost flex-shrink-0">Pilih</button>
                       </div>
                     </div>
                     <div id="unit-preview" class="hidden panel rounded-xl p-4 border-divider">
@@ -3342,14 +3352,10 @@ const c = document.getElementById('view-container');
                       <span>${s.created_at}</span>
                     </div>
                   </div>
-                  ${showUpdateBtn
-                    ? `<button onclick="modalUpdateService('${s.service_id}')" class="btn btn-ghost flex-shrink-0" style="height:32px;padding:0 12px;font-size:0.6875rem;">Update</button>`
-                    : ''}
-                </div>
-                ${s.foto_urls && s.foto_urls.length ? `<div class="flex gap-2 mt-3 flex-wrap pt-3 border-t border-divider">
-                  ${s.foto_urls.map(p=>`<img src="${p}" class="w-14 h-14 rounded-xl object-cover border dark:border-zinc-800 border-zinc-200 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${p}')"/>`).join('')}
-                </div>` : ''}
-            </div>`;
+                                  ${showUpdateBtn
+                                      ? `<button onclick="modalUpdateService('${s.service_id}')" class="btn btn-ghost flex-shrink-0" style="height:32px;padding:0 12px;font-size:0.6875rem;">Update</button>`
+                                      : ''}
+                              </div>`;
             }).join('') + `</div>`;
         }
 
@@ -3405,15 +3411,8 @@ const c = document.getElementById('view-container');
                             <textarea id="svc-catatan" rows="3" class="${input} resize-none" style="height:auto;">${svc.catatan_kerusakan||''}</textarea></div>
                           <div><label class="label">Nama Teknisi</label>
                             <input id="svc-teknisi" type="text" class="${input}" value="${svc.teknisi||STATE.user?.name||''}" placeholder="Nama teknisi pengerjaan"/></div>
-                          <div>
-                            <label class="label">Tambah Foto (via URL)</label>
-                            <div class="flex gap-2">
-                              <input id="svc-foto-url" type="url" class="${input} flex-1" placeholder="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect fill='%23ddd' width='100' height='100'/><text x='50' y='55' text-anchor='middle' fill='%23999' font-size='12'>No Image</text></svg>"/>
-                              <button onclick="addFotoUrlService('${service_id}')" class="btn btn-ghost flex-shrink-0">Tambah</button>
-                            </div>
-                            <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">Upload foto ke ImgBB/Imgur lalu paste URL-nya.</p>
-                            ${svc.foto_urls && svc.foto_urls.length ? `<div class="flex gap-2 mt-2 flex-wrap">${svc.foto_urls.map(p=>`<img src="${p}" class="w-14 h-14 rounded-xl object-cover dark:border dark:border-zinc-800" onclick="window.open('${p}')" style="cursor:pointer;"/></div>`).join('')}` : ''}
-                          </div>
+                          <div><label class="label">Estimasi Selesai <span class="text-red-400" id="svc-estimasi-required">*</span></label>
+                            <input id="svc-estimasi" type="datetime-local" class="${input}" value="${svc.estimasi_selesai ? svc.estimasi_selesai.replace(' ', 'T') : ''}" placeholder="Wajib diisi saat status = Proses"/></div>
                         </div>
                         <button id="btn-update-svc" onclick="updateService('${service_id}')" class="btn btn-primary w-full mt-5">Update Service</button>`);
             } catch (e) {
@@ -3421,29 +3420,16 @@ const c = document.getElementById('view-container');
             }
         }
 
-        async function addFotoUrlService(service_id) {
-            const urlInput = document.getElementById('svc-foto-url');
-            const url = urlInput?.value?.trim();
-            if (!url) { showToast('URL foto tidak boleh kosong', 'error'); return; }
-            showToast('Menyimpan URL foto...', 'info');
-            try {
-                await API.service.addFotoUrl(service_id, url);
-                showToast('Foto berhasil ditambahkan');
-                closeModalBtn();
-                await modalUpdateService(service_id);
-            } catch (e) { showToast(e.message, 'error'); }
-        }
-
         async function updateService(service_id) {
             const btn = document.getElementById('btn-update-svc');
             btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
-            btn.disabled = true;
             try {
                 const svc = (await API.service.get(service_id)).data;
                 const payload = {
                     status:            document.getElementById('svc-status').value,
                     catatan_kerusakan: document.getElementById('svc-catatan').value,
                     teknisi:           document.getElementById('svc-teknisi').value || undefined,
+                    estimasi_selesai:  document.getElementById('svc-estimasi').value || undefined,
                 };
                 // Add before/after photos if status is changing
                 if (svc.status === 'Antrian' && payload.status === 'Proses') {
@@ -4677,7 +4663,8 @@ async function renderInfluencerDashboard() {
     setLoading(c, 5);
     try {
         const params = getDateFilterParams();
-        const res = await API.influencer.dashboard(params.hari || 90);
+        const platform = _infDashFilter?.platform || '';
+        const res = await API.influencer.dashboard(params.hari || 90, platform);
         const s = res.data;
 
         c.innerHTML = `<div class="space-y-6">
@@ -4690,6 +4677,16 @@ async function renderInfluencerDashboard() {
 
             <!-- DATE FILTER -->
             ${renderDateFilter('renderInfluencerDashboard')}
+            <!-- PLATFORM FILTER -->
+            <div class="flex items-center gap-2 mt-2">
+                <span class="text-xs dark:text-zinc-500 text-zinc-400">Platform:</span>
+                <select id="inf-platform-filter" class="bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs font-medium dark:text-zinc-300 text-zinc-600 outline-none" onchange="_infDashFilter={platform:this.value};renderInfluencerDashboard()">
+                    <option value="">Semua</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="youtube">YouTube</option>
+                </select>
+            </div>
 
             <!-- STAT CARDS -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -5018,6 +5015,8 @@ async function renderInfluencerLog() {
     setLoading(c, 4);
     try {
         const params = getDateFilterParams();
+        const platform = _infLogFilter?.platform || '';
+        if (platform) params.platform = platform;
         const list = (await API.influencer.listLog(params)).data;
         
         const actionColors = {
@@ -5035,6 +5034,16 @@ async function renderInfluencerLog() {
                 <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Influencer</p>
                 <div class="flex items-center gap-3 flex-wrap">
                     ${renderDateFilter('renderInfluencerLog')}
+                    <!-- PLATFORM FILTER -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs dark:text-zinc-500 text-zinc-400">Platform:</span>
+                        <select id="inf-log-platform-filter" class="bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs font-medium dark:text-zinc-300 text-zinc-600 outline-none" onchange="_infLogFilter={platform:this.value};renderInfluencerLog()">
+                            <option value="">Semua</option>
+                            <option value="tiktok">TikTok</option>
+                            <option value="instagram">Instagram</option>
+                            <option value="youtube">YouTube</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div>
@@ -5081,8 +5090,8 @@ async function renderInfluencerMonitor() {
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 ${statCard('Total Influencer', dash.total_influencers, 'aktif', 'blue')}
                 ${statCard('Total Video', dash.total_videos, 'semua cabang', 'green')}
-                ${statCard('Total Views', dash.total_views.toLocaleString('id-ID'), 'gabungan', 'red')}
-                ${statCard('Total Likes', dash.total_likes.toLocaleString('id-ID'), 'gabungan', 'purple')}
+                ${statCard('Total Views', (dash.total_views||0).toLocaleString('id-ID'), 'gabungan', 'red')}
+                ${statCard('Total Likes', (dash.total_likes||0).toLocaleString('id-ID'), 'gabungan', 'purple')}
             </div>
 
             <!-- BY CABANG -->
@@ -5100,7 +5109,7 @@ async function renderInfluencerMonitor() {
                             </tr>
                         </thead>
                         <tbody>
-                            ${dash.by_cabang.map(b => `
+                            ${(dash.by_cabang||[]).map(b => `
                                 <tr class="tbl-row">
                                     <td class="px-5 py-4 font-medium dark:text-zinc-100 text-zinc-800">${b.cabang}</td>
                                     <td class="px-5 py-4 text-center">${b.video_count}</td>
@@ -5124,7 +5133,7 @@ async function renderInfluencerMonitor() {
                     </select>
                 </div>
                 <div class="space-y-3">
-                    ${dash.top_influencers.map((inf, i) => `
+                    ${(dash.top_influencers||[]).map((inf, i) => `
                         <div class="flex items-center gap-3 p-3 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50 hover:dark:bg-zinc-800 hover:bg-zinc-100 transition-colors">
                             <span class="w-8 text-center font-bold text-sm dark:text-zinc-400 text-zinc-500">${i+1}</span>
                             <div class="flex-1 min-w-0">

@@ -69,7 +69,7 @@ async function iuHandleFiles(id, files) {
     bar.style.width = '10%';
     try {
       // Upload via backend
-      var result = await uploadFile('/api/v1/upload/image', file);
+      var result = await uploadFile('/upload/image', file);
       var url = result.secure_url;
       bar.style.width = '100%';
       window._uploads[id] = window._uploads[id] || [];
@@ -227,6 +227,9 @@ async function uploadFiles(path, files, uploadType, options) {
   if (options.contextValue) fd.append('context_value', options.contextValue);
 
   var fullPath = BASE_URL + path;
+  if (BASE_URL.startsWith('http') && !BASE_URL.includes('/api/v1')) {
+    fullPath = BASE_URL + '/api/v1' + path;
+  }
   var controller = new AbortController();
   var timer = setTimeout(function() { controller.abort(); }, 120000); // 2 min for multi-upload
 
@@ -341,9 +344,9 @@ var API = {
     listInfluencers: function() { return request('GET', '/influencer/owner/influencers'); },
   },
   upload: {
-    image: function(file) { return uploadFile('/api/v1/upload/image', file); },
-    images: function(files, uploadType, options) { return uploadFiles('/api/v1/upload/images', files, uploadType, options); },
-    delete: function(publicId) { return uploadFile('/api/v1/upload/image', new Blob([publicId], {type: 'application/json'})); },
+    image: function(file) { return uploadFile('/upload/image', file); },
+    images: function(files, uploadType, options) { return uploadFiles('/upload/images', files, uploadType, options); },
+    delete: function(publicId) { return uploadFile('/upload/image', new Blob([publicId], {type: 'application/json'})); },
   },
 };
 

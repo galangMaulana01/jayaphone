@@ -2919,6 +2919,9 @@ const c = document.getElementById('view-container');
 
         // Cache unit list untuk search
         let _modalUnits = [];
+        let _infDashFilter = {};
+        let _infLogFilter = {};
+        let _owner_inf_videos_all = [];
 
         function modalPilihUnit(units) {
             _modalUnits = units || window._modalUnits || [];

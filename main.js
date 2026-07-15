@@ -42,16 +42,73 @@ function imageUploaderHTML(cfg) {
     '    <span>Pilih dari Galeri</span>' +
     '  </label>' +
     '  <input id="iu-file-gallery-' + id + '" type="file" accept="image/*" ' + multiple + ' class="hidden" onchange="iuHandleFiles(\'' + id + '\', this.files)" />' +
-    '  <label for="iu-file-camera-' + id + '" class="btn btn-ghost w-full justify-start">' +
+    '  <button type="button" class="btn btn-ghost w-full justify-start" onclick="iuOpenCamera(\'' + id + '\')">' +
     '    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="12" r="4"/></svg>' +
     '    <span>Ambil Foto dengan Kamera</span>' +
-    '  </label>' +
-    '  <input id="iu-file-camera-' + id + '" type="file" accept="image/*,android/allowCamera" ' + multiple + ' class="hidden" onchange="iuHandleFiles(\'' + id + '\', this.files)" />' +
+    '  </button>' +
     '</div>' +
     (cfg.helper ? '<p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">' + cfg.helper + '</p>' : '') +
     '  <div class="iu-preview grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2" id="iu-preview-' + id + '"></div>' +
     '  <div class="iu-progress hidden mt-2"><div class="h-1 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden"><div class="iu-bar h-full bg-[#4FD1C5] transition-all" style="width:0%"></div></div></div>' +
     '</div>';
+}
+
+// ===== LIVE CAMERA CAPTURE (getUserMedia) =====
+// Standar web reliable, gak gantung ke behavior file-input camera OS/browser tertentu.
+async function iuOpenCamera(id) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('Browser tidak mendukung akses kamera langsung', 'error');
+    return;
+  }
+
+  var overlay = document.createElement('div');
+  overlay.id = 'iu-camera-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:200;background:#000;display:flex;flex-direction:column;';
+  overlay.innerHTML =
+    '<div style="flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">' +
+    '  <video id="iu-camera-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;"></video>' +
+    '</div>' +
+    '<div style="display:flex;gap:12px;padding:16px;justify-content:center;background:#111;">' +
+    '  <button id="iu-camera-cancel" type="button" class="btn btn-ghost" style="color:#fff;border-color:#555;">Batal</button>' +
+    '  <button id="iu-camera-shot" type="button" class="btn" style="background:#4FD1C5;color:#000;font-weight:600;padding:0 24px;">Ambil Foto</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  var stream = null;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } },
+      audio: false
+    });
+  } catch (e) {
+    overlay.remove();
+    showToast('Tidak bisa akses kamera: ' + (e.message || e.name), 'error');
+    return;
+  }
+
+  var video = document.getElementById('iu-camera-video');
+  video.srcObject = stream;
+
+  function closeCamera() {
+    stream.getTracks().forEach(function (t) { t.stop(); });
+    overlay.remove();
+  }
+
+  document.getElementById('iu-camera-cancel').onclick = closeCamera;
+  document.getElementById('iu-camera-shot').onclick = function () {
+    var canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    canvas.toBlob(function (blob) {
+      closeCamera();
+      if (!blob) { showToast('Gagal mengambil foto', 'error'); return; }
+      var file = new File([blob], 'camera-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+      var dt = new DataTransfer();
+      dt.items.add(file);
+      iuHandleFiles(id, dt.files);
+    }, 'image/jpeg', 0.9);
+  };
 }
 
 // Handle file selection -> upload via BACKEND -> render preview

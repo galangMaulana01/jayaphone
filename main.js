@@ -10,6 +10,8 @@ var Token = {
     if (t) h.Authorization = 'Bearer ' + t;
     return h;
   },
+  // NOTE: For production, consider migrating to httpOnly cookie-based auth
+  // to prevent XSS token theft. This requires backend changes to set/clear cookies.
 };
 
 // Store uploaded URLs per uploader id: window._uploads[id] = [url1, url2, ...]
@@ -134,7 +136,7 @@ async function request(method, path, body) {
   }
 
   var controller = new AbortController();
-  var timer = setTimeout(function() { controller.abort(); }, 15000);
+  var timer = setTimeout(function() { controller.abort(); }, 30000);
   var opts2 = Object.assign({}, opts, { signal: controller.signal });
 
   var res;
@@ -143,7 +145,7 @@ async function request(method, path, body) {
   } catch (err) {
     clearTimeout(timer);
     if (err.name === 'AbortError') {
-      throw new APIError(0, 'Request timeout (>15 detik). Server cold start, coba lagi.');
+      throw new APIError(0, 'Request timeout (>30 detik). Server cold start, coba lagi.');
     }
     throw new APIError(0, 'Tidak dapat terhubung ke server. Periksa koneksi internet.');
   }
@@ -184,7 +186,7 @@ async function uploadFile(path, file) {
     fullPath = BASE_URL + '/api/v1' + path;
   }
   var controller = new AbortController();
-  var timer = setTimeout(function() { controller.abort(); }, 15000);
+  var timer = setTimeout(function() { controller.abort(); }, 60000);
   var res;
   try {
     res = await fetch(fullPath, {

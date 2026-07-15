@@ -5026,8 +5026,17 @@ function renderInfluencerVideosList(items) {
                 <span class="badge badge-${v.platform}">${v.platform}</span>
                 <span class="text-xs dark:text-zinc-500 text-zinc-400">${v.video_id}</span>
             </div>
+            ${v.thumbnail_url ? `
+                <div class="aspect-video mb-3 rounded-xl overflow-hidden border dark:border-zinc-700 border-zinc-200">
+                    <img src="${v.thumbnail_url}" class="w-full h-full object-cover" alt="Thumbnail" loading="lazy" />
+                </div>
+            ` : ''}
             <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 mb-1">${v.unit_label}</p>
             <p class="text-xs dark:text-zinc-500 text-zinc-400 mb-3">${v.unit_id}</p>
+            ${v.description ? `
+                <div class="divider mb-3"></div>
+                <p class="text-xs dark:text-zinc-400 text-zinc-500 line-clamp-2 mb-3" title="${v.description.replace(/"/g, '"')}">${v.description}</p>
+            ` : ''}
             <div class="divider mb-3"></div>
             <div class="grid grid-cols-3 gap-2 text-center mb-3">
                 <div class="p-2 rounded-xl dark:bg-zinc-800/50 bg-zinc-100/50">

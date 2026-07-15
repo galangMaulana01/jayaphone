@@ -37,15 +37,15 @@ function imageUploaderHTML(cfg) {
   return '<div class="img-uploader" data-id="' + id + '" data-folder="' + folder + '" data-max="' + max + '">' +
     '<label class="label">' + (cfg.label || 'Upload Foto') + (cfg.required ? '<span class="text-red-400">*</span>' : '') + '</label>' +
     '<div class="space-y-2">' +
-    '  <button type="button" class="btn btn-ghost w-full justify-start" onclick="document.getElementById(\'iu-file-gallery-' + id + '\').click()">' +
+    '  <label for="iu-file-gallery-' + id + '" class="btn btn-ghost w-full justify-start">' +
     '    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 17"/></svg>' +
     '    <span>Pilih dari Galeri</span>' +
-    '  </button>' +
+    '  </label>' +
     '  <input id="iu-file-gallery-' + id + '" type="file" accept="image/*" ' + multiple + ' class="hidden" onchange="iuHandleFiles(\'' + id + '\', this.files)" />' +
-    '  <button type="button" class="btn btn-ghost w-full justify-start" onclick="document.getElementById(\'iu-file-camera-' + id + '\').click()">' +
+    '  <label for="iu-file-camera-' + id + '" class="btn btn-ghost w-full justify-start">' +
     '    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="12" r="4"/></svg>' +
     '    <span>Ambil Foto dengan Kamera</span>' +
-    '  </button>' +
+    '  </label>' +
     '  <input id="iu-file-camera-' + id + '" type="file" accept="image/*" capture="environment" ' + multiple + ' class="hidden" onchange="iuHandleFiles(\'' + id + '\', this.files)" />' +
     '</div>' +
     (cfg.helper ? '<p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">' + cfg.helper + '</p>' : '') +

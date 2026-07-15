@@ -46,7 +46,7 @@ function imageUploaderHTML(cfg) {
     '    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="12" r="4"/></svg>' +
     '    <span>Ambil Foto dengan Kamera</span>' +
     '  </label>' +
-    '  <input id="iu-file-camera-' + id + '" type="file" accept="image/*" capture ' + multiple + ' class="hidden" onchange="iuHandleFiles(\'' + id + '\', this.files)" />' +
+    '  <input id="iu-file-camera-' + id + '" type="file" accept="image/*" ' + multiple + ' class="hidden" onchange="iuHandleFiles(\'' + id + '\', this.files)" />' +
     '</div>' +
     (cfg.helper ? '<p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1.5">' + cfg.helper + '</p>' : '') +
     '  <div class="iu-preview grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2" id="iu-preview-' + id + '"></div>' +

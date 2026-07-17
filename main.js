@@ -395,6 +395,17 @@ var API = {
     notifPending: function() { return request('GET', '/transfer-stok/notif/pending'); },
     cabangList: function() { return request('GET', '/transfer-stok/cabang-list'); },
   },
+  cod: {
+    list: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/cod' + (q ? '?' + q : '')); },
+    detail: function(id) { return request('GET', '/cod/' + id); },
+    kurirDashboard: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/cod/kurir/dashboard' + (q ? '?' + q : '')); },
+    kurirList: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/cod/kurir-list' + (q ? '?' + q : '')); },
+    kurirAccept: function(id) { return request('POST', '/cod/kurir/' + id + '/accept'); },
+    kurirReject: function(id) { return request('POST', '/cod/kurir/' + id + '/reject'); },
+    kurirUpdateStatus: function(id, status, note) { return request('POST', '/cod/kurir/' + id + '/status', { status: status, note: note }); },
+    kurirInputStok: function(b) { return request('POST', '/cod/kurir/input-stok', b); },
+    kurirLog: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/cod/kurir/log' + (q ? '?' + q : '')); },
+  },
   influencer: {
     dashboard: function(hari, platform) { var q = 'hari=' + (hari || 90); if (platform) q += '&platform=' + platform; return request('GET', '/influencer/dashboard/stats?' + q); },
     catalog: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/influencer/catalog' + (q ? '?' + q : '')); },

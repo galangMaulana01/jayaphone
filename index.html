@@ -828,6 +828,11 @@
                             { page: 'influencer-videos',  label: 'Video Saya', d: transaksiSvg },
                             { page: 'influencer-log',       label: 'Log Aktivitas', d: settingSvg },
                         ],
+            kurir: [
+                            { page: 'kurir-dashboard',  label: 'Dashboard COD', d: dashboardSvg },
+                            { page: 'kurir-input-stok', label: 'Input Stok', d: plusSvg },
+                            { page: 'kurir-log',        label: 'Log Aktivitas', d: logSvg },
+                        ],
         };
 
         const PAGE_META = {
@@ -854,6 +859,9 @@
             'influencer-videos':    ['Video Saya'],
             'influencer-log':       ['Log Aktivitas'],
             'influencer-monitor':   ['Monitor Influencer'],
+            'kurir-dashboard':  ['Dashboard COD'],
+            'kurir-input-stok': ['Input Stok (Kurir)'],
+            'kurir-log':        ['Log Aktivitas Kurir'],
         };
 
         // ── SHOW APP ──
@@ -915,6 +923,9 @@
             'influencer-videos':    renderInfluencerVideos,
             'influencer-log':       renderInfluencerLog,
             'influencer-monitor':   renderInfluencerMonitor,
+            'kurir-dashboard':  renderKurirDashboard,
+            'kurir-input-stok': renderKurirInputStok,
+            'kurir-log':        renderKurirLog,
         };
 
         function navigate(page) {
@@ -5267,6 +5278,350 @@ function renderOwnerInfluencerVideosList(items) {
             <a href="${v.url}" target="_blank" class="btn btn-primary w-full text-xs">Buka Video</a>
         </div>
     `).filter(Boolean).join(''); // ← Backtick dipindah ke sini
+}
+
+// ════════════════════════════════════════════════════════════════
+//  KURIR VIEWS
+// ════════════════════════════════════════════════════════════════
+
+async function renderKurirDashboard() {
+    const c = document.getElementById('view-container');
+    setLoading(c, 4);
+    try {
+        const res = await API.cod.list({ kurir: true });
+        const cods = res.data || [];
+        
+        const statusColors = {
+            menunggu_kurir: 'bg-amber-500/8 text-amber-400 border border-amber-500/15',
+            diterima: 'bg-blue-500/8 text-blue-400 border border-blue-500/15',
+            kurir_menuju_lokasi: 'bg-indigo-500/8 text-indigo-400 border border-indigo-500/15',
+            sudah_bertemu_penjual: 'bg-purple-500/8 text-purple-400 border border-purple-500/15',
+            input_stok: 'bg-teal-500/8 text-teal-400 border border-teal-500/15',
+            selesai: 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
+            ditolak: 'bg-red-500/8 text-red-400 border border-red-500/15',
+            barang_akan_dijemput: 'bg-amber-500/8 text-amber-400 border border-amber-500/15',
+            barang_sudah_diambil: 'bg-blue-500/8 text-blue-400 border border-blue-500/15',
+            kurir_menuju_lokasi_pembeli: 'bg-indigo-500/8 text-indigo-400 border border-indigo-500/15',
+            kurir_sedang_transaksi: 'bg-purple-500/8 text-purple-400 border border-purple-500/15',
+            transaksi_berhasil: 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
+            gagal: 'bg-red-500/8 text-red-400 border border-red-500/15',
+        };
+        
+        const statusLabels = {
+            menunggu_kurir: 'Menunggu Kurir',
+            diterima: 'Diterima',
+            kurir_menuju_lokasi: 'Kurir Menuju Lokasi',
+            sudah_bertemu_penjual: 'Sudah Bertemu Penjual',
+            input_stok: 'Input Stok',
+            selesai: 'Selesai',
+            ditolak: 'Ditolak',
+            barang_akan_dijemput: 'Barang Akan Dijemput',
+            barang_sudah_diambil: 'Barang Sudah Diambil',
+            kurir_menuju_lokasi_pembeli: 'Kurir Menuju Lokasi Pembeli',
+            kurir_sedang_transaksi: 'Kurir Sedang Transaksi',
+            transaksi_berhasil: 'Transaksi Berhasil',
+            gagal: 'Gagal',
+        };
+        
+        c.innerHTML = `<div class="space-y-6">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">Dashboard COD</h1>
+                    <p class="text-xs dark:text-zinc-500 text-zinc-400">Cabang ${STATE.user.cabang}</p>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto rounded-2xl border dark:border-zinc-700 border-zinc-200">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+                            <th class="px-5 py-3.5 font-medium">Waktu</th>
+                            <th class="px-5 py-3.5 font-medium">Tipe</th>
+                            <th class="px-5 py-3.5 font-medium">Status</th>
+                            <th class="px-5 py-3.5 font-medium">Lokasi</th>
+                            <th class="px-5 py-3.5 font-medium">WA Penjual/Pembeli</th>
+                            <th class="px-5 py-3.5 font-medium">Screenshot</th>
+                            <th class="px-5 py-3.5 font-medium text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${cods.length ? cods.map(cod => `
+                            <tr class="tbl-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">
+                                <td class="px-5 py-4 whitespace-nowrap text-[10px] dark:text-zinc-600 text-zinc-400">${cod.created_at}</td>
+                                <td class="px-5 py-4">
+                                    <span class="badge badge-${cod.type}">${cod.type === 'beli' ? 'Beli' : 'Jual'}</span>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${statusColors[cod.status] || 'dark:bg-zinc-800 bg-zinc-100 dark:text-zinc-500 text-zinc-400'}">
+                                        ${statusLabels[cod.status] || cod.status}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4 text-xs dark:text-zinc-300 text-zinc-700 max-w-xs truncate">${cod.location}</td>
+                                <td class="px-5 py-4 text-xs dark:text-zinc-300 text-zinc-700 font-mono">${cod.wa_number}</td>
+                                <td class="px-5 py-4">
+                                    <img src="${cod.screenshot_url}" class="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" alt="Screenshot" onclick="window.open('${cod.screenshot_url}', '_blank')" />
+                                </td>
+                                <td class="px-5 py-4 text-center">
+                                    ${cod.status === 'menunggu_kurir' ? `
+                                        <button class="btn btn-primary text-xs px-3 py-1.5 mr-1" onclick="kurirAccept('${cod.cod_id}')">Terima</button>
+                                        <button class="btn btn-ghost text-xs px-3 py-1.5 text-red-500 border-red-500" onclick="kurirReject('${cod.cod_id}')">Tolak</button>
+                                    ` : cod.status === 'sudah_bertemu_penjual' ? `
+                                        <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirGoInputStok('${cod.cod_id}')">Input Stok</button>
+                                    ` : cod.status === 'barang_sudah_diambil' ? `
+                                        <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'kurir_sedang_transaksi')">Transaksi</button>
+                                    ` : cod.status === 'kurir_sedang_transaksi' ? `
+                                        <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'transaksi_berhasil')">Selesai</button>
+                                        <button class="btn btn-ghost text-xs px-3 py-1.5 text-red-500 border-red-500" onclick="kurirUpdateStatus('${cod.cod_id}', 'gagal')">Gagal</button>
+                                    ` : '<span class="text-[10px] dark:text-zinc-500 text-zinc-400">-</span>'
+                                }
+                            </td>
+                        </tr>
+                        `).join('') : `
+                            <tr>
+                                <td colspan="7" class="px-5 py-12 text-center text-xs dark:text-zinc-500 text-zinc-400">Tidak ada COD request</td>
+                            </tr>
+                        `}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+    } catch (e) {
+        c.innerHTML = errorState(e.message, 'renderKurirDashboard()');
+    }
+}
+
+async function kurirAccept(cod_id) {
+    try {
+        await API.cod.kurirAccept(cod_id);
+        showToast('COD diterima');
+        renderKurirDashboard();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function kurirReject(cod_id) {
+    if (!confirm('Tolak COD ini?')) return;
+    try {
+        await API.cod.kurirReject(cod_id);
+        showToast('COD ditolak');
+        renderKurirDashboard();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function kurirGoInputStok(cod_id) {
+    // Navigate to input stok page with COD context
+    navigate('kurir-input-stok');
+    // Store COD ID for context
+    localStorage.setItem('kurir_cod_context', cod_id);
+}
+
+async function kurirUpdateStatus(cod_id, status) {
+    try {
+        await API.cod.kurirUpdateStatus(cod_id, status);
+        showToast('Status diperbarui');
+        renderKurirDashboard();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+// ═══ INPUT STOK (KURIK) ═══
+async function renderKurirInputStok() {
+    const c = document.getElementById('view-container');
+    const codContext = localStorage.getItem('kurir_cod_context');
+    
+    // Fetch unit categories for dropdown
+    let units = [];
+    try {
+        const res = await API.units.list({ status: 'Tersedia', limit: 500 });
+        units = res.data || [];
+    } catch (e) {
+        console.error(e);
+    }
+    
+    const merkOptions = [...new Set(units.map(u => u.merk))].map(m => `<option value="${m}">${m}</option>`).join('');
+    
+    c.innerHTML = `<div class="space-y-6 max-w-3xl mx-auto">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Input Stok (Kurir)</h1>
+                <p class="text-xs dark:text-zinc-500 text-zinc-400">Isi data HP hasil COD Beli. Harga diisi oleh Kasir.</p>
+            </div>
+        </div>
+        
+        <div class="panel rounded-2xl p-6 space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="label">IMEI <span class="text-red-400">*</span></label>
+                    <input id="si-imei" type="text" class="input" placeholder="Contoh: 351234567890123" maxlength="15" />
+                </div>
+                <div>
+                    <label class="label">Merk <span class="text-red-400">*</span></label>
+                    <select id="si-merk" class="input">
+                        <option value="">Pilih Merk</option>
+                        ${merkOptions}
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Tipe <span class="text-red-400">*</span></label>
+                    <input id="si-tipe" type="text" class="input" placeholder="Contoh: iPhone 13 Pro" />
+                </div>
+                <div>
+                    <label class="label">RAM <span class="text-red-400">*</span></label>
+                    <select id="si-ram" class="input">
+                        <option value="4GB">4GB</option>
+                        <option value="6GB">6GB</option>
+                        <option value="8GB">8GB</option>
+                        <option value="12GB">12GB</option>
+                        <option value="16GB">16GB</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Storage <span class="text-red-400">*</span></label>
+                    <select id="si-storage" class="input">
+                        <option value="64GB">64GB</option>
+                        <option value="128GB">128GB</option>
+                        <option value="256GB">256GB</option>
+                        <option value="512GB">512GB</option>
+                        <option value="1TB">1TB</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Warna <span class="text-red-400">*</span></label>
+                    <input id="si-warna" type="text" class="input" placeholder="Contoh: Graphite" />
+                </div>
+                <div>
+                    <label class="label">Kondisi <span class="text-red-400">*</span></label>
+                    <select id="si-kondisi" class="input">
+                        <option value="BN">BN (Baru Normal)</option>
+                        <option value="MN">MN (Minus Normal)</option>
+                        <option value="EX">EX (Ex Internal)</option>
+                        <option value="RJ">RJ (Reject)</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="label">Baterai (%)</label>
+                    <input id="si-baterai" type="number" class="input" placeholder="Contoh: 95" min="0" max="100" />
+                </div>
+                <div class="md:col-span-2">
+                    <label class="label">Kelengkapan</label>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="flex items-center gap-1.5 text-xs"><input type="checkbox" value="Charger" class="si-kelengkapan" /> Charger</label>
+                        <label class="flex items-center gap-1.5 text-xs"><input type="checkbox" value="Earphone" class="si-kelengkapan" /> Earphone</label>
+                        <label class="flex items-center gap-1.5 text-xs"><input type="checkbox" value="Box" class="si-kelengkapan" /> Box</label>
+                        <label class="flex items-center gap-1.5 text-xs"><input type="checkbox" value="Kartu Garansi" class="si-kelengkapan" /> Kartu Garansi</label>
+                        <label class="flex items-center gap-1.5 text-xs"><input type="checkbox" value="Lainnya" class="si-kelengkapan" /> Lainnya</label>
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="label">Catatan</label>
+                    <textarea id="si-catatan" class="input min-h-[80px]" placeholder="Catatan tambahan..."></textarea>
+                </div>
+            </div>
+            
+            <div class="flex gap-3 pt-4 border-t border-divider">
+                <button class="btn btn-ghost flex-1" onclick="history.back()">Kembali</button>
+                <button class="btn btn-primary flex-1" onclick="saveKurirInputStok()">Simpan Stok</button>
+            </div>
+        </div>
+    </div>`;
+    } catch (e) {
+        c.innerHTML = errorState(e.message, 'renderKurirInputStok()');
+    }
+}
+
+async function saveKurirInputStok() {
+    const imei = document.getElementById('si-imei').value.trim();
+    const merk = document.getElementById('si-merk').value;
+    const tipe = document.getElementById('si-tipe').value.trim();
+    const ram = document.getElementById('si-ram').value;
+    const storage = document.getElementById('si-storage').value;
+    const warna = document.getElementById('si-warna').value.trim();
+    const kondisi = document.getElementById('si-kondisi').value;
+    const baterai = document.getElementById('si-baterai').value;
+    const kelengkapan = Array.from(document.querySelectorAll('.si-kelengkapan:checked')).map(cb => cb.value);
+    const catatan = document.getElementById('si-catatan').value.trim();
+    
+    if (!imei || !merk || !tipe || !ram || !storage || !warna || !kondisi) {
+        showToast('Field wajib (*) harus diisi', 'error');
+        return;
+    }
+    
+    const btn = event.target;
+    btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+    btn.disabled = true;
+    
+    try {
+        const payload = {
+            imei, merk, tipe, ram, storage, warna, kondisi,
+            baterai: baterai ? parseInt(baterai) : null,
+            kelengkapan,
+            catatan,
+            created_by_role: 'Kurir',
+            harga_beli: null,
+            harga_jual: null,
+        };
+        
+        await API.units.create(payload);
+        showToast('Stok berhasil ditambahkan. Serahkan ke Kasir untuk input harga.');
+        
+        // Clear COD context
+        localStorage.removeItem('kurir_cod_context');
+        
+        // Navigate back to dashboard
+        renderKurirDashboard();
+    } catch (e) {
+        showToast(e.message, 'error');
+        btn.innerHTML = 'Simpan Stok';
+        btn.disabled = false;
+    }
+}
+
+// ═══ LOG KURIR ═══
+async function renderKurirLog() {
+    const c = document.getElementById('view-container');
+    setLoading(c, 4);
+    try {
+        const params = getDateFilterParams();
+        const list = (await API.log.list(params)).data || [];
+        
+        const actionColors = {
+            'Buat COD Request': 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
+            'Update COD Status': 'bg-blue-500/8 text-blue-400 border border-blue-500/15',
+            'COD Request Diterima': 'bg-blue-500/8 text-blue-400 border border-blue-500/15',
+            'COD Request Ditolak': 'bg-red-500/8 text-red-400 border border-red-500/15',
+            'Input Stok (Kurir)': 'bg-teal-500/8 text-teal-400 border border-teal-500/15',
+        };
+        
+        c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-divider flex items-center justify-between flex-wrap gap-3">
+                <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Kurir</p>
+                <div class="flex items-center gap-3 flex-wrap">
+                    ${renderDateFilter('renderKurirLog')}
+                </div>
+            </div>
+            <div>
+                ${list.length ? list.map(l => `
+                    <div class="log-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">
+                        <div class="w-1.5 h-1.5 rounded-full dark:bg-zinc-600 bg-zinc-300 mt-2 flex-shrink-0"></div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2.5 flex-wrap">
+                                <span class="text-xs font-medium dark:text-zinc-200 text-zinc-700">${l.user}</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${actionColors[l.aksi] || 'dark:bg-zinc-800 bg-zinc-100 dark:text-zinc-500 text-zinc-400'}"> ${l.aksi}</span>
+                            </div>
+                            <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-0.5">${l.detail}</p>
+                        </div>
+                        <span class="text-[10px] dark:text-zinc-600 text-zinc-400 whitespace-nowrap flex-shrink-0">${l.waktu}</span>
+                    </div>
+                `).join('') : emptyState('Belum ada log aktivitas')}
+            </div>
+        </div>`;
+    } catch (e) {
+        c.innerHTML = errorState(e.message, 'renderKurirLog()');
+    }
 }
         const NOTIF = {
             _items: JSON.parse(localStorage.getItem('jyp_notif') || '[]'),

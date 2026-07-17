@@ -2006,6 +2006,7 @@ let _svcStatusFilter = '';
                 const roleColors = {
                     Kasir: 'bg-blue-500/8 text-blue-400 border border-blue-500/15',
                     Teknisi: 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
+                    Kurir: 'bg-amber-500/8 text-amber-400 border border-amber-500/15',
                     Admin: 'bg-violet-500/8 text-violet-400 border border-violet-500/15'
                 };
                 c.innerHTML = `<div class="space-y-5">
@@ -2108,7 +2109,11 @@ let _svcStatusFilter = '';
                       <input id="k-user" type="text" class="${input}" placeholder="username_login" autocomplete="off"/></div>
                     <div><label class="label">Jabatan</label>
                       <select id="k-jabatan" class="${input}">
-                        <option value="Kasir">Kasir</option><option value="Teknisi">Teknisi</option><option value="Admin">Admin</option><option value="Influencer">Influencer</option>
+                        <option value="Kasir">Kasir</option>
+                        <option value="Teknisi">Teknisi</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Influencer">Influencer</option>
+                        <option value="Kurir">Kurir</option>
                       </select></div>
                   </div>
                   <!-- Upload Foto Profil -->

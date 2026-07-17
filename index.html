@@ -795,6 +795,7 @@
                 { page: 'cabang',            label: 'Manajemen Cabang',  d: stokSvg2 },
                 { page: 'log',               label: 'Log Aktivitas',     d: logSvg },
                 { page: 'influencer-monitor', label: 'Monitor Influencer', d: karyawanSvg },
+                { page: 'kurir-monitoring',  label: 'Monitor Kurir', d: dashboardSvg },
             ],
             kepala_cabang: [
                 { page: 'dashboard',         label: 'Dashboard',         d: dashboardSvg },
@@ -808,6 +809,7 @@
                 { page: 'request-sparepart', label: 'Request Sparepart', d: stokSvg2 },
                 { page: 'karyawan',          label: 'Karyawan',          d: karyawanSvg },
                 { page: 'log',               label: 'Log Aktivitas',     d: logSvg },
+                { page: 'kurir-monitoring',  label: 'Monitor Kurir', d: dashboardSvg },
             ],
             kasir: [
                 { page: 'stok-kasir',        label: 'Cek Stok',          d: stokSvg2 },
@@ -862,6 +864,7 @@
             'kurir-dashboard':  ['Dashboard COD'],
             'kurir-input-stok': ['Input Stok (Kurir)'],
             'kurir-log':        ['Log Aktivitas Kurir'],
+            'kurir-monitoring': ['Monitor Kurir'],
         };
 
         // ── SHOW APP ──
@@ -873,7 +876,7 @@
             document.getElementById('user-name').textContent = user.name;
             document.getElementById('user-role-label').textContent = user.role;
             
-            const first = { owner: 'dashboard', kepala_cabang: 'dashboard', kasir: 'stok-kasir', teknisi: 'service-list', influencer: 'influencer-dashboard' };
+            const first = { owner: 'dashboard', kepala_cabang: 'dashboard', kasir: 'stok-kasir', teknisi: 'service-list', influencer: 'influencer-dashboard', kurir: 'kurir-dashboard' };
             const activePage = first[user.role] || 'dashboard';
 
             const items = NAV[user.role] || [];
@@ -926,6 +929,7 @@
             'kurir-dashboard':  renderKurirDashboard,
             'kurir-input-stok': renderKurirInputStok,
             'kurir-log':        renderKurirLog,
+            'kurir-monitoring': renderKurirMonitoring,
         };
 
         function navigate(page) {
@@ -5532,11 +5536,93 @@ async function renderKurirLog() {
                 `).join('') : emptyState('Belum ada log aktivitas')}
             </div>
         </div>`;
+    // ═══ MONITOR KURIR (Owner/Kepala Cabang) ═══
+async function renderKurirMonitoring() {
+    const c = document.getElementById('view-container');
+    setLoading(c, 4);
+    try {
+        const params = getDateFilterParams();
+        const res = await API.cod.kurirMonitoring(params);
+        const kurirs = res.data || [];
+
+        c.innerHTML = `<div class="space-y-6">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">Monitor Kurir</h1>
+                    <p class="text-xs dark:text-zinc-500 text-zinc-400">Ringkasan performa kurir per cabang</p>
+                </div>
+            </div>
+
+            ${renderDateFilter('renderKurirMonitoring')}
+
+            <div class="overflow-x-auto rounded-2xl border dark:border-zinc-700 border-zinc-200">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
+                            <th class="px-5 py-3.5 font-medium">Kurir</th>
+                            <th class="px-5 py-3.5 font-medium">Cabang</th>
+                            <th class="px-5 py-3.5 font-medium text-center">Total COD</th>
+                            <th class="px-5 py-3.5 font-medium text-center">Beli</th>
+                            <th class="px-5 py-3.5 font-medium text-center">Jual</th>
+                            <th class="px-5 py-3.5 font-medium text-center">Menunggu</th>
+                            <th class="px-5 py-3.5 font-medium text-center">Diterima</th>
+                            <th class="px-5 py-3.5 font-medium text-center">Proses</th>
+                            <th class="px-5 py-3.5 font-medium text-center">Selesai</th>
+                            <th class="px-5 py-3.5 font-medium text-center">Gagal</th>
+                            <th class="px-5 py-3.5 font-medium text-center">Ditolak</th>
+                            <th class="px-5 py-3.5 font-medium text-right">Success Rate</th>
+                            <th class="px-5 py-3.5 font-medium text-right">Total Harga Beli</th>
+                            <th class="px-5 py-3.5 font-medium text-right">Total Harga Jual</th>
+                            <th class="px-5 py-3.5 font-medium text-center">Last Activity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${kurirs.length ? kurirs.map(k => `
+                            <tr class="tbl-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">
+                                <td class="px-5 py-4">
+                                    <p class="font-medium dark:text-zinc-100 text-zinc-800">${k.kurir_name}</p>
+                                    <p class="text-[10px] dark:text-zinc-500 text-zinc-400">${k.kurir_id}</p>
+                                </td>
+                                <td class="px-5 py-4 text-xs dark:text-zinc-300 text-zinc-700">${k.cabang || '-'}</td>
+                                <td class="px-5 py-4 text-center font-semibold dark:text-zinc-100 text-zinc-800">${k.total_cod}</td>
+                                <td class="px-5 py-4 text-center text-xs dark:text-zinc-500 text-zinc-400">${k.cod_beli}</td>
+                                <td class="px-5 py-4 text-center text-xs dark:text-zinc-500 text-zinc-400">${k.cod_jual}</td>
+                                <td class="px-5 py-4 text-center">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/8 text-amber-400 border border-amber-500/15">${k.status_menunggu}</span>
+                                </td>
+                                <td class="px-5 py-4 text-center">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/8 text-blue-400 border border-blue-500/15">${k.status_diterima}</span>
+                                </td>
+                                <td class="px-5 py-4 text-center">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-500/8 text-indigo-400 border border-indigo-500/15">${k.status_proses}</span>
+                                </td>
+                                <td class="px-5 py-4 text-center">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/8 text-emerald-400 border border-emerald-500/15">${k.status_selesai}</span>
+                                </td>
+                                <td class="px-5 py-4 text-center">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500/8 text-red-400 border border-red-500/15">${k.status_gagal}</span>
+                                </td>
+                                <td class="px-5 py-4 text-center">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500/8 text-red-400 border border-red-500/15">${k.status_ditolak}</span>
+                                </td>
+                                <td class="px-5 py-4 text-right font-semibold dark:text-zinc-100 text-zinc-800">${k.success_rate}%</td>
+                                <td class="px-5 py-4 text-right font-mono dark:text-zinc-300 text-zinc-600">${k.total_offer_price.toLocaleString('id-ID')}</td>
+                                <td class="px-5 py-4 text-right font-mono dark:text-zinc-300 text-zinc-600">${k.total_transaksi_price.toLocaleString('id-ID')}</td>
+                                <td class="px-5 py-4 text-center text-[10px] dark:text-zinc-600 text-zinc-400">${k.last_activity ? new Date(k.last_activity).toLocaleString('id-ID') : '-'}</td>
+                            </tr>
+                        `).join('') : `
+                            <tr>
+                                <td colspan="16" class="px-5 py-12 text-center text-xs dark:text-zinc-500 text-zinc-400">Tidak ada data kurir</td>
+                            </tr>
+                        `}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
     } catch (e) {
-        c.innerHTML = errorState(e.message, 'renderKurirLog()');
+        c.innerHTML = errorState(e.message, 'renderKurirMonitoring()');
     }
 }
-        const NOTIF = {
             _items: JSON.parse(localStorage.getItem('jyp_notif') || '[]'),
             _interval: null,
             _seen: new Set(JSON.parse(localStorage.getItem('jyp_notif_seen') || '[]')),

@@ -5536,6 +5536,11 @@ async function renderKurirLog() {
                 `).join('') : emptyState('Belum ada log aktivitas')}
             </div>
         </div>`;
+    } catch (e) {
+        c.innerHTML = errorState(e.message, 'renderKurirLog()');
+    }
+}
+
     // ═══ MONITOR KURIR (Owner/Kepala Cabang) ═══
 async function renderKurirMonitoring() {
     const c = document.getElementById('view-container');

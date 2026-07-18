@@ -11,9 +11,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <!-- DOMPurify for XSS Protection -->
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.0/dist/purify.min.js"></script>
-    <!-- Eruda - Mobile Console Debug -->
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
+    <!-- Eruda - Mobile Console Debug (disabled for production) -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script> -->
+    <!-- <script>eruda.init();</script> -->
     <script>
       window.BACKEND_URL = 'https://phonejaya.vercel.app';
         tailwind.config = {
@@ -661,7 +661,7 @@
             };
             const el = document.createElement('div');
             el.className = `toast pointer-events-auto flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-xs font-medium max-w-xs toast-${type||'success'}`;
-            el.innerHTML = `${icons[type]||icons.info}<span>${msg}</span>`;
+            el.innerHTML = `${icons[type]||icons.info}<span>${DOMPurify.sanitize(msg)}</span>`;
             document.getElementById('toast-container').appendChild(el);
             setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.2s'; setTimeout(() => el.remove(), 200); }, 3200);
         }
@@ -4841,8 +4841,6 @@ async function renderInfluencerCatalog() {
     try {
         const res = await API.influencer.catalog({});
         const items = res.data || [];
-        console.log('📦 Catalog API response:', res);
-        console.log('📦 Catalog items:', items);
 
         c.innerHTML = `<div class="space-y-5">
             <div class="flex items-center justify-between">
@@ -5467,7 +5465,7 @@ async function saveKurirInputStok() {
         return;
     }
     
-    const btn = event.target;
+    const btn = document.querySelector('#view-container button[onclick*="saveKurirInputStok"]') || document.activeElement;
     btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
     btn.disabled = true;
     
@@ -5631,6 +5629,7 @@ async function renderKurirMonitoring() {
 
 const NOTIF = {
             _interval: null,
+            _items: JSON.parse(localStorage.getItem('jyp_notif') || '[]'),
             _seen: new Set(JSON.parse(localStorage.getItem('jyp_notif_seen') || '[]')),
 
             save() {

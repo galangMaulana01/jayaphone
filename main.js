@@ -396,6 +396,7 @@ var API = {
     cabangList: function() { return request('GET', '/transfer-stok/cabang-list'); },
   },
   cod: {
+    create: function(b) { return request('POST', '/cod', b); },
     list: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/cod' + (q ? '?' + q : '')); },
     detail: function(id) { return request('GET', '/cod/' + id); },
     kurirDashboard: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/cod/kurir/dashboard' + (q ? '?' + q : '')); },

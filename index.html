@@ -2874,10 +2874,7 @@ const c = document.getElementById('view-container');
                     <span class="text-sm font-medium">Kirim via COD ke Customer</span>
                   </label>
                   <div id="trx-cod-fields" class="mt-3 space-y-3" style="display:none">
-                    <div>
-                      <label class="label">Pilih Kurir</label>
-                      <select id="trx-cod-kurir" class="input"></select>
-                    </div>
+                    <p class="text-[11px] dark:text-zinc-500 text-zinc-400">COD akan dikirim ke semua kurir di cabang. Kurir pertama yang accept akan mendapat tugas.</p>
                     <div>
                       <label class="label">Alamat Pengiriman</label>
                       <input id="trx-cod-alamat" class="input" placeholder="Alamat lengkap tujuan">
@@ -3106,21 +3103,18 @@ const c = document.getElementById('view-container');
                 // Create COD delivery if toggle checked
                 const codToggle = document.getElementById('trx-cod-toggle');
                 if (codToggle && codToggle.checked) {
-                    const kurirId = document.getElementById('trx-cod-kurir')?.value;
                     const alamat = document.getElementById('trx-cod-alamat')?.value?.trim();
                     const waCust = document.getElementById('trx-cod-wa')?.value?.trim() || customer_kontak;
-                    if (!kurirId) { showToast('Pilih kurir untuk COD', 'error'); return; }
                     if (!alamat) { showToast('Alamat pengiriman wajib diisi', 'error'); return; }
                     await API.cod.create({
                         type: 'delivery',
-                        kurir_id: kurirId,
                         trx_id: res.data.trx_id,
                         delivery_address: alamat,
                         wa_customer: waCust,
                         location: 'Toko',
                         wa_number: '',
                     });
-                    showToast('COD Delivery berhasil dibuat ke ' + kurirId);
+                    showToast('COD Delivery berhasil dibroadcast ke kurir');
                 }
                 
                 _spKeranjang = [];
@@ -3136,16 +3130,6 @@ const c = document.getElementById('view-container');
             if (!toggle || !fields) return;
             fields.style.display = toggle.checked ? 'block' : 'none';
             if (toggle.checked) {
-                // Load kurir dropdown
-                const sel = document.getElementById('trx-cod-kurir');
-                if (sel && sel.options.length <= 1) {
-                    try {
-                        const res = await API.cod.kurirList({});
-                        const kurirs = res.data || [];
-                        sel.innerHTML = '<option value="">-- Pilih Kurir --</option>' +
-                            kurirs.map(k => `<option value="${k.kurir_id}">${k.kurir_name}</option>`).join('');
-                    } catch(e) { /* silent */ }
-                }
                 // Pre-fill WA from customer field
                 const waCust = document.getElementById('trx-customer-kontak');
                 const waCod = document.getElementById('trx-cod-wa');

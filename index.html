@@ -5419,8 +5419,8 @@ async function renderKurirDashboard() {
                                         ${statusLabels[cod.status] || cod.status}
                                     </span>
                                 </td>
-                                <td class="px-5 py-4 text-xs dark:text-zinc-300 text-zinc-700 max-w-xs truncate">${cod.location}</td>
-                                <td class="px-5 py-4 text-xs dark:text-zinc-300 text-zinc-700 font-mono">${cod.wa_number}</td>
+                                <td class="px-5 py-4 text-xs dark:text-zinc-300 text-zinc-700 max-w-xs truncate">${cod.type === 'delivery' ? (cod.delivery_address || '-') : cod.location}</td>
+                                <td class="px-5 py-4 text-xs dark:text-zinc-300 text-zinc-700 font-mono">${cod.type === 'delivery' ? (cod.wa_customer || '-') : cod.wa_number}</td>
                                 <td class="px-5 py-4">
                                     ${cod.screenshot_url ? `<img src="${cod.screenshot_url}" class="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" alt="Screenshot" onclick="window.open('${cod.screenshot_url}', '_blank')" />` : cod.type === 'delivery' && cod.items ? `<div class="text-[10px] dark:text-zinc-400 text-zinc-500">${cod.items.length} item</div>` : '<span class="text-[10px] dark:text-zinc-500 text-zinc-400">-</span>'}
                                 </td>

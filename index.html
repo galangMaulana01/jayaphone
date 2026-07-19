@@ -2867,6 +2867,28 @@ const c = document.getElementById('view-container');
                   ${imageUploaderHTML({ id: 'trx-foto', maxFiles: 1, required: true, label: 'Foto Bukti Serah Terima', capture: 'environment', folder: 'jayaphone/transactions', helper: 'Ambil foto kondisi HP dari berbagai sudut (depan, belakang, samping).' })}
                 </div>
 
+                <!-- COD Delivery Toggle -->
+                <div class="border-t dark:border-zinc-800 border-zinc-200 pt-4 mt-4">
+                  <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="trx-cod-toggle" onchange="toggleCODDelivery()" class="w-4 h-4 rounded accent-blue-500">
+                    <span class="text-sm font-medium">Kirim via COD ke Customer</span>
+                  </label>
+                  <div id="trx-cod-fields" class="mt-3 space-y-3" style="display:none">
+                    <div>
+                      <label class="label">Pilih Kurir</label>
+                      <select id="trx-cod-kurir" class="input"></select>
+                    </div>
+                    <div>
+                      <label class="label">Alamat Pengiriman</label>
+                      <input id="trx-cod-alamat" class="input" placeholder="Alamat lengkap tujuan">
+                    </div>
+                    <div>
+                      <label class="label">WA Customer</label>
+                      <input id="trx-cod-wa" class="input" placeholder="08xxx">
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Submit -->
                 <button id="btn-konfirmasi" onclick="konfirmasiTransaksi()" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">
                   Konfirmasi Transaksi
@@ -3080,10 +3102,55 @@ const c = document.getElementById('view-container');
                     payload.foto_serah_terima = fotoUrls[0] || null;
                 }
                 const res = await API.transaksi.create(payload);
+                
+                // Create COD delivery if toggle checked
+                const codToggle = document.getElementById('trx-cod-toggle');
+                if (codToggle && codToggle.checked) {
+                    const kurirId = document.getElementById('trx-cod-kurir')?.value;
+                    const alamat = document.getElementById('trx-cod-alamat')?.value?.trim();
+                    const waCust = document.getElementById('trx-cod-wa')?.value?.trim() || customer_kontak;
+                    if (!kurirId) { showToast('Pilih kurir untuk COD', 'error'); return; }
+                    if (!alamat) { showToast('Alamat pengiriman wajib diisi', 'error'); return; }
+                    await API.cod.create({
+                        type: 'delivery',
+                        kurir_id: kurirId,
+                        trx_id: res.data.trx_id,
+                        delivery_address: alamat,
+                        wa_customer: waCust,
+                        location: 'Toko',
+                        wa_number: '',
+                    });
+                    showToast('COD Delivery berhasil dibuat ke ' + kurirId);
+                }
+                
                 _spKeranjang = [];
                 closeModalBtn();
                 modalStrukKasir(res.data);
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Konfirmasi Transaksi'; btn.disabled = false; }
+        }
+
+        // ═══ COD DELIVERY TOGGLE ═══
+        async function toggleCODDelivery() {
+            const toggle = document.getElementById('trx-cod-toggle');
+            const fields = document.getElementById('trx-cod-fields');
+            if (!toggle || !fields) return;
+            fields.style.display = toggle.checked ? 'block' : 'none';
+            if (toggle.checked) {
+                // Load kurir dropdown
+                const sel = document.getElementById('trx-cod-kurir');
+                if (sel && sel.options.length <= 1) {
+                    try {
+                        const res = await API.cod.kurirList({});
+                        const kurirs = res.data || [];
+                        sel.innerHTML = '<option value="">-- Pilih Kurir --</option>' +
+                            kurirs.map(k => `<option value="${k.kurir_id}">${k.kurir_name}</option>`).join('');
+                    } catch(e) { /* silent */ }
+                }
+                // Pre-fill WA from customer field
+                const waCust = document.getElementById('trx-customer-kontak');
+                const waCod = document.getElementById('trx-cod-wa');
+                if (waCust && waCod && waCust.value && !waCod.value) waCod.value = waCust.value;
+            }
         }
 
         // ═══ MODAL DETAIL TRANSAKSI (Owner) ═══
@@ -5311,6 +5378,9 @@ async function renderKurirDashboard() {
             kurir_sedang_transaksi: 'bg-purple-500/8 text-purple-400 border border-purple-500/15',
             transaksi_berhasil: 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
             gagal: 'bg-red-500/8 text-red-400 border border-red-500/15',
+            kurir_menuju_toko: 'bg-indigo-500/8 text-indigo-400 border border-indigo-500/15',
+            sedang_diantar: 'bg-cyan-500/8 text-cyan-400 border border-cyan-500/15',
+            terkirim: 'bg-emerald-500/8 text-emerald-400 border border-emerald-500/15',
         };
         
         const statusLabels = {
@@ -5327,6 +5397,9 @@ async function renderKurirDashboard() {
             kurir_sedang_transaksi: 'Kurir Sedang Transaksi',
             transaksi_berhasil: 'Transaksi Berhasil',
             gagal: 'Gagal',
+            kurir_menuju_toko: 'Menuju Toko',
+            sedang_diantar: 'Sedang Diantar',
+            terkirim: 'Terkirim',
         };
         
         c.innerHTML = `<div class="space-y-6">
@@ -5355,7 +5428,7 @@ async function renderKurirDashboard() {
                             <tr class="tbl-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">
                                 <td class="px-5 py-4 whitespace-nowrap text-[10px] dark:text-zinc-600 text-zinc-400">${cod.created_at}</td>
                                 <td class="px-5 py-4">
-                                    <span class="badge badge-${cod.type}">${cod.type === 'beli' ? 'Beli' : 'Jual'}</span>
+                                    <span class="badge badge-${cod.type}">${cod.type === 'beli' ? 'Beli' : cod.type === 'jual' ? 'Jual' : 'Delivery'}</span>
                                 </td>
                                 <td class="px-5 py-4">
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${statusColors[cod.status] || 'dark:bg-zinc-800 bg-zinc-100 dark:text-zinc-500 text-zinc-400'}">
@@ -5365,7 +5438,7 @@ async function renderKurirDashboard() {
                                 <td class="px-5 py-4 text-xs dark:text-zinc-300 text-zinc-700 max-w-xs truncate">${cod.location}</td>
                                 <td class="px-5 py-4 text-xs dark:text-zinc-300 text-zinc-700 font-mono">${cod.wa_number}</td>
                                 <td class="px-5 py-4">
-                                    <img src="${cod.screenshot_url}" class="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" alt="Screenshot" onclick="window.open('${cod.screenshot_url}', '_blank')" />
+                                    ${cod.screenshot_url ? `<img src="${cod.screenshot_url}" class="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" alt="Screenshot" onclick="window.open('${cod.screenshot_url}', '_blank')" />` : cod.type === 'delivery' && cod.items ? `<div class="text-[10px] dark:text-zinc-400 text-zinc-500">${cod.items.length} item</div>` : '<span class="text-[10px] dark:text-zinc-500 text-zinc-400">-</span>'}
                                 </td>
                                 <td class="px-5 py-4 text-center">
                                     ${cod.status === 'menunggu_kurir' ? `
@@ -5373,7 +5446,16 @@ async function renderKurirDashboard() {
                                         <button class="btn btn-ghost text-xs px-3 py-1.5 text-red-500 border-red-500" onclick="kurirReject('${cod.cod_id}')">Tolak</button>
                                     ` : cod.status === 'sudah_bertemu_penjual' ? `
                                         <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirGoInputStok('${cod.cod_id}')">Input Stok</button>
-                                    ` : cod.status === 'barang_sudah_diambil' ? `
+                                    ` : cod.status === 'diterima' && cod.type === 'delivery' ? `
+                                        <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'kurir_menuju_toko')">Menuju Toko</button>
+                                    ` : cod.status === 'kurir_menuju_toko' ? `
+                                        <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'barang_sudah_diambil')">Ambil Barang</button>
+                                    ` : cod.status === 'barang_sudah_diambil' && cod.type === 'delivery' ? `
+                                        <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'sedang_diantar')">Kirim</button>
+                                    ` : cod.status === 'sedang_diantar' ? `
+                                        <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'terkirim')">Terkirim</button>
+                                        <button class="btn btn-ghost text-xs px-3 py-1.5 text-red-500 border-red-500" onclick="kurirUpdateStatus('${cod.cod_id}', 'gagal')">Gagal</button>
+                                    ` : cod.status === 'barang_sudah_diambil' && cod.type !== 'delivery' ? `
                                         <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'kurir_sedang_transaksi')">Transaksi</button>
                                     ` : cod.status === 'kurir_sedang_transaksi' ? `
                                         <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'transaksi_berhasil')">Selesai</button>
@@ -5898,6 +5980,7 @@ const NOTIF = {
         window.renderKurirLog = renderKurirLog;
         window.kurirAccept = kurirAccept;
         window.kurirReject = kurirReject;
+        window.toggleCODDelivery = toggleCODDelivery;
         window.kurirGoInputStok = kurirGoInputStok;
         window.kurirUpdateStatus = kurirUpdateStatus;
         window.saveKurirInputStok = saveKurirInputStok;

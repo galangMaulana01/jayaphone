@@ -2749,7 +2749,7 @@ const c = document.getElementById('view-container');
 
                 <!-- Unit HP Section -->
                 <div class="panel rounded-2xl p-5">
-                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">${smartphoneSvg} Unit HP <span class="text-[10px] normal-case tracking-normal dark:text-zinc-600 text-zinc-400">(opsional)</span></p>
+                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3"><span class="inline-block align-middle mr-1">${smartphoneSvg}</span> Unit HP <span class="text-[10px] normal-case tracking-normal dark:text-zinc-600 text-zinc-400">(opsional)</span></p>
                   <div class="space-y-3">
                     <div>
                       <label class="label">ID Produk</label>
@@ -2884,11 +2884,11 @@ const c = document.getElementById('view-container');
                     <p class="text-[11px] dark:text-zinc-500 text-zinc-400">COD akan dikirim ke semua kurir di cabang. Kurir pertama yang accept akan mendapat tugas.</p>
                     <div>
                       <label class="label">Alamat Pengiriman</label>
-                      <input id="trx-cod-alamat" class="input" placeholder="Alamat lengkap tujuan">
+                      <input id="trx-cod-alamat" class="${input}" placeholder="Alamat lengkap tujuan">
                     </div>
                     <div>
                       <label class="label">WA Customer</label>
-                      <input id="trx-cod-wa" class="input" placeholder="08xxx">
+                      <input id="trx-cod-wa" class="${input}" placeholder="08xxx">
                     </div>
                   </div>
                 </div>
@@ -5724,55 +5724,42 @@ async function renderCodBeli() {
             <div class="space-y-4">
                 <div>
                     <label class="label">Nama Produk <span class="text-red-400">*</span></label>
-                    <input id="cb-product" class="input" placeholder="iPhone 15 Pro Max">
+                    <input id="cb-product" class="${input}" placeholder="iPhone 15 Pro Max">
                 </div>
                 <div>
                     <label class="label">Harga Offer (Rp)</label>
-                    <input id="cb-price" class="input" type="number" placeholder="5000000" min="0">
-                </div>
-                <div>
-                    <label class="label">Kurir <span class="text-red-400">*</span></label>
-                    <select id="cb-kurir" class="input"><option value="">-- Pilih Kurir --</option></select>
+                    <input id="cb-price" class="${input}" type="number" placeholder="5000000" min="0">
                 </div>
                 <div>
                     <label class="label">Lokasi Penjual</label>
-                    <input id="cb-location" class="input" placeholder="Alamat lokasi penjual">
+                    <input id="cb-location" class="${input}" placeholder="Alamat lokasi penjual">
                 </div>
                 <div>
                     <label class="label">WA Penjual</label>
-                    <input id="cb-wa" class="input" placeholder="08xxx">
+                    <input id="cb-wa" class="${input}" placeholder="08xxx">
                 </div>
                 <div>
                     <label class="label">Catatan</label>
-                    <textarea id="cb-note" class="input" rows="2" placeholder="Catatan tambahan"></textarea>
+                    <textarea id="cb-note" class="${input}" rows="2" placeholder="Catatan tambahan"></textarea>
                 </div>
                 <button onclick="submitCodBeli()" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">Buat Order COD Beli</button>
             </div>
         </div>
     </div>`;
-    // Load kurir dropdown
-    try {
-        const res = await API.cod.kurirList({});
-        const kurirs = res.data || [];
-        const sel = document.getElementById('cb-kurir');
-        sel.innerHTML = '<option value="">-- Pilih Kurir --</option>' + kurirs.map(k => `<option value="${k.kurir_id}">${k.kurir_name} (${k.cabang})</option>`).join('');
-    } catch(e) {}
 }
 async function submitCodBeli() {
     const product = document.getElementById('cb-product').value.trim();
     const price = parseInt(document.getElementById('cb-price').value) || 0;
-    const kurir = document.getElementById('cb-kurir').value;
     const location = document.getElementById('cb-location').value.trim();
     const wa = document.getElementById('cb-wa').value.trim();
     const note = document.getElementById('cb-note').value.trim();
     if (!product) { showToast('Nama produk wajib diisi', 'error'); return; }
-    if (!kurir) { showToast('Pilih kurir', 'error'); return; }
     try {
         await API.cod.create({
             type: 'beli', product_name: product, offer_price: price,
-            kurir_id: kurir, location: location || 'Toko', wa_number: wa, note: note
+            location: location || 'Toko', wa_number: wa, note: note
         });
-        showToast('COD Beli berhasil dibuat');
+        showToast('COD Beli berhasil dibuat — menunggu kurir accept');
         renderCodBeli();
     } catch(e) { showToast(e.message, 'error'); }
 }
@@ -5856,7 +5843,7 @@ function modalRejectCod(codId) {
     openModal(`${modalHeader('Reject COD Beli', codId)}
         <div class="space-y-3">
             <div><label class="label">Alasan Reject <span class="text-red-400">*</span></label>
-            <textarea id="reject-reason" class="input" rows="3" placeholder="Contoh: Harga deal terlalu rendah, kondisi beda dari foto, dll"></textarea></div>
+            <textarea id="reject-reason" class="${input}" rows="3" placeholder="Contoh: Harga deal terlalu rendah, kondisi beda dari foto, dll"></textarea></div>
             <div class="flex gap-2">
                 <button onclick="doRejectCod('${codId}')" class="btn btn-primary flex-1 bg-red-600 hover:bg-red-700">Reject</button>
                 <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
@@ -5877,24 +5864,24 @@ function modalSubmitBeli(codId) {
     openModal(`${modalHeader('Input Data HP', codId)}
         <div class="space-y-3 max-h-[70vh] overflow-y-auto">
             <div><label class="label">Harga Deal (Rp) <span class="text-red-400">*</span></label>
-            <input id="sb-price" class="input" type="number" min="0" placeholder="5000000"></div>
+            <input id="sb-price" class="${input}" type="number" min="0" placeholder="5000000"></div>
             <div class="grid grid-cols-2 gap-3">
-                <div><label class="label">Merk <span class="text-red-400">*</span></label><input id="sb-merk" class="input" placeholder="Apple"></div>
-                <div><label class="label">Tipe <span class="text-red-400">*</span></label><input id="sb-tipe" class="input" placeholder="iPhone 15"></div>
-                <div><label class="label">IMEI <span class="text-red-400">*</span></label><input id="sb-imei" class="input" placeholder="15 digit"></div>
-                <div><label class="label">Storage</label><input id="sb-storage" class="input" placeholder="128GB"></div>
-                <div><label class="label">RAM</label><input id="sb-ram" class="input" placeholder="8GB"></div>
-                <div><label class="label">Warna</label><input id="sb-warna" class="input" placeholder="Black"></div>
+                <div><label class="label">Merk <span class="text-red-400">*</span></label><input id="sb-merk" class="${input}" placeholder="Apple"></div>
+                <div><label class="label">Tipe <span class="text-red-400">*</span></label><input id="sb-tipe" class="${input}" placeholder="iPhone 15"></div>
+                <div><label class="label">IMEI <span class="text-red-400">*</span></label><input id="sb-imei" class="${input}" placeholder="15 digit"></div>
+                <div><label class="label">Storage</label><input id="sb-storage" class="${input}" placeholder="128GB"></div>
+                <div><label class="label">RAM</label><input id="sb-ram" class="${input}" placeholder="8GB"></div>
+                <div><label class="label">Warna</label><input id="sb-warna" class="${input}" placeholder="Black"></div>
                 <div><label class="label">Kondisi HP</label>
-                    <select id="sb-kondisi" class="input"><option value="Mulus">Mulus — Inventory</option><option value="Repair">Repair — Service Teknisi</option></select>
+                    <select id="sb-kondisi" class="${input}"><option value="Mulus">Mulus — Inventory</option><option value="Repair">Repair — Service Teknisi</option></select>
                 </div>
-                <div><label class="label">Battery %</label><input id="sb-battery" class="input" type="number" value="100" min="0" max="100"></div>
+                <div><label class="label">Battery %</label><input id="sb-battery" class="${input}" type="number" value="100" min="0" max="100"></div>
             </div>
-            <div><label class="label">Foto URL (Cloudinary)</label><input id="sb-foto" class="input" placeholder="https://res.cloudinary.com/..."></div>
+            <div><label class="label">Foto URL (Cloudinary)</label><input id="sb-foto" class="${input}" placeholder="https://res.cloudinary.com/..."></div>
             <div><label class="label">Kondisi Fisik</label>
-                <select id="sb-kondisi-kode" class="input"><option value="BN">Normal</option><option value="MN">Minus</option><option value="EX">Ex Inter</option><option value="RJ">Reject</option></select>
+                <select id="sb-kondisi-kode" class="${input}"><option value="BN">Normal</option><option value="MN">Minus</option><option value="EX">Ex Inter</option><option value="RJ">Reject</option></select>
             </div>
-            <div><label class="label">Keluhan (kalau Repair)</label><input id="sb-keluhan" class="input" placeholder="LCD pecah, baterai soak, dll"></div>
+            <div><label class="label">Keluhan (kalau Repair)</label><input id="sb-keluhan" class="${input}" placeholder="LCD pecah, baterai soak, dll"></div>
             <button onclick="doSubmitBeli('${codId}')" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">Kirim ke Kasir untuk Approval</button>
         </div>`);
 }

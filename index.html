@@ -696,9 +696,10 @@
             c.innerHTML = `<div class="space-y-3">${Array(rows).fill('<div class="skeleton h-10 w-full"></div>').join('')}</div>`;
         }
 
-        function emptyState(msg, icon = '📭') {
+        function emptyState(msg, icon) {
+            const svgIcon = (typeof emojiSvgMap !== 'undefined' && emojiSvgMap[icon]) || emojiSvgMap['📭'] || icon;
             return `<div class="flex flex-col items-center justify-center py-16 text-center">
-                <div class="w-12 h-12 rounded-2xl dark:bg-zinc-800/50 bg-zinc-100 flex items-center justify-center mb-3 text-2xl">${icon}</div>
+                <div class="w-12 h-12 rounded-2xl dark:bg-zinc-800/50 bg-zinc-100 flex items-center justify-center mb-3 text-zinc-400 dark:text-zinc-500">${svgIcon}</div>
                 <p class="text-sm dark:text-zinc-500 text-zinc-400 font-medium">${msg}</p>
             </div>`;
         }
@@ -1144,22 +1145,22 @@ let _dashCabangFilter = '';
                 <table class="w-full text-xs">
                   <thead>
                     <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
-                      <th class="px-6 py-3.5 font-medium">ID</th>
-                      <th class="px-6 py-3.5 font-medium">Unit</th>
-                      <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Kasir</th>
-                      <th class="px-6 py-3.5 font-medium">Harga Jual</th>
-                      <th class="px-6 py-3.5 font-medium">Profit</th>
-                      <th class="px-6 py-3.5 font-medium hidden md:table-cell">Waktu</th>
+                      <th class="px-5 py-3.5 font-medium">ID</th>
+                      <th class="px-5 py-3.5 font-medium">Unit</th>
+                      <th class="px-5 py-3.5 font-medium hidden sm:table-cell">Kasir</th>
+                      <th class="px-5 py-3.5 font-medium">Harga Jual</th>
+                      <th class="px-5 py-3.5 font-medium">Profit</th>
+                      <th class="px-5 py-3.5 font-medium hidden md:table-cell">Waktu</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${trx.length ? trx.map(t=>`<tr class="tbl-row">
-                      <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${t.trx_id}</td>
-                      <td class="px-6 py-4 font-medium dark:text-zinc-100 text-zinc-800 max-w-[160px] truncate">${t.unit_label}</td>
-                      <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
-                      <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
-                      <td class="px-6 py-4 font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
-                      <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell text-[11px]">${t.waktu}</td>
+                      <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${t.trx_id}</td>
+                      <td class="px-5 py-4 font-medium dark:text-zinc-100 text-zinc-800 max-w-[160px] truncate">${t.unit_label}</td>
+                      <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
+                      <td class="px-5 py-4 whitespace-nowrap dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
+                      <td class="px-5 py-4 whitespace-nowrap font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
+                      <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell text-[11px]">${t.waktu}</td>
                     </tr>`).join('') : `<tr><td colspan="6">${emptyState('Belum ada transaksi')}</td></tr>`}
                   </tbody>
                 </table>
@@ -1376,15 +1377,15 @@ let _stokSearchTimer = null;
                   <div class="font-mono">${u.imei}</div>
                   ${u.imei2 && u.imei2 !== '-' ? `<div class="font-mono text-[10px] dark:text-zinc-600"> ${u.imei2}</div>` : ''}
                 </td>
-                <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(u.harga_modal)}</td>
-                <td class="px-5 py-4 font-semibold text-[#4FD1C5]">${rp(u.harga_jual)}</td>
+                <td class="px-5 py-4 whitespace-nowrap dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(u.harga_modal)}</td>
+                <td class="px-5 py-4 whitespace-nowrap font-semibold text-[#4FD1C5]">${rp(u.harga_jual)}</td>
                 <td class="px-5 py-4 hidden sm:table-cell">${batteryBar(u.battery)}</td>
                 <td class="px-5 py-4">${badge(u.status)}</td>
                 <td class="px-5 py-4">
                   <span class="text-[11px] ${u.kondisi_hp==='Repair'?'text-amber-400':'dark:text-zinc-500 text-zinc-400'}"> ${u.kondisi_hp}</span>
                   ${u.service_id ? `<div class="text-[10px] dark:text-zinc-600 text-zinc-400"> ${u.service_id}</div>` : ''}
                   <div class="text-[10px] dark:text-zinc-600 text-zinc-300 mt-0.5">
-                    ${u.lcd || ''} ${u.speaker && u.speaker !== 'Normal' ? '· Spk ⚠' : ''}
+                    ${u.lcd || ''} ${u.speaker && u.speaker !== 'Normal' ? '· Spk ${warningSvg}' : ''}
                     ${u.battery_health ? '· BH '+u.battery_health+'%' : ''}
                   </div>
                 </td>
@@ -1722,21 +1723,21 @@ let _trxCabangFilter = '';
           <table class="w-full text-xs">
             <thead>
               <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
-                <th class="px-6 py-3.5 font-medium">ID Trx</th>
-                <th class="px-6 py-3.5 font-medium">Unit</th>
-                <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Kasir</th>
-                <th class="px-6 py-3.5 font-medium">Harga Jual</th>
-                <th class="px-6 py-3.5 font-medium hidden md:table-cell">Modal</th>
-                <th class="px-6 py-3.5 font-medium">Profit</th>
-                <th class="px-6 py-3.5 font-medium hidden lg:table-cell">Waktu</th>
-                <th class="px-6 py-3.5 font-medium">Detail</th>
+                <th class="px-5 py-3.5 font-medium">ID Trx</th>
+                <th class="px-5 py-3.5 font-medium">Unit</th>
+                <th class="px-5 py-3.5 font-medium hidden sm:table-cell">Kasir</th>
+                <th class="px-5 py-3.5 font-medium">Harga Jual</th>
+                <th class="px-5 py-3.5 font-medium hidden md:table-cell">Modal</th>
+                <th class="px-5 py-3.5 font-medium">Profit</th>
+                <th class="px-5 py-3.5 font-medium hidden lg:table-cell">Waktu</th>
+                <th class="px-5 py-3.5 font-medium">Detail</th>
               </tr>
             </thead>
             <tbody>
                           ${list.length ? list.map(t => `
-                            <tr class="tbl-row cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50" onclick="modalDetailTransaksi('${t.trx_id}')">
-                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${t.trx_id}</td>
-                              <td class="px-6 py-4">
+                            <tr class="tbl-row cursor-pointer" onclick="modalDetailTransaksi('${t.trx_id}')">
+                              <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${t.trx_id}</td>
+                              <td class="px-5 py-4">
                                 <div class="font-medium dark:text-zinc-100 text-zinc-800">${t.unit_label}</div>
                                 <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${t.unit_id}</div>
                                 ${(t.poin_dipakai > 0 || t.poin_dapat > 0) ? `<div class="flex gap-2 mt-1">
@@ -1744,12 +1745,12 @@ let _trxCabangFilter = '';
                                   ${t.poin_dapat > 0 ? `<span class="text-[9px] px-1.5 py-0.5 rounded-full dark:bg-amber-500/10 bg-amber-50 text-amber-400 border dark:border-amber-500/20 border-amber-200">+${t.poin_dapat} poin</span>` : ''}
                                 </div>` : ''}
                               </td>
-                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
-                              <td class="px-6 py-4 dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
-                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(t.harga_modal)}</td>
-                              <td class="px-6 py-4 font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
-                              <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${t.waktu}</td>
-                              <td class="px-6 py-4 text-center">
+                              <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell">${t.kasir}</td>
+                              <td class="px-5 py-4 whitespace-nowrap dark:text-zinc-300 text-zinc-600">${rp(t.harga_jual)}</td>
+                              <td class="px-5 py-4 whitespace-nowrap dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(t.harga_modal)}</td>
+                              <td class="px-5 py-4 whitespace-nowrap font-semibold text-[#4FD1C5]">${rp(t.profit)}</td>
+                              <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${t.waktu}</td>
+                              <td class="px-5 py-4 text-center">
                                 <button class="btn btn-ghost text-xs px-3 py-1" onclick="event.stopPropagation(); modalDetailTransaksi('${t.trx_id}')">Detail</button>
                               </td>
                             </tr>
@@ -1878,19 +1879,19 @@ let _svcStatusFilter = '';
                     <table class="w-full text-xs">
                       <thead>
                         <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
-                          <th class="px-6 py-3.5 font-medium">ID</th>
-                          <th class="px-6 py-3.5 font-medium">Unit</th>
-                          <th class="px-6 py-3.5 font-medium hidden md:table-cell">Keluhan</th>
-                          <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Teknisi</th>
-                          <th class="px-6 py-3.5 font-medium">Status</th>
-                          <th class="px-6 py-3.5 font-medium hidden lg:table-cell">Tgl Masuk</th>
-                          <th class="px-6 py-3.5 font-medium">Aksi</th>
+                          <th class="px-5 py-3.5 font-medium">ID</th>
+                          <th class="px-5 py-3.5 font-medium">Unit</th>
+                          <th class="px-5 py-3.5 font-medium hidden md:table-cell">Keluhan</th>
+                          <th class="px-5 py-3.5 font-medium hidden sm:table-cell">Teknisi</th>
+                          <th class="px-5 py-3.5 font-medium">Status</th>
+                          <th class="px-5 py-3.5 font-medium hidden lg:table-cell">Tgl Masuk</th>
+                          <th class="px-5 py-3.5 font-medium">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
                         ${list.length ? list.map(s=>`<tr class="tbl-row cursor-pointer" onclick="modalDetailService('${s.service_id}')">
-                          <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${s.service_id}</td>
-                          <td class="px-6 py-4">
+                          <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 text-[11px]">${s.service_id}</td>
+                          <td class="px-5 py-4">
                             <div class="font-medium dark:text-zinc-100 text-zinc-800">${s.unit_label}</div>
                             <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${s.unit_id}</div>
                           </td>
@@ -1903,7 +1904,7 @@ let _svcStatusFilter = '';
                               ? `<button onclick="modalApproveRepair('${s.unit_id}','${s.service_id}')" class="btn btn-success" style="height:28px;padding:0 12px;font-size:0.6875rem;">Approve</button>`
                               : `<span class="text-[11px] dark:text-zinc-600 text-zinc-300">—</span>`}
                           </td>
-                        </tr>`).join('') : `<tr><td colspan="7">${emptyState('Belum ada data service','🔧')}</td></tr>`}
+                        </tr>`).join('') : `<tr><td colspan="7">${emptyState('Belum ada data service','${wrenchSvg}')}</td></tr>`}
                       </tbody>
                     </table>
                   </div>
@@ -2045,12 +2046,12 @@ let _svcStatusFilter = '';
                       <div class="flex gap-2 mt-3">
                         ${(k.jabatan === 'Kasir' || k.jabatan === 'Teknisi') ? `
                         <button onclick="modalKaryawanStats('${k.id}','${k.nama}','${k.jabatan}')" class="btn btn-ghost flex-1 text-xs" style="height:32px;">
-                          📊 Detail
+                          ${starSvg} Detail
                         </button>` : '<div class="flex-1"></div>'}
-                        ${STATE.user.role === 'owner' && k.aktif ? `<button onclick="modalResetPassword('${k.id}','${k.nama}','${k.username||''}')" class="btn btn-ghost text-xs" style="height:32px;">🔑 Reset PW</button>` : ''}
+                        ${STATE.user.role === 'owner' && k.aktif ? `<button onclick="modalResetPassword('${k.id}','${k.nama}','${k.username||''}')" class="btn btn-ghost text-xs" style="height:32px;">${keySvg} Reset PW</button>` : ''}
                         ${STATE.user.role === 'owner' && k.aktif ? `<button onclick="konfirmasiPecatKaryawan('${k.id}','${k.nama}')" class="btn btn-ghost flex-1 text-xs text-red-400 dark:hover:bg-red-500/10" style="height:32px;">Pecat</button>` : ''}
                       </div>
-                    </div>`).join('') : `<div class="col-span-3">${emptyState('Belum ada karyawan','👤')}</div>`}
+                    </div>`).join('') : `<div class="col-span-3">${emptyState('Belum ada karyawan','${userSvg}')}</div>`}
                   </div>
                 </div>`;
             } catch (e) { c.innerHTML = errorState(e.message, 'renderKaryawan()'); }
@@ -2193,7 +2194,7 @@ let _svcStatusFilter = '';
             _karStatsCurrent = { id, nama, jabatan };
             _karStatsFilter  = { preset: '30d', start: null, end: null };
             openModal(`
-                ${modalHeader('📊 Statistik ' + nama)}
+                ${modalHeader('${starSvg} Statistik ' + nama)}
                 <div id="kar-stats-body">
                   <div class="flex justify-center py-8"><span class="spinner"></span></div>
                 </div>
@@ -2241,7 +2242,7 @@ let _svcStatusFilter = '';
                     </button>`).join('')}
                   </div>
                   <button onclick="_showKarCustomDate()" class="btn btn-ghost text-xs px-4 py-1.5 ${_karStatsFilter.start ? 'dark:text-teal-400 text-teal-600' : ''}">
-                    ${_karStatsFilter.start ? `📅 ${_karStatsFilter.start} → ${_karStatsFilter.end}` : 'Custom'}
+                    ${_karStatsFilter.start ? `${calendarSvg} ${_karStatsFilter.start} → ${_karStatsFilter.end}` : 'Custom'}
                   </button>
                 </div>`;
 
@@ -2368,7 +2369,7 @@ let _svcStatusFilter = '';
             closeModalBtn();
             // Re-open stats modal
             const { id, nama, jabatan } = _karStatsCurrent;
-            openModal(modalHeader('📊 Statistik ' + nama) + '<div id="kar-stats-body"><div class="flex justify-center py-8"><span class="spinner"></span></div></div>', 'max-w-2xl');
+            openModal(modalHeader('${starSvg} Statistik ' + nama) + '<div id="kar-stats-body"><div class="flex justify-center py-8"><span class="spinner"></span></div></div>', 'max-w-2xl');
             _loadKarStats();
         }
 
@@ -2478,12 +2479,12 @@ const c = document.getElementById('view-container');
                           </td>
                           <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${u.storage}/${u.ram} · ${u.warna}<br/><span class="text-[10px]">${u.kondisi}</span></td>
                           <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden lg:table-cell text-[11px]">${u.imei}</td>
-                          <td class="px-5 py-4 font-semibold text-[#4FD1C5]">${rp(u.harga_jual)}</td>
+                          <td class="px-5 py-4 whitespace-nowrap font-semibold text-[#4FD1C5]">${rp(u.harga_jual)}</td>
                           <td class="px-5 py-4 hidden sm:table-cell">${batteryBar(u.battery)}</td>
                           <td class="px-5 py-4 text-center">
                             <button onclick="modalDetailUnit('${u.unit_id}')" class="btn btn-ghost text-xs px-3 py-1">Detail</button>
                           </td>
-                        </tr>`).join('') : `<tr><td colspan="7">${emptyState('Tidak ada unit tersedia','📦')}</td></tr>`}
+                        </tr>`).join('') : `<tr><td colspan="7">${emptyState('Tidak ada unit tersedia','${packageSvg}')}</td></tr>`}
                       </tbody>
                     </table>
                   </div>
@@ -2626,7 +2627,7 @@ const c = document.getElementById('view-container');
                               <div class="text-xs font-medium dark:text-zinc-100 text-zinc-800">${cu.nama}</div>
                               <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${cu.kontak || '-'}</div>
                             </div>
-                            <span class="text-[10px] font-medium dark:text-amber-400 text-amber-500">⭐ ${cu.points || 0} poin</span>
+                            <span class="text-[10px] font-medium dark:text-amber-400 text-amber-500">${starSvg} ${cu.points || 0} poin</span>
                           </div>`).join('');
                     }
                     dropdown.classList.remove('hidden');
@@ -2748,7 +2749,7 @@ const c = document.getElementById('view-container');
 
                 <!-- Unit HP Section -->
                 <div class="panel rounded-2xl p-5">
-                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">📱 Unit HP <span class="text-[10px] normal-case tracking-normal dark:text-zinc-600 text-zinc-400">(opsional)</span></p>
+                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">${smartphoneSvg} Unit HP <span class="text-[10px] normal-case tracking-normal dark:text-zinc-600 text-zinc-400">(opsional)</span></p>
                   <div class="space-y-3">
                     <div>
                       <label class="label">ID Produk</label>
@@ -2771,7 +2772,7 @@ const c = document.getElementById('view-container');
 
                 <!-- Sparepart Section -->
                 <div class="panel rounded-2xl p-5">
-                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">🔧 Sparepart <span class="text-[10px] normal-case tracking-normal dark:text-zinc-600 text-zinc-400">(opsional)</span></p>
+                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">${wrenchSvg} Sparepart <span class="text-[10px] normal-case tracking-normal dark:text-zinc-600 text-zinc-400">(opsional)</span></p>
                   <div class="space-y-3">
                     <div class="relative">
                       <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 dark:text-zinc-500 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2819,7 +2820,7 @@ const c = document.getElementById('view-container');
                     <!-- Customer Points Info (hidden by default) -->
                     <div id="trx-poin-section" class="hidden">
                       <div class="flex items-center gap-2 p-3 rounded-xl dark:bg-emerald-500/8 bg-emerald-50 border dark:border-emerald-500/20 border-emerald-200">
-                        <span class="text-base">⭐</span>
+                        <span class="text-base">${starSvg}</span>
                         <div class="flex-1">
                           <p id="trx-poin-info" class="text-xs font-medium dark:text-emerald-400 text-emerald-600"></p>
                           <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-0.5">1 poin = Rp 1.000 diskon</p>
@@ -3028,7 +3029,7 @@ const c = document.getElementById('view-container');
         }
 
         function _renderUnitList(units) {
-            if (!units.length) return emptyState('Tidak ada unit ditemukan', '📦');
+            if (!units.length) return emptyState('Tidak ada unit ditemukan', '${packageSvg}');
             return units.map(u => `
               <div onclick="pilihUnit('${u.unit_id}')" class="flex justify-between items-center p-4 rounded-xl border dark:border-zinc-800 border-zinc-100 dark:hover:border-zinc-700 hover:border-zinc-200 cursor-pointer transition-all dark:hover:bg-zinc-800/50 hover:bg-zinc-50">
                 <div class="flex-1 min-w-0 mr-3">
@@ -3214,7 +3215,7 @@ const c = document.getElementById('view-container');
                         
                         <div class="flex gap-2 mt-4 pt-3 border-t dark:border-zinc-700 border-zinc-200">
                             <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Tutup</button>
-                            <button onclick="printStruk(window._lastTrx)" class="btn btn-primary flex-1">🖨️ Cetak Struk</button>
+                            <button onclick="printStruk(window._lastTrx)" class="btn btn-primary flex-1">${printerSvg} Cetak Struk</button>
                         </div>
                     </div>`;
             } catch (e) {
@@ -3228,7 +3229,7 @@ const c = document.getElementById('view-container');
             const diskonPoin = (trx.poin_dipakai || 0) * 1000;
             const totalBayar = (trx.harga_jual || 0) + (trx.biaya_garansi || 0) - diskonPoin;
             openModal(`
-                ${modalHeader('✅ Transaksi Berhasil')}
+                ${modalHeader('${checkCircleSvg} Transaksi Berhasil')}
                 <div class="space-y-3">
                   <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50 space-y-2 text-xs">
                     <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">No. Struk</span><span class="font-mono font-semibold dark:text-zinc-200 text-zinc-700">${trx.trx_id}</span></div>
@@ -3237,13 +3238,13 @@ const c = document.getElementById('view-container');
                     ${trx.biaya_garansi ? `<div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Garansi ${trx.garansi_hari}h</span><span>${rp(trx.biaya_garansi)}</span></div>` : ''}
                     ${trx.poin_dipakai > 0 ? `<div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Diskon Poin (${trx.poin_dipakai} poin)</span><span class="text-red-400">-${rp(diskonPoin)}</span></div>` : ''}
                     <div class="border-t dark:border-zinc-700 border-zinc-200 pt-2 flex justify-between font-bold"><span>Total Bayar</span><span class="text-[#4FD1C5]">${rp(totalBayar)}</span></div>
-                    ${trx.poin_dapat > 0 ? `<div class="flex justify-between font-medium"><span class="dark:text-amber-400 text-amber-500">⭐ Poin didapat</span><span class="dark:text-amber-400 text-amber-500">${trx.poin_dapat} poin</span></div>` : ''}
+                    ${trx.poin_dapat > 0 ? `<div class="flex justify-between font-medium"><span class="dark:text-amber-400 text-amber-500">${starSvg} Poin didapat</span><span class="dark:text-amber-400 text-amber-500">${trx.poin_dapat} poin</span></div>` : ''}
                   </div>
                 </div>
                 <div class="flex gap-3 mt-5">
                   <button onclick="closeModalBtn(); navigate('stok-kasir');" class="btn btn-ghost flex-1">Tutup</button>
                   <button onclick="printStruk(window._lastTrx)" class="btn btn-primary flex-1">
-                                      🖨️ Cetak Struk
+                                      ${printerSvg} Cetak Struk
                   </button>
                 </div>
             `);
@@ -3309,7 +3310,7 @@ const c = document.getElementById('view-container');
     <div>Terima kasih telah berbelanja!</div>
     <div style="margin-top:2px;">Barang yang sudah dibeli tidak dapat dikembalikan</div>
   </div>
-  <button class="print-btn" onclick="window.print()">🖨️ Cetak Sekarang</button>
+  <button class="print-btn" onclick="window.print()">${printerSvg} Cetak Sekarang</button>
 </body></html>`;
 
             // Blob URL — works di HP Android, tidak kena popup blocker
@@ -3371,7 +3372,7 @@ const c = document.getElementById('view-container');
         }
 
         function renderCustomerTable(list) {
-            if (!list.length) return emptyState('Belum ada customer', '👥');
+            if (!list.length) return emptyState('Belum ada customer', '${usersSvg}');
             return `<div class="overflow-x-auto">
                 <table class="w-full text-xs">
                   <thead>
@@ -3387,7 +3388,7 @@ const c = document.getElementById('view-container');
                       <td class="px-6 py-4 font-medium dark:text-zinc-100 text-zinc-800">${cu.nama}</td>
                       <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400">${cu.kontak}</td>
                       <td class="px-6 py-4 dark:text-zinc-500 text-zinc-400 hidden sm:table-cell text-[11px]">${cu.created_at}</td>
-                      <td class="px-6 py-4"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${cu.points > 0 ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"}">⭐ ${cu.points || 0}</span></td>
+                      <td class="px-6 py-4"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${cu.points > 0 ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"}">${starSvg} ${cu.points || 0}</span></td>
                     </tr>`).join('')}
                   </tbody>
                 </table>
@@ -3783,10 +3784,10 @@ const c = document.getElementById('view-container');
                             <td class="px-5 py-4">
                               <span class="font-semibold ${s.stok <= 3 ? 'text-red-400' : s.stok <= 10 ? 'text-amber-400' : 'text-emerald-400'}">${s.stok}</span>
                               <span class="text-[11px] dark:text-zinc-500 text-zinc-400 ml-1">${s.satuan}</span>
-                              ${s.stok <= 3 ? '<span class="ml-1 text-[10px] text-red-400">⚠ Menipis</span>' : ''}
+                              ${s.stok <= 3 ? '<span class="ml-1 text-[10px] text-red-400">${warningSvg} Menipis</span>' : ''}
                             </td>
-                            <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(s.harga_beli)}</td>
-                            <td class="px-5 py-4 font-semibold text-[#4FD1C5]">${rp(s.harga_jual)}</td>
+                            <td class="px-5 py-4 whitespace-nowrap dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(s.harga_beli)}</td>
+                            <td class="px-5 py-4 whitespace-nowrap font-semibold text-[#4FD1C5]">${rp(s.harga_jual)}</td>
                             <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 text-[11px] hidden lg:table-cell">${s.dimensi_str || '—'}</td>
                             <td class="px-5 py-4">
                               <button onclick="modalUpdateStokSP('${s.sp_id}','${s.nama}',${s.stok})" class="btn btn-ghost" style="height:28px;padding:0 10px;font-size:0.6875rem;">Stok</button>
@@ -3905,7 +3906,7 @@ async function renderRequestSparepart() {
 }
 
 function renderRequestTable(list) {
-  if (!list?.length) return emptyState('Belum ada request sparepart', '🔧');
+  if (!list?.length) return emptyState('Belum ada request sparepart', '${wrenchSvg}');
 
   const isKepala = STATE.user?.role === 'kepala_cabang' || STATE.user?.role === 'owner';
 
@@ -4057,7 +4058,7 @@ async function simpanRequestSparepart() {
     const res = await API.requestSP.create(payload);
     
     closeModalBtn();
-    showToast(res.message || 'Request sparepart berhasil dikirim ✅', 'success');
+    showToast(res.message || 'Request sparepart berhasil dikirim ${checkCircleSvg}', 'success');
     
     // Refresh tabel
     setTimeout(() => renderRequestSparepart(), 700);
@@ -4223,7 +4224,7 @@ function filterTransfer(status) {
 }
 
 function renderTransferTable(list, canRespond) {
-  if (!list?.length) return emptyState('Belum ada transfer stok', '📦');
+  if (!list?.length) return emptyState('Belum ada transfer stok', '${packageSvg}');
   const isKepala = STATE.user?.role === 'kepala_cabang';
   const userCabang = STATE.user?.cabang;
 
@@ -4424,7 +4425,7 @@ async function simpanTransfer() {
 
     const res = await API.transferStok.create(payload);
     closeModalBtn();
-    showToast(res.message || `Transfer berhasil diajukan ✅`, 'success');
+    showToast(res.message || `Transfer berhasil diajukan ${checkCircleSvg}`, 'success');
     setTimeout(() => renderTransferStok(), 700);
   } catch (e) {
     // Tampilkan error per-unit jika ada
@@ -4509,7 +4510,7 @@ async function kirimResponTransfer(transfer_id) {
   try {
     const res = await API.transferStok.respond(transfer_id, { status, catatan });
     closeModalBtn();
-    showToast(res.message || `Transfer ${status} ✅`, 'success');
+    showToast(res.message || `Transfer ${status} ${checkCircleSvg}`, 'success');
     setTimeout(() => renderTransferStok(), 700);
   } catch (e) {
     showToast(e.message || 'Gagal memproses transfer', 'error');
@@ -4652,7 +4653,7 @@ function modalDetailTransfer(transfer_id) {
                                 <p class="text-[10px] dark:text-zinc-500 text-zinc-400">@${cab.kepala_username}</p>
                               </div>
                             </div>`
-                          : `<p class="text-xs text-amber-400">⚠ Belum ada kepala cabang</p>`
+                          : `<p class="text-xs text-amber-400">${warningSvg} Belum ada kepala cabang</p>`
                         }
                       </div>
                       <div class="flex gap-2 pt-1">
@@ -4665,7 +4666,7 @@ function modalDetailTransfer(transfer_id) {
                           : `<button onclick="toggleAktifCabang('${cab.kode}',true)" class="btn btn-ghost text-xs text-emerald-400" style="height:32px;padding:0 12px;">Aktifkan</button>`
                         }
                       </div>
-                    </div>`).join('') : `<div class="col-span-2">${emptyState('Belum ada cabang terdaftar', '🏢')}</div>`}
+                    </div>`).join('') : `<div class="col-span-2">${emptyState('Belum ada cabang terdaftar', '${buildingSvg}')}</div>`}
                   </div>
                 </div>`;
             } catch (e) { c.innerHTML = errorState(e.message, 'renderCabang()'); }
@@ -4913,8 +4914,8 @@ async function renderInfluencerCatalog() {
                 <input type="text" id="inf-cat-search" placeholder="Cari merk, tipe, unit..." class="flex-1 min-w-[200px] ${input} text-sm" onkeyup="filterInfluencerCatalog()">
                 <select id="inf-cat-filter" class="${input} text-xs" onchange="filterInfluencerCatalog()">
                     <option value="all">All Products</option>
-                    <option value="naked">⚠️ Needs Content</option>
-                    <option value="has-content">✅ Has Content</option>
+                    <option value="naked">${warningSvg} Needs Content</option>
+                    <option value="has-content">${checkCircleSvg} Has Content</option>
                 </select>
             </div>
 
@@ -4947,8 +4948,8 @@ function renderInfluencerCatalogList(items) {
     const c = document.getElementById('inf-cat-list');
     if (!c) return;
     if (!items.length) {
-        const debugMsg = items.length === 0 ? '<p class="text-xs text-red-500 mt-4">⚠️ API returned empty catalog. Check console for details.</p>' : '';
-    c.innerHTML = emptyState('Tidak ada produk tersedia', '📦') + debugMsg;
+        const debugMsg = items.length === 0 ? '<p class="text-xs text-red-500 mt-4">${warningSvg} API returned empty catalog. Check console for details.</p>' : '';
+    c.innerHTML = emptyState('Tidak ada produk tersedia', '${packageSvg}') + debugMsg;
         return;
     }
     c.innerHTML = items.map(item => {
@@ -4961,14 +4962,14 @@ function renderInfluencerCatalogList(items) {
         <div class="svc-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
-                    ${needsContent ? '<span class="badge badge-sold">⚠️ Needs Content</span>' : '<span class="badge badge-diambil">✅ Has Content</span>'}
+                    ${needsContent ? '<span class="badge badge-sold">${warningSvg} Needs Content</span>' : '<span class="badge badge-diambil">${checkCircleSvg} Has Content</span>'}
                 </div>
                 <span class="text-xs font-mono dark:text-zinc-500 text-zinc-400">${videoCount} video${videoCount !== 1 ? 's' : ''}</span>
             </div>
             <p class="text-base font-semibold dark:text-zinc-100 text-zinc-900 mb-1">${productName}</p>
-            <p class="text-sm dark:text-zinc-500 text-zinc-400 mb-2">${typeof rp === 'function' ? rp(price) : '💰 ' + price}</p>
+            <p class="text-sm dark:text-zinc-500 text-zinc-400 mb-2">${typeof rp === 'function' ? rp(price) : '${moneySvg} ' + price}</p>
             <button onclick="modalUploadVideo('${item.unit_id}', encodeURIComponent('${productName}'))" class="btn ${needsContent ? 'btn-primary' : 'btn-ghost'} w-full text-xs">
-                📹 ${needsContent ? 'Upload First Video' : `Upload Again (${videoCount})`}
+                ${cameraSvg} ${needsContent ? 'Upload First Video' : `Upload Again (${videoCount})`}
             </button>
         </div>
     `;}).filter(Boolean).join('');
@@ -4992,10 +4993,10 @@ function modalUploadVideo(preselectedUnitId = null, preselectedLabel = null) {
             <label class="label">Product (Optional)</label>
             <select name="unit_id" class="${input}">
                 <option value="">No product (general content)</option>
-                ${naked.map(p => `<option value="${p.unit_id}" ${preselectedUnitId === p.unit_id ? 'selected' : ''}>⚠️ ${labelOf(p)}</option>`).join('')}
-                ${hasContent.map(p => `<option value="${p.unit_id}" ${preselectedUnitId === p.unit_id ? 'selected' : ''}>✅ ${labelOf(p)} (${p.videos_count} videos)</option>`).join('')}
+                ${naked.map(p => `<option value="${p.unit_id}" ${preselectedUnitId === p.unit_id ? 'selected' : ''}>${warningSvg} ${labelOf(p)}</option>`).join('')}
+                ${hasContent.map(p => `<option value="${p.unit_id}" ${preselectedUnitId === p.unit_id ? 'selected' : ''}>${checkCircleSvg} ${labelOf(p)} (${p.videos_count} videos)</option>`).join('')}
             </select>
-            <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-1">⚠️ Products without content shown first</p>
+            <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-1">${warningSvg} Products without content shown first</p>
         </div>
         <div>
             <label class="label">Platform</label>
@@ -5011,7 +5012,7 @@ function modalUploadVideo(preselectedUnitId = null, preselectedLabel = null) {
         </div>
         <div class="flex gap-3 mt-6 pt-4 border-t dark:border-zinc-800 border-zinc-200">
             <button type="button" onclick="closeModalBtn()" class="btn btn-ghost flex-1">Cancel</button>
-            <button type="submit" class="btn btn-primary flex-1">📹 Upload Video</button>
+            <button type="submit" class="btn btn-primary flex-1">${cameraSvg} Upload Video</button>
         </div>
     </form>`);
 
@@ -5035,7 +5036,7 @@ function modalUploadVideo(preselectedUnitId = null, preselectedLabel = null) {
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
-            btn.innerHTML = '📹 Upload Video'; btn.disabled = false;
+            btn.innerHTML = '${cameraSvg} Upload Video'; btn.disabled = false;
         }
     });
 }
@@ -5092,7 +5093,7 @@ function renderInfluencerVideosList(items) {
     const c = document.getElementById('inf-vid-list');
     if (!c) return;
     if (!items.length) {
-        c.innerHTML = emptyState('Belum ada video', '🎬');
+        c.innerHTML = emptyState('Belum ada video', '${filmSvg}');
         return;
     }
     c.innerHTML = items.map(v => `
@@ -5315,7 +5316,7 @@ function renderOwnerInfluencerVideosList(items) {
     const c = document.getElementById('owner-inf-vid-list');
     if (!c) return;
     if (!items.length) {
-        c.innerHTML = emptyState('Tidak ada video', '🎬');
+        c.innerHTML = emptyState('Tidak ada video', '${filmSvg}');
         return;
     }
     
@@ -5400,8 +5401,9 @@ async function renderKurirDashboard() {
                 </div>
             </div>
             
-            <div class="overflow-x-auto rounded-2xl border dark:border-zinc-700 border-zinc-200">
-                <table class="w-full text-sm">
+            <div class="table-wrap rounded-2xl overflow-hidden">
+                <div class="overflow-x-auto">
+                <table class="w-full text-xs">
                     <thead>
                         <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
                             <th class="px-5 py-3.5 font-medium">Waktu</th>
@@ -5415,7 +5417,7 @@ async function renderKurirDashboard() {
                     </thead>
                     <tbody>
                         ${cods.length ? cods.map(cod => `
-                            <tr class="tbl-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">
+                            <tr class="tbl-row">
                                 <td class="px-5 py-4 whitespace-nowrap text-[10px] dark:text-zinc-600 text-zinc-400">${cod.created_at}</td>
                                 <td class="px-5 py-4">
                                     <span class="badge badge-${cod.type}">${cod.type === 'beli' ? 'Beli' : cod.type === 'jual' ? 'Jual' : 'Delivery'}</span>
@@ -5471,6 +5473,7 @@ async function renderKurirDashboard() {
                         `}
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>`;
     } catch (e) {
@@ -5640,8 +5643,8 @@ async function renderKurirMonitoring() {
 
             ${renderDateFilter('renderKurirMonitoring')}
 
-            <div class="overflow-x-auto rounded-2xl border dark:border-zinc-700 border-zinc-200">
-                <table class="w-full text-sm">
+            <div class="table-wrap rounded-2xl overflow-hidden"><div class="overflow-x-auto">
+                <table class="w-full text-xs">
                     <thead>
                         <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
                             <th class="px-5 py-3.5 font-medium">Kurir</th>
@@ -5702,6 +5705,7 @@ async function renderKurirMonitoring() {
                         `}
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>`;
     } catch (e) {
@@ -5787,8 +5791,8 @@ async function renderApprovalCod() {
                 <h1 class="text-2xl font-bold tracking-tight">Approval COD Beli</h1>
                 <span class="badge">${cods.length} menunggu</span>
             </div>
-            <div class="overflow-x-auto rounded-2xl border dark:border-zinc-700 border-zinc-200">
-                <table class="w-full text-sm">
+            <div class="table-wrap rounded-2xl overflow-hidden"><div class="overflow-x-auto">
+                <table class="w-full text-xs">
                     <thead><tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
                         <th class="px-5 py-3.5 font-medium">Waktu</th>
                         <th class="px-5 py-3.5 font-medium">Produk</th>
@@ -5812,6 +5816,7 @@ async function renderApprovalCod() {
                         </tr>`;
                     }).join('') : '<tr><td colspan="6" class="px-5 py-12 text-center text-xs dark:text-zinc-500 text-zinc-400">Tidak ada COD menunggu approval</td></tr>'}</tbody>
                 </table>
+                </div>
             </div>
         </div>`;
     } catch(e) { c.innerHTML = errorState(e.message, 'renderApprovalCod()'); }
@@ -6009,7 +6014,7 @@ const NOTIF = {
                         if (added) newCount++;
                     }
                     if (newCount > 0) {
-                        showToast(`🔔 ${newCount} tiket service selesai, menunggu approval`, 'info');
+                        showToast(`${bellSvg} ${newCount} tiket service selesai, menunggu approval`, 'info');
                     }
                     this.updateBadge();
                 } catch (e) {
@@ -6035,7 +6040,7 @@ const NOTIF = {
                                 if (added) newTrf++;
                             }
                             if (newTrf > 0) {
-                                showToast(`📦 ${newTrf} transfer stok baru menunggu persetujuan`, 'info');
+                                showToast(`${packageSvg} ${newTrf} transfer stok baru menunggu persetujuan`, 'info');
                             }
                             this.updateBadge();
                         }

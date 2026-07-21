@@ -834,7 +834,6 @@
                         ],
             kurir: [
                             { page: 'kurir-dashboard',  label: 'Dashboard COD', d: dashboardSvg },
-                            { page: 'kurir-input-stok', label: 'Input Stok', d: plusSvg },
                             { page: 'kurir-log',        label: 'Log Aktivitas', d: logSvg },
                         ],
         };
@@ -866,7 +865,6 @@
             'influencer-log':       ['Log Aktivitas'],
             'influencer-monitor':   ['Monitor Influencer'],
             'kurir-dashboard':  ['Dashboard COD'],
-            'kurir-input-stok': ['Input Stok (Kurir)'],
             'kurir-log':        ['Log Aktivitas Kurir'],
             'kurir-monitoring': ['Monitor Kurir'],
         };
@@ -931,7 +929,6 @@
             'influencer-log':       renderInfluencerLog,
             'influencer-monitor':   renderInfluencerMonitor,
             'kurir-dashboard':  renderKurirDashboard,
-            'kurir-input-stok': renderKurirInputStok,
             'kurir-log':        renderKurirLog,
             'kurir-monitoring': renderKurirMonitoring,
             'cod-beli':       renderCodBeli,
@@ -5503,10 +5500,24 @@ async function kurirReject(cod_id) {
 }
 
 async function kurirGoInputStok(cod_id) {
-    // Navigate to input stok page with COD context
-    navigate('kurir-input-stok');
-    // Store COD ID for context
-    localStorage.setItem('kurir_cod_context', cod_id);
+    // Show modal instead of navigating to separate page
+    openModal(`${modalHeader('Input Stok', cod_id)}
+        <div class="space-y-3 max-h-[70vh] overflow-y-auto">
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="label">Merk <span class="text-red-400">*</span></label><input id="is-merk" class="${input}" placeholder="Apple / Samsung"></div>
+                <div><label class="label">Tipe <span class="text-red-400">*</span></label><input id="is-tipe" class="${input}" placeholder="iPhone 15"></div>
+                <div><label class="label">IMEI <span class="text-red-400">*</span></label><input id="is-imei" class="${input}" placeholder="15 digit IMEI"></div>
+                <div><label class="label">Storage</label><input id="is-storage" class="${input}" placeholder="128GB"></div>
+                <div><label class="label">RAM</label><input id="is-ram" class="${input}" placeholder="8GB"></div>
+                <div><label class="label">Warna</label><input id="is-warna" class="${input}" placeholder="Black"></div>
+                <div><label class="label">Kondisi HP</label>
+                    <select id="is-kondisi" class="${input}"><option value="Mulus">Mulus — Inventory</option><option value="Repair">Repair — Service Teknisi</option></select>
+                </div>
+                <div><label class="label">Battery %</label><input id="is-baterai" class="${input}" type="number" value="100" min="0" max="100"></div>
+            </div>
+            <div><label class="label">Catatan</label><input id="is-catatan" class="${input}" placeholder="Kondisi fisik, kelengkapan, dll"></div>
+            <button onclick="doKurirInputStok('${cod_id}')" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">Simpan Stok</button>
+        </div>`);
 }
 
 async function kurirUpdateStatus(cod_id, status) {
@@ -5519,64 +5530,36 @@ async function kurirUpdateStatus(cod_id, status) {
     }
 }
 
-// ═══ INPUT STOK (KURIR) ═══
-async function renderKurirInputStok() {
-    const c = document.getElementById('view-container');
-    const codContext = localStorage.getItem('kurir_cod_context');
+// ═══ INPUT STOK (KURIR) - via Modal ═══
+async function doKurirInputStok(cod_id) {
+    const imei = document.getElementById('is-imei')?.value?.trim();
+    const merk = document.getElementById('is-merk')?.value?.trim();
+    const tipe = document.getElementById('is-tipe')?.value?.trim();
+    const ram = document.getElementById('is-ram')?.value?.trim() || '-';
+    const storage = document.getElementById('is-storage')?.value?.trim() || '-';
+    const warna = document.getElementById('is-warna')?.value?.trim() || '-';
+    const kondisi = document.getElementById('is-kondisi')?.value || 'Mulus';
+    const baterai = parseInt(document.getElementById('is-baterai')?.value) || 100;
+    const catatan = document.getElementById('is-catatan')?.value?.trim() || '';
     
-    c.innerHTML = `<div class="max-w-xl">
-        <div class="panel rounded-2xl p-7">
-          <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-6">Form Input Stok (Kurir)</p>
-          ${_unitFormFields(true)}
-          <button id="btn-simpan-unit" onclick="saveKurirInputStok()" class="btn btn-primary w-full mt-5">Simpan Stok</button>
-        </div>
-    </div>`;
-}
-
-async function saveKurirInputStok() {
-    const imei = document.getElementById('si-imei').value.trim();
-    const merk = document.getElementById('si-merk').value;
-    const tipe = document.getElementById('si-tipe').value.trim();
-    const ram = document.getElementById('si-ram').value;
-    const storage = document.getElementById('si-storage').value;
-    const warna = document.getElementById('si-warna').value.trim();
-    const kondisi = document.getElementById('si-kondisi').value;
-    const baterai = document.getElementById('si-baterai').value;
-    const kelengkapan = Array.from(document.querySelectorAll('.si-kelengkapan:checked')).map(cb => cb.value);
-    const catatan = document.getElementById('si-catatan').value.trim();
-    
-    if (!imei || !merk || !tipe || !ram || !storage || !warna || !kondisi) {
-        showToast('Field wajib (*) harus diisi', 'error');
+    if (!imei || !merk || !tipe) {
+        showToast('IMEI, Merk, Tipe wajib diisi', 'error');
         return;
     }
     
-    const btn = document.querySelector('#view-container button[onclick*="saveKurirInputStok"]') || document.activeElement;
-    btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
-    btn.disabled = true;
-    
     try {
-        const payload = {
+        await API.units.create({
             imei, merk, tipe, ram, storage, warna, kondisi,
-            baterai: baterai ? parseInt(baterai) : null,
-            kelengkapan,
-            catatan,
+            baterai, catatan,
             created_by_role: 'Kurir',
             harga_beli: null,
             harga_jual: null,
-        };
-        
-        await API.units.create(payload);
-        showToast('Stok berhasil ditambahkan. Serahkan ke Kasir untuk input harga.');
-        
-        // Clear COD context
-        localStorage.removeItem('kurir_cod_context');
-        
-        // Navigate back to dashboard
+        });
+        closeModalBtn();
+        showToast('Stok berhasil ditambahkan');
         renderKurirDashboard();
     } catch (e) {
         showToast(e.message, 'error');
-        btn.innerHTML = 'Simpan Stok';
-        btn.disabled = false;
     }
 }
 
@@ -5593,7 +5576,6 @@ async function renderKurirLog() {
             'Update COD Status': 'bg-blue-500/8 text-blue-400 border border-blue-500/15',
             'COD Request Diterima': 'bg-blue-500/8 text-blue-400 border border-blue-500/15',
             'COD Request Ditolak': 'bg-red-500/8 text-red-400 border border-red-500/15',
-            'Input Stok (Kurir)': 'bg-teal-500/8 text-teal-400 border border-teal-500/15',
         };
         
         c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
@@ -6183,7 +6165,6 @@ const NOTIF = {
         window.renderInfluencerLog = renderInfluencerLog;
         window.renderInfluencerMonitor = renderInfluencerMonitor;
         window.renderKurirDashboard = renderKurirDashboard;
-        window.renderKurirInputStok = renderKurirInputStok;
         window.renderKurirLog = renderKurirLog;
         window.renderCodBeli = renderCodBeli;
         window.renderApprovalCod = renderApprovalCod;
@@ -6192,8 +6173,8 @@ const NOTIF = {
         window.kurirReject = kurirReject;
         window.toggleCODDelivery = toggleCODDelivery;
         window.kurirGoInputStok = kurirGoInputStok;
+        window.doKurirInputStok = doKurirInputStok;
         window.kurirUpdateStatus = kurirUpdateStatus;
-        window.saveKurirInputStok = saveKurirInputStok;
         window.renderTransferStok = renderTransferStok;
         window.renderTransferTable = renderTransferTable;
         window.searchCustomer = searchCustomer;

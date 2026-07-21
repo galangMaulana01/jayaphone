@@ -406,7 +406,7 @@ var API = {
     kurirUpdateStatus: function(id, status, note) { return request('POST', '/cod/kurir/' + id + '/status', { status: status, note: note }); },
     kurirInputStok: function(b) { return request('POST', '/cod/kurir/input-stok', b); },
     kurirSubmitBeli: function(id, b) { return request('POST', '/cod/kurir/' + id + '/submit-beli', b); },
-    approve: function(id) { return request('POST', '/cod/' + id + '/approve'); },
+    approve: function(id, b) { return request('POST', '/cod/' + id + '/approve', b); },
     reject: function(id, reason) { return request('POST', '/cod/' + id + '/reject', { reason: reason }); },
     kurirLog: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/cod/kurir/log' + (q ? '?' + q : '')); },
     kurirMonitoring: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/cod/kurir/monitoring' + (q ? '?' + q : '')); },

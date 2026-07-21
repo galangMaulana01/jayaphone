@@ -5815,7 +5815,7 @@ function modalApproveCod(codId, unitData, kurirName, productName, dealPrice) {
         <div class="space-y-3 text-sm">
             <div class="grid grid-cols-2 gap-3">
                 <div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Produk</span><p class="font-medium">${productName}</p></div>
-                <div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Harga Deal</span><p class="font-medium">Rp ${dealPrice.toLocaleString()}</p></div>
+                <div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Harga Beli (Modal)</span><p class="font-medium">Rp ${dealPrice.toLocaleString()}</p></div>
                 <div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Kurir</span><p class="font-medium">${kurirName}</p></div>
                 <div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Kondisi</span><p class="font-medium">${kondisi}</p></div>
             </div>
@@ -5828,15 +5828,23 @@ function modalApproveCod(codId, unitData, kurirName, productName, dealPrice) {
                     <div>LCD: ${ud.lcd || '-'}</div><div>Keamanan: ${ud.keamanan || '-'}</div>
                 </div>
             </div>
+            ${kondisi !== 'Repair' ? `
+            <div class="border-t dark:border-zinc-800 border-zinc-200 pt-3">
+                <label class="label">Harga Jual Toko <span class="text-red-400">*</span></label>
+                <input id="cb-harga-jual" type="number" class="${input}" min="0" placeholder="Masukkan harga jual" value="${dealPrice}"/>
+                <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-1">Harga beli dari kurir: Rp ${dealPrice.toLocaleString()}. Tentukan harga jual toko.</p>
+            </div>` : ''}
             <p class="text-[11px] dark:text-zinc-500 text-zinc-400">${kondisi === 'Repair' ? 'Unit akan masuk antrian Service Teknisi' : 'Unit akan masuk Inventory (Tersedia)'}</p>
             <div class="flex gap-2">
-                <button onclick="doApproveCod('${codId}')" class="btn btn-primary flex-1">Approve</button>
+                <button onclick="doApproveCod('${codId}', ${kondisi !== 'Repair' ? 'true' : 'false'})" class="btn btn-primary flex-1">Approve</button>
                 <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
             </div>
         </div>`);
 }
-async function doApproveCod(codId) {
-    try { await API.cod.approve(codId); closeModalBtn(); showToast('COD Disetujui — unit masuk inventory'); renderApprovalCod(); }
+async function doApproveCod(codId, isRepair) {
+    const hargaJual = isRepair ? 0 : (parseInt(document.getElementById('cb-harga-jual')?.value) || 0);
+    if (!isRepair && !hargaJual) { showToast('Harga jual wajib diisi', 'error'); return; }
+    try { await API.cod.approve(codId, { harga_jual: hargaJual }); closeModalBtn(); showToast('COD Disetujui — unit masuk inventory'); renderApprovalCod(); }
     catch(e) { showToast(e.message, 'error'); }
 }
 function modalRejectCod(codId) {

@@ -1271,7 +1271,7 @@ let _dashCabangFilter = '';
 
         async function renderStok() {
             const c = document.getElementById('view-container');
-            const statuses = ['Semua', 'Tersedia', 'Sold', 'Booking', 'Service'];
+            const statuses = ['Semua', 'Tersedia', 'Sold', 'Service'];
             const isOwner = STATE.user.role === 'owner';
             const cabangLabel = !isOwner ? `<span class="text-xs dark:text-zinc-500 text-zinc-400">Cabang ${STATE.user.cabang}</span>` : '';
             c.innerHTML = `<div class="space-y-5">
@@ -3431,7 +3431,7 @@ const c = document.getElementById('view-container');
                 // Status resmi backend: Antrian, Proses, Selesai, Approved, Ditolak
                 c.innerHTML = `<div class="space-y-5">
                   <div class="flex gap-1.5 flex-wrap" id="svc-filter-btns">
-                    ${['Semua','Antrian','Proses','Selesai','Approved','Ditolak'].map((s,i)=>
+                    ${['Semua','Antrian','Proses','Selesai','Ditolak'].map((s,i)=>
                       `<button onclick="filterServiceTeknisi('${s}')" class="filter-tab ${i===0?'active':''}">${s}</button>`).join('')}
                   </div>
                   <div id="svc-list">${renderServiceList(list)}</div>
@@ -4756,6 +4756,7 @@ function modalDetailTransfer(transfer_id) {
                       </button>
                     </div>
                   </div>
+                  <div class="mt-3">${imageUploaderHTML({ id: 'kc-foto', maxFiles: 1, required: false, label: 'Foto Profil', capture: 'user', folder: 'jayaphone/users', helper: 'Opsional. Foto profil Kepala Cabang.' })}</div>
                 </div>
                 <button id="btn-assign-kc" onclick="simpanKepalaCabang('${kode}')" class="btn btn-primary w-full mt-5">Set sebagai Kepala Cabang</button>`);
         }
@@ -4769,7 +4770,7 @@ function modalDetailTransfer(transfer_id) {
             if (pass.length < 6) { showToast('Password minimal 6 karakter', 'error'); return; }
             btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             try {
-                await API.cabang.assignKepala(kode, { nama, username: user, password: pass });
+                await API.cabang.assignKepala(kode, { nama, username: user, password: pass, foto_profil_url: (window._uploads['kc-foto'] && window._uploads['kc-foto'][0]) || null });
                 closeModalBtn(); showToast(`Kepala cabang ${kode} berhasil diset`); await renderCabang();
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Set sebagai Kepala Cabang'; btn.disabled = false; }
         }
@@ -5665,7 +5666,7 @@ async function renderKurirMonitoring() {
                     </thead>
                     <tbody>
                         ${kurirs.length ? kurirs.map(k => `
-                            <tr class="tbl-row flex items-start gap-4 px-6 py-4 border-b border-divider last:border-0 transition-colors cursor-default">
+                            <tr class="tbl-row">
                                 <td class="px-5 py-4">
                                     <p class="font-medium dark:text-zinc-100 text-zinc-800">${k.kurir_name}</p>
                                     <p class="text-[10px] dark:text-zinc-500 text-zinc-400">${k.kurir_id}</p>
@@ -5876,7 +5877,7 @@ function modalSubmitBeli(codId) {
                 </div>
                 <div><label class="label">Battery %</label><input id="sb-battery" class="${input}" type="number" value="100" min="0" max="100"></div>
             </div>
-            <div><label class="label">Foto URL (Cloudinary)</label><input id="sb-foto" class="${input}" placeholder="https://res.cloudinary.com/..."></div>
+            <div><label class="label">Foto Unit HP</label>${imageUploaderHTML({ id: 'sb-foto', maxFiles: 1, required: false, label: '', capture: 'environment', folder: 'jayaphone/units/cod-beli', helper: 'Foto kondisi HP dari kurir (opsional).' })}</div>
             <div><label class="label">Kondisi Fisik</label>
                 <select id="sb-kondisi-kode" class="${input}"><option value="BN">Normal</option><option value="MN">Minus</option><option value="EX">Ex Inter</option><option value="RJ">Reject</option></select>
             </div>
@@ -5897,7 +5898,7 @@ async function doSubmitBeli(codId) {
         warna: document.getElementById('sb-warna')?.value?.trim() || '-',
         kondisi_hp: document.getElementById('sb-kondisi')?.value || 'Mulus',
         battery: parseInt(document.getElementById('sb-battery')?.value) || 100,
-        foto_url: document.getElementById('sb-foto')?.value?.trim() || '',
+        foto_url: (window._uploads['sb-foto'] && window._uploads['sb-foto'][0]) || '',
         kondisi: document.getElementById('sb-kondisi-kode')?.value || 'BN',
         keluhan: document.getElementById('sb-keluhan')?.value?.trim() || '',
         kat_kode: 'AI', kondisi_kode: document.getElementById('sb-kondisi-kode')?.value || 'BN',

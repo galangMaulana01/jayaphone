@@ -4964,6 +4964,7 @@ function renderInfluencerCatalogList(items) {
                 <span class="text-xs font-mono dark:text-zinc-500 text-zinc-400">${videoCount} video${videoCount !== 1 ? 's' : ''}</span>
             </div>
             <p class="text-base font-semibold dark:text-zinc-100 text-zinc-900 mb-1">${productName}</p>
+            <p class="text-xs font-mono text-zinc-400 mb-1">${item.unit_id}</p>
             <p class="text-sm dark:text-zinc-500 text-zinc-400 mb-2">${typeof rp === 'function' ? rp(price) : '${moneySvg} ' + price}</p>
             <button onclick="modalUploadVideo('${item.unit_id}', encodeURIComponent('${productName}'))" class="btn ${needsContent ? 'btn-primary' : 'btn-ghost'} w-full text-xs">
                 ${cameraSvg} ${needsContent ? 'Upload First Video' : `Upload Again (${videoCount})`}
@@ -5442,7 +5443,8 @@ async function renderKurirDashboard() {
                                     ` : cod.status === 'kurir_menuju_lokasi' ? `
                                         <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'sudah_bertemu_penjual')">Sudah Bertemu</button>
                                     ` : cod.status === 'sudah_bertemu_penjual' && cod.type === 'beli' ? `
-                                        <button class="btn btn-primary text-xs px-3 py-1.5" onclick="modalSubmitBeli('${cod.cod_id}')">Input Data HP</button>
+                                        <button class="btn btn-primary text-xs px-3 py-1.5 mr-1" onclick="modalSubmitBeli('${cod.cod_id}')">Input Data HP</button>
+                                        <button class="btn btn-ghost text-xs px-3 py-1.5 text-red-500 border-red-500" onclick="modalRejectCodBeliKurir('${cod.cod_id}')">Tolak</button>
                                     ` : cod.status === 'sudah_bertemu_penjual' && cod.type !== 'beli' ? `
                                         <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirGoInputStok('${cod.cod_id}')">Input Stok</button>
                                     ` : cod.status === 'barang_sudah_diambil' && cod.type === 'delivery' ? `
@@ -5510,58 +5512,61 @@ async function kurirGoInputStok(cod_id) {
                 <div><label class="label">Storage</label><input id="is-storage" class="${input}" placeholder="128GB"></div>
                 <div><label class="label">RAM</label><input id="is-ram" class="${input}" placeholder="8GB"></div>
                 <div><label class="label">Warna</label><input id="is-warna" class="${input}" placeholder="Black"></div>
-                <div><label class="label">Kondisi HP</label>
-                    <select id="is-kondisi" class="${input}"><option value="Mulus">Mulus — Inventory</option><option value="Repair">Repair — Service Teknisi</option></select>
-                </div>
-                <div><label class="label">Battery %</label><input id="is-baterai" class="${input}" type="number" value="100" min="0" max="100"></div>
-            </div>
-            <div><label class="label">Catatan</label><input id="is-catatan" class="${input}" placeholder="Kondisi fisik, kelengkapan, dll"></div>
-            <button onclick="doKurirInputStok('${cod_id}')" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">Simpan Stok</button>
-        </div>`);
-}
-
-async function kurirUpdateStatus(cod_id, status) {
-    try {
-        await API.cod.kurirUpdateStatus(cod_id, status);
-        showToast('Status diperbarui');
-        renderKurirDashboard();
-    } catch (e) {
-        showToast(e.message, 'error');
-    }
-}
-
-// ═══ INPUT STOK (KURIR) - via Modal ═══
-async function doKurirInputStok(cod_id) {
-    const imei = document.getElementById('is-imei')?.value?.trim();
-    const merk = document.getElementById('is-merk')?.value?.trim();
-    const tipe = document.getElementById('is-tipe')?.value?.trim();
-    const ram = document.getElementById('is-ram')?.value?.trim() || '-';
-    const storage = document.getElementById('is-storage')?.value?.trim() || '-';
-    const warna = document.getElementById('is-warna')?.value?.trim() || '-';
-    const kondisi = document.getElementById('is-kondisi')?.value || 'Mulus';
-    const baterai = parseInt(document.getElementById('is-baterai')?.value) || 100;
-    const catatan = document.getElementById('is-catatan')?.value?.trim() || '';
-    
-    if (!imei || !merk || !tipe) {
-        showToast('IMEI, Merk, Tipe wajib diisi', 'error');
-        return;
-    }
-    
-    try {
-        await API.units.create({
-            imei, merk, tipe, ram, storage, warna, kondisi,
-            baterai, catatan,
-            created_by_role: 'Kurir',
-            harga_beli: null,
-            harga_jual: null,
-        });
-        closeModalBtn();
-        showToast('Stok berhasil ditambahkan');
-        renderKurirDashboard();
-    } catch (e) {
-        showToast(e.message, 'error');
-    }
-}
+                async function kurirGoInputStok(cod_id) {
+                    openModal(modalHeader('Input Stok', cod_id) +
+                        '<div class="space-y-3 max-h-[70vh] overflow-y-auto">' +
+                        renderUnitFormHTML({
+                            codId: cod_id,
+                            uploaderId: 'is-foto',
+                            submitFn: 'doKurirInputStok',
+                            submitLabel: 'Simpan Stok',
+                            dealPrice: 0,
+                            showDealPrice: false,
+                            showHargaJual: false,
+                            prefill: {}
+                        }) +
+                        '</div>');
+                }
+                async function doKurirInputStok(cod_id) {
+                    const unit_data = collectUnitFormData('is-foto');
+                    // Validate required fields
+                    if (!unit_data.imei || !unit_data.merk || !unit_data.tipe) {
+                        showToast('IMEI, Merk, Tipe wajib diisi', 'error');
+                        return;
+                    }
+                    try {
+                        await API.units.create({
+                            imei: unit_data.imei,
+                            merk: unit_data.merk,
+                            tipe: unit_data.tipe,
+                            ram: unit_data.ram,
+                            storage: unit_data.storage,
+                            warna: unit_data.warna,
+                            kondisi: unit_data.kondisi_hp,
+                            baterai: unit_data.battery,
+                            catatan: unit_data.catatan,
+                            created_by_role: 'Kurir',
+                            harga_beli: null,
+                            harga_jual: null,
+                            // Map additional fields
+                            kat_kode: 'AI',
+                            kondisi_kode: unit_data.kondisi,
+                            tipe_sim: unit_data.tipe_sim,
+                            keamanan: unit_data.keamanan,
+                            speaker: unit_data.speaker,
+                            lcd: unit_data.lcd,
+                            battery_health: unit_data.battery_health,
+                            garansi_toko: unit_data.garansi_toko,
+                            foto_url: unit_data.foto_url,
+                            keluhan: unit_data.keluhan,
+                        });
+                        closeModalBtn();
+                        showToast('Stok berhasil ditambahkan');
+                        renderKurirDashboard();
+                    } catch (e) {
+                        showToast(e.message, 'error');
+                    }
+                }
 
 // ═══ LOG KURIR ═══
 async function renderKurirLog() {
@@ -5793,40 +5798,67 @@ async function renderApprovalCod() {
 function modalApproveCod(codId, unitData, kurirName, productName, dealPrice) {
     const ud = typeof unitData === 'string' ? JSON.parse(unitData) : unitData;
     const kondisi = ud.kondisi_hp || 'Mulus';
-    openModal(`${modalHeader('Approve COD Beli', codId)}
-        <div class="space-y-3 text-sm">
-            <div class="grid grid-cols-2 gap-3">
-                <div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Produk</span><p class="font-medium">${productName}</p></div>
-                <div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Harga Beli (Modal)</span><p class="font-medium">Rp ${dealPrice.toLocaleString()}</p></div>
-                <div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Kurir</span><p class="font-medium">${kurirName}</p></div>
-                <div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Kondisi</span><p class="font-medium">${kondisi}</p></div>
-            </div>
-            <div class="border-t dark:border-zinc-800 border-zinc-200 pt-3">
-                <span class="text-[10px] dark:text-zinc-500 text-zinc-400">Detail Unit</span>
-                <div class="grid grid-cols-2 gap-2 mt-2 text-xs dark:text-zinc-400 text-zinc-500">
-                    <div>IMEI: ${ud.imei || '-'}</div><div>RAM: ${ud.ram || '-'}</div>
-                    <div>Storage: ${ud.storage || '-'}</div><div>Warna: ${ud.warna || '-'}</div>
-                    <div>Battery: ${ud.battery || '-'}%</div><div>Speaker: ${ud.speaker || '-'}</div>
-                    <div>LCD: ${ud.lcd || '-'}</div><div>Keamanan: ${ud.keamanan || '-'}</div>
-                </div>
-            </div>
-            ${kondisi !== 'Repair' ? `
-            <div class="border-t dark:border-zinc-800 border-zinc-200 pt-3">
-                <label class="label">Harga Jual Toko <span class="text-red-400">*</span></label>
-                <input id="cb-harga-jual" type="number" class="${input}" min="0" placeholder="Masukkan harga jual" value="${dealPrice}"/>
-                <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-1">Harga beli dari kurir: Rp ${dealPrice.toLocaleString()}. Tentukan harga jual toko.</p>
-            </div>` : ''}
-            <p class="text-[11px] dark:text-zinc-500 text-zinc-400">${kondisi === 'Repair' ? 'Unit akan masuk antrian Service Teknisi' : 'Unit akan masuk Inventory (Tersedia)'}</p>
-            <div class="flex gap-2">
-                <button onclick="doApproveCod('${codId}', ${kondisi !== 'Repair' ? 'true' : 'false'})" class="btn btn-primary flex-1">Approve</button>
-                <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
-            </div>
-        </div>`);
+    
+    // Build prefill data from unit_data
+    const prefill = {
+        merk: ud.merk || '',
+        tipe: ud.tipe || '',
+        imei: ud.imei || '',
+        storage: ud.storage || '-',
+        ram: ud.ram || '-',
+        warna: ud.warna || '-',
+        kondisi_hp: ud.kondisi_hp || 'Mulus',
+        battery: ud.battery || 100,
+        foto_url: ud.foto_url || '',
+        kondisi: ud.kondisi || 'BN',
+        keluhan: ud.keluhan || '',
+        tipe_sim: ud.tipe_sim || 'Single SIM',
+        keamanan: ud.keamanan || 'Tidak Ada',
+        speaker: ud.speaker || 'Normal',
+        lcd: ud.lcd || 'Original',
+        battery_health: ud.battery_health || 0,
+        garansi_toko: ud.garansi_toko || 7,
+        catatan: ud.catatan || '',
+    };
+    
+    openModal(modalHeader('Approve COD Beli', codId) +
+        '<div class="space-y-3 text-sm max-h-[70vh] overflow-y-auto">' +
+        '<div class="grid grid-cols-2 gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">' +
+        '<div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Produk</span><p class="font-medium">' + productName + '</p></div>' +
+        '<div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Harga Beli (Modal)</span><p class="font-medium">Rp ' + dealPrice.toLocaleString('id-ID') + '</p></div>' +
+        '<div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Kurir</span><p class="font-medium">' + kurirName + '</p></div>' +
+        '<div><span class="text-[10px] dark:text-zinc-500 text-zinc-400">Kondisi</span><p class="font-medium">' + kondisi + '</p></div>' +
+        '</div>' +
+        renderUnitFormHTML({
+            codId: codId,
+            uploaderId: 'ap-foto',
+            submitFn: 'doApproveCod',
+            submitLabel: 'Approve & Simpan',
+            dealPrice: dealPrice,
+            showDealPrice: true,
+            readOnlyDealPrice: true,
+            showHargaJual: kondisi !== 'Repair',
+            hargaJualRequired: kondisi !== 'Repair',
+            prefillHargaJual: 0, // kasir harus isi harga jual sendiri
+            prefill: prefill
+        }) +
+        '<p class="text-[11px] dark:text-zinc-500 text-zinc-400 text-center">' + (kondisi === 'Repair' ? 'Unit akan masuk antrian Service Teknisi' : 'Unit akan masuk Inventory (Tersedia)') + '</p>' +
+        '</div>');
 }
-async function doApproveCod(codId, isRepair) {
-    const hargaJual = isRepair ? 0 : (parseInt(document.getElementById('cb-harga-jual')?.value) || 0);
+async function doApproveCod(codId) {
+    const dealPrice = parseInt(document.getElementById('uf-price')?.value) || 0;
+    const isRepair = document.getElementById('uf-kondisi-hp')?.value === 'Repair';
+    const hargaJual = isRepair ? 0 : (parseInt(document.getElementById('uf-harga-jual')?.value) || 0);
     if (!isRepair && !hargaJual) { showToast('Harga jual wajib diisi', 'error'); return; }
-    try { await API.cod.approve(codId, { harga_jual: hargaJual }); closeModalBtn(); showToast('COD Disetujui — unit masuk inventory'); renderApprovalCod(); }
+    const unit_data = collectUnitFormData('ap-foto');
+    unit_data.kat_kode = 'AI';
+    unit_data.kondisi_kode = unit_data.kondisi;
+    try { 
+        await API.cod.approve(codId, { harga_jual: hargaJual, unit_data: unit_data }); 
+        closeModalBtn(); 
+        showToast('COD Disetujui — unit masuk inventory'); 
+        renderApprovalCod(); 
+    }
     catch(e) { showToast(e.message, 'error'); }
 }
 function modalRejectCod(codId) {
@@ -5848,54 +5880,183 @@ async function doRejectCod(codId) {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  KURIR — Submit Beli Popup
+//  SHARED UNIT FORM COMPONENT
+//  Digunakan oleh: Kurir (modalSubmitBeli) & Kasir (modalApproveCod)
+// ════════════════════════════════════════════════════════════════
+function renderUnitFormHTML(cfg) {
+    cfg = cfg || {};
+    var uploaderId = cfg.uploaderId || 'unit-foto';
+    var isApproval = cfg.isApproval === true;
+    var dealPrice = cfg.dealPrice || 0;
+    var prefill = cfg.prefill || {};
+    var submitFn = cfg.submitFn || 'doSubmitUnitForm';
+    var submitLabel = cfg.submitLabel || 'Simpan';
+    var showDealPrice = cfg.showDealPrice !== false; // default true for kurir
+    var readOnlyDealPrice = cfg.readOnlyDealPrice === true; // true for kasir approval
+    var showHargaJual = cfg.showHargaJual !== false; // default true
+    var hargaJualRequired = cfg.hargaJualRequired !== false;
+    var prefillHargaJual = cfg.prefillHargaJual || 0;
+
+    // Helper untuk ambil nilai prefill dengan fallback
+    function val(key, def) {
+        return (prefill[key] !== undefined && prefill[key] !== null && prefill[key] !== '') ? prefill[key] : def;
+    }
+
+    var dealPriceInput = showDealPrice ? (
+        '<div><label class="label">Harga Deal (Rp) <span class="text-red-400">*</span></label>' +
+        '<input id="uf-price" class="' + input + '" type="number" min="0" placeholder="5000000" value="' + dealPrice + '"' + (readOnlyDealPrice ? ' readonly' : '') + '></div>'
+    ) : '';
+
+    var hargaJualInput = showHargaJual ? (
+        '<div class="border-t dark:border-zinc-800 border-zinc-200 pt-3">' +
+        '<label class="label">Harga Jual Toko ' + (hargaJualRequired ? '<span class="text-red-400">*</span>' : '') + '</label>' +
+        '<input id="uf-harga-jual" type="number" class="' + input + '" min="0" placeholder="Masukkan harga jual" value="' + prefillHargaJual + '"/>' +
+        (dealPrice > 0 ? '<p class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-1">Harga beli dari kurir: Rp ' + dealPrice.toLocaleString('id-ID') + '. Tentukan harga jual toko.</p>' : '') +
+        '</div>'
+    ) : '';
+
+    var garansiInput = (
+        '<div><label class="label">Garansi Toko (hari)</label>' +
+        '<input id="uf-garansi" type="number" class="' + input + '" min="0" value="' + val('garansi_toko', 7) + '"></div>'
+    );
+
+    var catatanInput = (
+        '<div><label class="label">Catatan</label>' +
+        '<input id="uf-catatan" class="' + input + '" placeholder="Kondisi fisik, kelengkapan, dll" value="' + val('catatan', '') + '"></div>'
+    );
+
+    return (
+        dealPriceInput +
+        '<div class="grid grid-cols-2 gap-3">' +
+        '<div><label class="label">Merk <span class="text-red-400">*</span></label><input id="uf-merk" class="' + input + '" placeholder="Apple / Samsung" value="' + val('merk', '') + '"></div>' +
+        '<div><label class="label">Tipe <span class="text-red-400">*</span></label><input id="uf-tipe" class="' + input + '" placeholder="iPhone 15" value="' + val('tipe', '') + '"></div>' +
+        '<div><label class="label">IMEI <span class="text-red-400">*</span></label><input id="uf-imei" class="' + input + '" placeholder="15 digit" value="' + val('imei', '') + '"></div>' +
+        '<div><label class="label">Storage</label><input id="uf-storage" class="' + input + '" placeholder="128GB" value="' + val('storage', '-') + '"></div>' +
+        '<div><label class="label">RAM</label><input id="uf-ram" class="' + input + '" placeholder="8GB" value="' + val('ram', '-') + '"></div>' +
+        '<div><label class="label">Warna</label><input id="uf-warna" class="' + input + '" placeholder="Black" value="' + val('warna', '-') + '"></div>' +
+        '<div><label class="label">Kondisi HP</label>' +
+        '<select id="uf-kondisi-hp" class="' + input + '">' +
+        '<option value="Mulus"' + (val('kondisi_hp', 'Mulus') === 'Mulus' ? ' selected' : '') + '>Mulus — Inventory</option>' +
+        '<option value="Repair"' + (val('kondisi_hp', 'Mulus') === 'Repair' ? ' selected' : '') + '>Repair — Service Teknisi</option>' +
+        '</select></div>' +
+        '<div><label class="label">Battery %</label><input id="uf-battery" class="' + input + '" type="number" value="' + val('battery', 100) + '" min="0" max="100"></div>' +
+        '</div>' +
+        '<div><label class="label">Foto Unit HP</label>' + imageUploaderHTML({ id: uploaderId, maxFiles: 5, required: false, label: '', capture: 'environment', folder: 'jayaphone/units/cod-beli', helper: 'Foto kondisi HP (max 5).' }) + '</div>' +
+        '<div><label class="label">Kondisi Fisik</label>' +
+        '<select id="uf-kondisi-kode" class="' + input + '">' +
+        '<option value="BN"' + (val('kondisi', 'BN') === 'BN' ? ' selected' : '') + '>Normal</option>' +
+        '<option value="MN"' + (val('kondisi', 'BN') === 'MN' ? ' selected' : '') + '>Minus</option>' +
+        '<option value="EX"' + (val('kondisi', 'BN') === 'EX' ? ' selected' : '') + '>Ex Inter</option>' +
+        '<option value="RJ"' + (val('kondisi', 'BN') === 'RJ' ? ' selected' : '') + '>Reject</option>' +
+        '</select></div>' +
+        '<div><label class="label">Keluhan (kalau Repair)</label><input id="uf-keluhan" class="' + input + '" placeholder="LCD pecah, baterai soak, dll" value="' + val('keluhan', '') + '"></div>' +
+        '<div><label class="label">Tipe SIM</label>' +
+        '<select id="uf-tipe-sim" class="' + input + '">' +
+        '<option value="Single SIM"' + (val('tipe_sim', 'Single SIM') === 'Single SIM' ? ' selected' : '') + '>Single SIM</option>' +
+        '<option value="Dual SIM"' + (val('tipe_sim', 'Single SIM') === 'Dual SIM' ? ' selected' : '') + '>Dual SIM</option>' +
+        '<option value="eSIM"' + (val('tipe_sim', 'Single SIM') === 'eSIM' ? ' selected' : '') + '>eSIM</option>' +
+        '<option value="WiFi Only"' + (val('tipe_sim', 'Single SIM') === 'WiFi Only' ? ' selected' : '') + '>WiFi Only</option>' +
+        '</select></div>' +
+        '<div><label class="label">Keamanan</label>' +
+        '<select id="uf-keamanan" class="' + input + '">' +
+        '<option value="Tidak Ada"' + (val('keamanan', 'Tidak Ada') === 'Tidak Ada' ? ' selected' : '') + '>Tidak Ada</option>' +
+        '<option value="Face ID"' + (val('keamanan', 'Tidak Ada') === 'Face ID' ? ' selected' : '') + '>Face ID</option>' +
+        '<option value="Fingerprint"' + (val('keamanan', 'Tidak Ada') === 'Fingerprint' ? ' selected' : '') + '>Fingerprint</option>' +
+        '<option value="Touch ID"' + (val('keamanan', 'Tidak Ada') === 'Touch ID' ? ' selected' : '') + '>Touch ID</option>' +
+        '</select></div>' +
+        '<div><label class="label">Speaker</label>' +
+        '<select id="uf-speaker" class="' + input + '">' +
+        '<option value="Normal"' + (val('speaker', 'Normal') === 'Normal' ? ' selected' : '') + '>Normal</option>' +
+        '<option value="Tidak Normal"' + (val('speaker', 'Normal') === 'Tidak Normal' ? ' selected' : '') + '>Tidak Normal</option>' +
+        '</select></div>' +
+        '<div><label class="label">LCD</label>' +
+        '<select id="uf-lcd" class="' + input + '">' +
+        '<option value="Original"' + (val('lcd', 'Original') === 'Original' ? ' selected' : '') + '>Original</option>' +
+        '<option value="Tidak Original"' + (val('lcd', 'Original') === 'Tidak Original' ? ' selected' : '') + '>Tidak Original</option>' +
+        '</select></div>' +
+        '<div><label class="label">Battery Health %</label><input id="uf-battery-health" class="' + input + '" type="number" min="0" max="100" value="' + val('battery_health', 0) + '"></div>' +
+        garansiInput +
+        catatanInput +
+        hargaJualInput +
+        '<button onclick="' + submitFn + '(' + (cfg.codId ? "'" + cfg.codId + "'" : '') + ')" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">' + submitLabel + '</button>'
+    );
+}
+
+// ════════════════════════════════════════════════════════════════
+//  KURIR — Submit Beli Popup (menggunakan shared form)
 // ════════════════════════════════════════════════════════════════
 function modalSubmitBeli(codId) {
-    openModal(`${modalHeader('Input Data HP', codId)}
-        <div class="space-y-3 max-h-[70vh] overflow-y-auto">
-            <div><label class="label">Harga Deal (Rp) <span class="text-red-400">*</span></label>
-            <input id="sb-price" class="${input}" type="number" min="0" placeholder="5000000"></div>
-            <div class="grid grid-cols-2 gap-3">
-                <div><label class="label">Merk <span class="text-red-400">*</span></label><input id="sb-merk" class="${input}" placeholder="Apple"></div>
-                <div><label class="label">Tipe <span class="text-red-400">*</span></label><input id="sb-tipe" class="${input}" placeholder="iPhone 15"></div>
-                <div><label class="label">IMEI <span class="text-red-400">*</span></label><input id="sb-imei" class="${input}" placeholder="15 digit"></div>
-                <div><label class="label">Storage</label><input id="sb-storage" class="${input}" placeholder="128GB"></div>
-                <div><label class="label">RAM</label><input id="sb-ram" class="${input}" placeholder="8GB"></div>
-                <div><label class="label">Warna</label><input id="sb-warna" class="${input}" placeholder="Black"></div>
-                <div><label class="label">Kondisi HP</label>
-                    <select id="sb-kondisi" class="${input}"><option value="Mulus">Mulus — Inventory</option><option value="Repair">Repair — Service Teknisi</option></select>
-                </div>
-                <div><label class="label">Battery %</label><input id="sb-battery" class="${input}" type="number" value="100" min="0" max="100"></div>
-            </div>
-            <div><label class="label">Foto Unit HP</label>${imageUploaderHTML({ id: 'sb-foto', maxFiles: 1, required: false, label: '', capture: 'environment', folder: 'jayaphone/units/cod-beli', helper: 'Foto kondisi HP dari kurir (opsional).' })}</div>
-            <div><label class="label">Kondisi Fisik</label>
-                <select id="sb-kondisi-kode" class="${input}"><option value="BN">Normal</option><option value="MN">Minus</option><option value="EX">Ex Inter</option><option value="RJ">Reject</option></select>
-            </div>
-            <div><label class="label">Keluhan (kalau Repair)</label><input id="sb-keluhan" class="${input}" placeholder="LCD pecah, baterai soak, dll"></div>
-            <button onclick="doSubmitBeli('${codId}')" class="btn btn-primary w-full" style="height:44px;border-radius:14px;">Kirim ke Kasir untuk Approval</button>
-        </div>`);
+    openModal(modalHeader('Input Data HP', codId) +
+        '<div class="space-y-3 max-h-[70vh] overflow-y-auto">' +
+        renderUnitFormHTML({
+            codId: codId,
+            uploaderId: 'sb-foto',
+            submitFn: 'doSubmitBeli',
+            submitLabel: 'Kirim ke Kasir untuk Approval',
+            dealPrice: 0,
+            showDealPrice: true,
+            readOnlyDealPrice: false,
+            showHargaJual: false,
+            prefill: {}
+        }) +
+        '</div>');
 }
 async function doSubmitBeli(codId) {
-    const deal_price = parseInt(document.getElementById('sb-price')?.value) || 0;
-    const merk = document.getElementById('sb-merk')?.value?.trim();
-    const tipe = document.getElementById('sb-tipe')?.value?.trim();
-    const imei = document.getElementById('sb-imei')?.value?.trim();
+    const deal_price = parseInt(document.getElementById('uf-price')?.value) || 0;
+    const merk = document.getElementById('uf-merk')?.value?.trim();
+    const tipe = document.getElementById('uf-tipe')?.value?.trim();
+    const imei = document.getElementById('uf-imei')?.value?.trim();
     if (!deal_price || !merk || !tipe || !imei) { showToast('Harga, Merk, Tipe, IMEI wajib diisi', 'error'); return; }
-    const unit_data = {
-        merk, tipe, imei,
-        storage: document.getElementById('sb-storage')?.value?.trim() || '-',
-        ram: document.getElementById('sb-ram')?.value?.trim() || '-',
-        warna: document.getElementById('sb-warna')?.value?.trim() || '-',
-        kondisi_hp: document.getElementById('sb-kondisi')?.value || 'Mulus',
-        battery: parseInt(document.getElementById('sb-battery')?.value) || 100,
-        foto_url: (window._uploads['sb-foto'] && window._uploads['sb-foto'][0]) || '',
-        kondisi: document.getElementById('sb-kondisi-kode')?.value || 'BN',
-        keluhan: document.getElementById('sb-keluhan')?.value?.trim() || '',
-        kat_kode: 'AI', kondisi_kode: document.getElementById('sb-kondisi-kode')?.value || 'BN',
-        battery_health: 0, tipe_sim: 'Single SIM', keamanan: 'Tidak Ada', speaker: 'Normal', lcd: 'Original',
-    };
+    const unit_data = collectUnitFormData('sb-foto');
+    unit_data.kat_kode = 'AI';
+    unit_data.kondisi_kode = unit_data.kondisi;
     try { await API.cod.kurirSubmitBeli(codId, { deal_price, unit_data }); closeModalBtn(); showToast('Data dikirim ke kasir untuk approval'); renderKurirDashboard(); }
     catch(e) { showToast(e.message, 'error'); }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  KURIR — Reject Beli (setelah sudah bertemu penjual)
+// ════════════════════════════════════════════════════════════════
+function modalRejectCodBeliKurir(codId) {
+    openModal(`${modalHeader('Tolak COD Beli', codId)}
+        <div class="space-y-3">
+            <div><label class="label">Alasan Reject <span class="text-red-400">*</span></label>
+            <textarea id="kurir-reject-reason" class="${input}" rows="3" placeholder="Contoh: Harga deal tidak sepakat, kondisi beda dari foto, penjual batal, dll"></textarea></div>
+            <div class="flex gap-2">
+                <button onclick="doRejectCodBeliKurir('${codId}')" class="btn btn-primary flex-1 bg-red-600 hover:bg-red-700">Tolak</button>
+                <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Batal</button>
+            </div>
+        </div>`);
+}
+async function doRejectCodBeliKurir(codId) {
+    const reason = document.getElementById('kurir-reject-reason')?.value?.trim();
+    if (!reason) { showToast('Alasan reject wajib diisi', 'error'); return; }
+    try { await API.cod.kurirRejectBeli(codId, reason); closeModalBtn(); showToast('COD Ditolak'); renderKurirDashboard(); }
+    catch(e) { showToast(e.message, 'error'); }
+}
+
+// Helper: collect all unit form data from DOM
+function collectUnitFormData(uploaderId) {
+    return {
+        merk: document.getElementById('uf-merk')?.value?.trim() || '',
+        tipe: document.getElementById('uf-tipe')?.value?.trim() || '',
+        imei: document.getElementById('uf-imei')?.value?.trim() || '',
+        storage: document.getElementById('uf-storage')?.value?.trim() || '-',
+        ram: document.getElementById('uf-ram')?.value?.trim() || '-',
+        warna: document.getElementById('uf-warna')?.value?.trim() || '-',
+        kondisi_hp: document.getElementById('uf-kondisi-hp')?.value || 'Mulus',
+        battery: parseInt(document.getElementById('uf-battery')?.value) || 100,
+        foto_url: (window._uploads[uploaderId] && window._uploads[uploaderId][0]) || '',
+        kondisi: document.getElementById('uf-kondisi-kode')?.value || 'BN',
+        keluhan: document.getElementById('uf-keluhan')?.value?.trim() || '',
+        tipe_sim: document.getElementById('uf-tipe-sim')?.value || 'Single SIM',
+        keamanan: document.getElementById('uf-keamanan')?.value || 'Tidak Ada',
+        speaker: document.getElementById('uf-speaker')?.value || 'Normal',
+        lcd: document.getElementById('uf-lcd')?.value || 'Original',
+        battery_health: parseInt(document.getElementById('uf-battery-health')?.value) || 0,
+        garansi_toko: parseInt(document.getElementById('uf-garansi')?.value) || 7,
+        catatan: document.getElementById('uf-catatan')?.value?.trim() || '',
+    };
 }
 
 const NOTIF = {

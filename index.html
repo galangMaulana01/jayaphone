@@ -796,6 +796,8 @@
                 { page: 'log',               label: 'Log Aktivitas',     d: logSvg },
                 { page: 'influencer-monitor', label: 'Monitor Influencer', d: karyawanSvg },
                 { page: 'kurir-monitoring',  label: 'Monitor Kurir', d: dashboardSvg },
+                { page: 'customers',         label: 'Data Customer',     d: clientSvg },
+                { page: 'settings',          label: 'Pengaturan',        d: settingSvg },
             ],
             kepala_cabang: [
                 { page: 'dashboard',         label: 'Dashboard',         d: dashboardSvg },
@@ -810,6 +812,8 @@
                 { page: 'karyawan',          label: 'Karyawan',          d: karyawanSvg },
                 { page: 'log',               label: 'Log Aktivitas',     d: logSvg },
                 { page: 'kurir-monitoring',  label: 'Monitor Kurir', d: dashboardSvg },
+                { page: 'customers',         label: 'Data Customer',     d: clientSvg },
+                { page: 'settings',          label: 'Pengaturan',        d: settingSvg },
             ],
             kasir: [
                 { page: 'stok-kasir',        label: 'Cek Stok',          d: stokSvg2 },
@@ -820,21 +824,25 @@
                 { page: 'approval-repair',   label: 'Approval Repair',   d: settingSvg },
                 { page: 'request-sparepart', label: 'Request Sparepart', d: stokSvg2 },
                 { page: 'customers',         label: 'Data Customer',     d: clientSvg },
+                { page: 'settings',          label: 'Pengaturan',        d: settingSvg },
             ],
             teknisi: [
                            { page: 'service-list',    label: 'Data Service',       d: settingSvg },
                            { page: 'request-sparepart', label: 'Request Sparepart', d: stokSvg2 },
                            { page: 'teknisi-log',       label: 'Log Aktivitas',     d: settingSvg },
+                           { page: 'settings',          label: 'Pengaturan',        d: settingSvg },
                        ],
             'influencer': [
                             { page: 'influencer-dashboard', label: 'Dashboard', d: dashboardSvg },
                             { page: 'influencer-catalog', label: 'Katalog Produk', d: stokSvg1 },
                             { page: 'influencer-videos',  label: 'Video Saya', d: transaksiSvg },
                             { page: 'influencer-log',       label: 'Log Aktivitas', d: settingSvg },
+                            { page: 'settings',             label: 'Pengaturan', d: settingSvg },
                         ],
             kurir: [
                             { page: 'kurir-dashboard',  label: 'Dashboard COD', d: dashboardSvg },
                             { page: 'kurir-log',        label: 'Log Aktivitas', d: logSvg },
+                            { page: 'settings',          label: 'Pengaturan',        d: settingSvg },
                         ],
         };
 
@@ -867,6 +875,7 @@
             'kurir-dashboard':  ['Dashboard COD'],
             'kurir-log':        ['Log Aktivitas Kurir'],
             'kurir-monitoring': ['Monitor Kurir'],
+            'settings':         ['Pengaturan'],
         };
 
         // ── SHOW APP ──
@@ -933,6 +942,7 @@
             'kurir-monitoring': renderKurirMonitoring,
             'cod-beli':       renderCodBeli,
             'approval-cod':   renderApprovalCod,
+            'settings':       renderSettings,
         };
 
         function navigate(page) {
@@ -3416,6 +3426,134 @@ const c = document.getElementById('view-container');
                 await API.customers.create({ nama: document.getElementById('cu-nama').value, kontak: document.getElementById('cu-kontak').value });
                 closeModalBtn(); showToast('Customer berhasil ditambahkan'); await renderCustomers();
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Customer'; btn.disabled = false; }
+        }
+
+        // ═══ VIEW: PENGATURAN / PROFIL (SEMUA ROLE) ═══
+        async function renderSettings() {
+            const c = document.getElementById('view-container');
+            setLoading(c, 3);
+            try {
+                const me = (await API.auth.me()).data;
+                c.innerHTML = `<div class="space-y-6 max-w-2xl">
+                  <h2 class="text-xl font-semibold tracking-tight">Pengaturan Profil</h2>
+                  
+                  <!-- Profile Info (Read-only username & name, editable foto) -->
+                  <div class="card p-5 space-y-4">
+                    <h3 class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Informasi Akun</h3>
+                    <div class="space-y-3">
+                      <div>
+                        <label class="label">Role</label>
+                        <div class="${input} px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-sm font-medium">${me.role}</div>
+                      </div>
+                      <div>
+                        <label class="label">Cabang</label>
+                        <div class="${input} px-3 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-sm font-medium">${me.cabang || '-'}</div>
+                      </div>
+                      <div>
+                        <label class="label">Username <span class="text-red-400">*</span> <span class="text-[10px] text-zinc-400 ml-1">(tidak bisa diubah)</span></label>
+                        <input id="set-username" type="text" class="${input}" value="${me.username}" readonly />
+                      </div>
+                      <div>
+                        <label class="label">Nama Tampil <span class="text-red-400">*</span> <span class="text-[10px] text-zinc-400 ml-1">(tidak bisa diubah)</span></label>
+                        <input id="set-name" type="text" class="${input}" value="${me.name || ''}" placeholder="Nama lengkap" readonly />
+                      </div>
+                      <div>
+                        <label class="label">Foto Profil</label>
+                        <div class="flex items-center gap-4">
+                          <div id="set-avatar-preview" class="w-16 h-16 rounded-xl overflow-hidden border dark:border-zinc-700 border-zinc-200 flex-shrink-0">
+                            ${me.foto_profil_url && isValidProfilePhotoUrl(me.foto_profil_url) 
+                                ? `<img src="${me.foto_profil_url}" class="w-full h-full object-cover" alt="Foto Profil" />`
+                                : avatarSvg}
+                          </div>
+                          <div class="flex-1">
+                            ${imageUploaderHTML({ 
+                                id: 'set-foto-profil', 
+                                maxFiles: 1, 
+                                required: false, 
+                                label: 'Ganti Foto Profil', 
+                                folder: 'jayaphone/users/profiles',
+                                helper: 'Format: JPG, PNG, WebP. Max 10MB. Aspect ratio 1:1 direkomendasikan.'
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <button id="btn-simpan-profil" onclick="simpanProfil()" class="btn btn-primary w-full md:w-auto mt-4">Simpan Foto Profil</button>
+                  </div>
+
+                  <!-- Change Password -->
+                  <div class="card p-5 space-y-4">
+                    <h3 class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Ganti Password</h3>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Masukkan password lama dan password baru (minimal 6 karakter).</p>
+                    <div class="space-y-3">
+                      <div>
+                        <label class="label">Password Lama <span class="text-red-400">*</span></label>
+                        <input id="set-password-lama" type="password" class="${input}" placeholder="Password saat ini" autocomplete="current-password" />
+                      </div>
+                      <div>
+                        <label class="label">Password Baru <span class="text-red-400">*</span></label>
+                        <input id="set-password-baru" type="password" class="${input}" placeholder="Minimal 6 karakter" autocomplete="new-password" />
+                      </div>
+                      <div>
+                        <label class="label">Konfirmasi Password Baru <span class="text-red-400">*</span></label>
+                        <input id="set-password-konfirmasi" type="password" class="${input}" placeholder="Ulangi password baru" autocomplete="new-password" />
+                      </div>
+                    </div>
+                    <button id="btn-ganti-password" onclick="gantiPassword()" class="btn btn-primary w-full md:w-auto mt-4">Ganti Password</button>
+                  </div>
+                </div>`;
+            } catch (e) { c.innerHTML = errorState(e.message, 'renderSettings()'); }
+        }
+
+        async function simpanProfil() {
+            const btn = document.getElementById('btn-simpan-profil');
+            const fotoUrls = window._uploads['set-foto-profil'] || [];
+            const foto_profil_url = fotoUrls[0] || null;
+
+            if (!foto_profil_url) { showToast('Pilih foto profil terlebih dahulu', 'error'); return; }
+
+            btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
+            try {
+                await API.auth.updateProfile({ foto_profil_url });
+                closeModalBtn(); // close any open modal
+                showToast('Foto profil berhasil diupdate');
+                // Refresh user info in sidebar/header
+                const me = (await API.auth.me()).data;
+                const ava = document.getElementById('avatar');
+                if (me.foto_profil_url && isValidProfilePhotoUrl(me.foto_profil_url)) {
+                    ava.innerHTML = sanitizeHTML(`<img src="${me.foto_profil_url}" class="w-10 h-10 rounded-xl object-cover border dark:border-zinc-700 border-zinc-200" alt="Profile" />`);
+                } else {
+                    ava.innerHTML = avatarSvg;
+                }
+                await renderSettings(); // re-render to show updated values
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Foto Profil'; btn.disabled = false; }
+        }
+
+        async function gantiPassword() {
+            const btn = document.getElementById('btn-ganti-password');
+            const password_lama = document.getElementById('set-password-lama')?.value || '';
+            const password_baru = document.getElementById('set-password-baru')?.value || '';
+            const password_konfirmasi = document.getElementById('set-password-konfirmasi')?.value || '';
+
+            if (!password_lama || !password_baru || !password_konfirmasi) { 
+                showToast('Semua field wajib diisi', 'error'); return; 
+            }
+            if (password_baru !== password_konfirmasi) { 
+                showToast('Konfirmasi password tidak cocok', 'error'); return; 
+            }
+            if (password_baru.length < 6) { 
+                showToast('Password minimal 6 karakter', 'error'); return; 
+            }
+
+            btn.innerHTML = `<span class="spinner"></span> Mengubah...`; btn.disabled = true;
+            try {
+                await API.auth.changePassword({ password_lama, password_baru, password_konfirmasi });
+                showToast('Password berhasil diubah. Anda tetap login.');
+                document.getElementById('set-password-lama').value = '';
+                document.getElementById('set-password-baru').value = '';
+                document.getElementById('set-password-konfirmasi').value = '';
+                btn.innerHTML = 'Ganti Password'; btn.disabled = false;
+            } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Ganti Password'; btn.disabled = false; }
         }
 
         // ═══ VIEW: SERVICE TEKNISI ═══

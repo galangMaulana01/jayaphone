@@ -333,6 +333,8 @@ var API = {
   auth: {
     login: function(u, p) { return request('POST', '/auth/login', { username: u, password: p }); },
     me: function() { return request('GET', '/auth/me'); },
+    updateProfile: function(data) { return request('PATCH', '/auth/me/profile', data); },
+    changePassword: function(data) { return request('PATCH', '/auth/me/password', data); },
   },
   dashboard: {
     stats: function(cabang) { return request('GET', '/dashboard/stats' + (cabang ? '?cabang=' + cabang : '')); },

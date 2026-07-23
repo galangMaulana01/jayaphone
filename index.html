@@ -639,7 +639,7 @@
         // H1: XSS Protection - DOMPurify sanitizer helper
         function sanitizeHTML(html) {
             if (typeof DOMPurify !== 'undefined') {
-                return DOMPurify.sanitize(html, { 
+                return DOMPurify.sanitize(html, {
                     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'span', 'div', 'p', 'br', 'a', 'img'],
                     ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'style', 'alt', 'target', 'rel'],
                     ALLOW_DATA_ATTR: false
@@ -5641,31 +5641,22 @@ async function kurirReject(cod_id) {
 
 async function kurirGoInputStok(cod_id) {
     // Show modal instead of navigating to separate page
-    openModal(`${modalHeader('Input Stok', cod_id)}
-        <div class="space-y-3 max-h-[70vh] overflow-y-auto">
-            <div class="grid grid-cols-2 gap-3">
-                <div><label class="label">Merk <span class="text-red-400">*</span></label><input id="is-merk" class="${input}" placeholder="Apple / Samsung"></div>
-                <div><label class="label">Tipe <span class="text-red-400">*</span></label><input id="is-tipe" class="${input}" placeholder="iPhone 15"></div>
-                <div><label class="label">IMEI <span class="text-red-400">*</span></label><input id="is-imei" class="${input}" placeholder="15 digit IMEI"></div>
-                <div><label class="label">Storage</label><input id="is-storage" class="${input}" placeholder="128GB"></div>
-                <div><label class="label">RAM</label><input id="is-ram" class="${input}" placeholder="8GB"></div>
-                <div><label class="label">Warna</label><input id="is-warna" class="${input}" placeholder="Black"></div>
-                async function kurirGoInputStok(cod_id) {
-                    openModal(modalHeader('Input Stok', cod_id) +
-                        '<div class="space-y-3 max-h-[70vh] overflow-y-auto">' +
-                        renderUnitFormHTML({
-                            codId: cod_id,
-                            uploaderId: 'is-foto',
-                            submitFn: 'doKurirInputStok',
-                            submitLabel: 'Simpan Stok',
-                            dealPrice: 0,
-                            showDealPrice: false,
-                            showHargaJual: false,
-                            prefill: {}
-                        }) +
-                        '</div>');
-                }
-                async function doKurirInputStok(cod_id) {
+    openModal(modalHeader('Input Stok', cod_id) +
+        '<div class="space-y-3 max-h-[70vh] overflow-y-auto">' +
+        renderUnitFormHTML({
+            codId: cod_id,
+            uploaderId: 'is-foto',
+            submitFn: 'doKurirInputStok',
+            submitLabel: 'Simpan Stok',
+            dealPrice: 0,
+            showDealPrice: false,
+            showHargaJual: false,
+            prefill: {}
+        }) +
+        '</div>');
+}
+
+async function doKurirInputStok(cod_id) {
                     const unit_data = collectUnitFormData('is-foto');
                     // Validate required fields
                     if (!unit_data.imei || !unit_data.merk || !unit_data.tipe) {
@@ -5704,9 +5695,9 @@ async function kurirGoInputStok(cod_id) {
                     } catch (e) {
                         showToast(e.message, 'error');
                     }
-                }
+                                    }
 
-// ═══ LOG KURIR ═══
+                    // ═══ LOG KURIR ═══
 async function renderKurirLog() {
     const c = document.getElementById('view-container');
     setLoading(c, 4);

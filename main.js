@@ -387,7 +387,8 @@ var API = {
   requestSP: {
     list: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/request-sparepart' + (q ? '?' + q : '')); },
     create: function(b) { return request('POST', '/request-sparepart', b); },
-    respond: function(id, b) { return request('PATCH', '/request-sparepart/' + id, b); },
+    respond: function(id, b) { return request('PATCH', '/request-sparepart/' + id + '/respond', b); },
+    approve: function(id, b) { return request('PATCH', '/request-sparepart/' + id + '/approve', b); },
   },
   transferStok: {
     list: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/transfer-stok' + (q ? '?' + q : '')); },

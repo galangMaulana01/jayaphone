@@ -941,7 +941,7 @@
             'kurir-dashboard':  renderKurirDashboard,
             'kurir-log':        renderKurirLog,
             'kurir-monitoring': renderKurirMonitoring,
-            'kod-beli':       renderCodBeli,
+            'cod-beli':       renderCodBeli,
                         'approval-cod':   renderApprovalCod,
                         'settings':       renderSettings,
                         'approval-sparepart': renderApprovalSparepart,
@@ -1785,9 +1785,7 @@ let _trxCabangFilter = '';
             setLoading(c, 4);
             try {
                 const dateParams = getDateFilterParams();
-                const trxParams = { limit: 200 };
-                if (dateParams.date_from) trxParams.date_from = dateParams.date_from;
-                if (dateParams.date_to) trxParams.date_to = dateParams.date_to;
+                const trxParams = { limit: 200, ...dateParams };
                 if (_lapCabangFilter) { trxParams.cabang = _lapCabangFilter; }
                 const statsParams = { ...(_lapCabangFilter ? { cabang: _lapCabangFilter } : {}) };
 
@@ -1851,10 +1849,8 @@ let _svcStatusFilter = '';
             setLoading(c, 4);
             try {
                 // Backend auto-filter by cabang dari JWT
-                const svcParams = { limit: 50 };
                 const svcDateParams = getDateFilterParams();
-                if (svcDateParams.date_from) svcParams.date_from = svcDateParams.date_from;
-                if (svcDateParams.date_to) svcParams.date_to = svcDateParams.date_to;
+                const svcParams = { limit: 50, ...svcDateParams };
                 if (_svcCabangFilter) svcParams.cabang = _svcCabangFilter;
                 if (_svcStatusFilter) svcParams.status = _svcStatusFilter;
                 const list = (await API.service.list(svcParams)).data;
@@ -2717,6 +2713,8 @@ const c = document.getElementById('view-container');
             const diskonPoin = document.getElementById('trx-diskon-poin');
             const hargaFinalEl = document.getElementById('trx-harga-final');
             const poinDapatEl = document.getElementById('trx-poin-dapat');
+            const poinDapatRow = document.getElementById('trx-poin-dapat-row');
+            const namaCustomer = document.getElementById('trx-customer-nama')?.value?.trim() || '';
 
             if (totalHarga > 0) {
                 breakdown?.classList.remove('hidden');
@@ -2732,6 +2730,10 @@ const c = document.getElementById('view-container');
                 else { diskonRow?.classList.add('hidden'); }
                 if (hargaFinalEl) hargaFinalEl.textContent = rp(hargaFinal);
                 if (poinDapatEl) poinDapatEl.textContent = poinDapat + ' poin';
+                if (poinDapatRow) {
+                    if (namaCustomer) poinDapatRow.classList.remove('hidden');
+                    else poinDapatRow.classList.add('hidden');
+                }
             } else {
                 breakdown?.classList.add('hidden');
             }
@@ -2828,7 +2830,7 @@ const c = document.getElementById('view-container');
                       <label class="label">Nama Customer</label>
                       <div class="relative">
                         <input id="trx-customer-nama" type="text" class="${input}" placeholder="Ketik nama customer..."
-                          oninput="searchCustomerTrx(this.value)" onfocus="searchCustomerTrx(this.value)" autocomplete="off"/>
+                          oninput="searchCustomerTrx(this.value); hitungPoin();" onfocus="searchCustomerTrx(this.value)" autocomplete="off"/>
                         <div id="trx-customer-dropdown" class="hidden absolute z-50 left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto rounded-xl border dark:border-zinc-700 border-zinc-200 dark:bg-zinc-900 bg-white shadow-lg"></div>
                       </div>
                     </div>
@@ -2875,7 +2877,7 @@ const c = document.getElementById('view-container');
                     <span class="dark:text-zinc-200 text-zinc-700">Harga Final</span>
                     <span id="trx-harga-final" class="text-[#4FD1C5]">Rp 0</span>
                   </div>
-                  <div class="flex justify-between">
+                  <div id="trx-poin-dapat-row" class="hidden flex justify-between">
                     <span class="dark:text-zinc-500 text-zinc-400">Poin didapat</span>
                     <span id="trx-poin-dapat" class="font-medium dark:text-amber-400 text-amber-500">0 poin</span>
                   </div>
@@ -5159,7 +5161,14 @@ async function renderInfluencerDashboard() {
     try {
         const params = getDateFilterParams();
         const platform = _infDashFilter?.platform || '';
-        const res = await API.influencer.dashboard(params.hari || 90, platform);
+        let hariValue = params.hari || 90;
+        if (params.date_from && params.date_to) {
+            // Backend endpoint ini cuma terima jumlah hari, bukan rentang tanggal —
+            // konversi custom range ke jumlah hari yang setara supaya tetap berefek
+            const selisihHari = Math.ceil((new Date(params.date_to) - new Date(params.date_from)) / 86400000) + 1;
+            hariValue = Math.max(1, selisihHari);
+        }
+        const res = await API.influencer.dashboard(hariValue, platform);
         const s = res.data;
 
         c.innerHTML = `<div class="space-y-6">
@@ -6060,6 +6069,12 @@ async function renderKurirMonitoring() {
                                 <span class="px-2 py-1 rounded-full bg-zinc-500/8 text-zinc-400 border border-zinc-500/15">
                                     Total: ${k.total_cod}
                                 </span>
+                            </div>
+
+                            <!-- Proporsi Beli vs Jual -->
+                            <div class="h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden flex">
+                                <div class="h-full bg-blue-400" style="width:${beliPercent}%"></div>
+                                <div class="h-full bg-purple-400" style="width:${jualPercent}%"></div>
                             </div>
                             
                             <!-- Status Breakdown -->

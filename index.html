@@ -2652,13 +2652,8 @@ const c = document.getElementById('view-container');
                         }
                     }, 300);
                 }
-                    dropdown.classList.remove('hidden');
-                } catch (e) {
-                    dropdown.innerHTML = '<div class="px-4 py-3 text-xs text-red-400">Gagal memuat</div>';
-                    dropdown.classList.remove('hidden');
-                }
-            }, 300);
-        }
+                
+                dropdown.classList.remove('hidden');
 
         // Close dropdown on outside click
         document.addEventListener('click', (e) => {
@@ -6749,9 +6744,9 @@ const NOTIF = {
         window.kurirGoInputStok = kurirGoInputStok;
         window.doKurirInputStok = doKurirInputStok;
         window.kurirUpdateStatus = function(id, status, note) { 
-            // Find the button that triggered this (based on status) and disable it
-            const selector = `button[onclick*="kurirUpdateStatus('${id}', '${status}'"]`;
-            const buttons = document.querySelectorAll(selector);
+                    // Find the button that triggered this (based on status) and disable it
+                    const selector = `button[onclick*="kurirUpdateStatus('${id}', '${status}')"]`;
+                    const buttons = document.querySelectorAll(selector);
             buttons.forEach(btn => {
                 btn.disabled = true;
                 btn.innerHTML = '<span class="spinner"></span> Memproses...';

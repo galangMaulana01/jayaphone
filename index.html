@@ -4213,11 +4213,10 @@ function modalBuatRequestSP() {
             </button>
           </div>
         `);
-      }
-  `);
-}
+              }
+            `);
 
-async function simpanRequestSparepart() {
+        async function simpanRequestSparepart() {
   const btn = document.getElementById('btn-simpan-req');
   const originalText = btn.innerHTML;
   
@@ -6694,30 +6693,31 @@ const NOTIF = {
         window.kurirGoInputStok = kurirGoInputStok;
         window.doKurirInputStok = doKurirInputStok;
         window.kurirUpdateStatus = function(id, status, note) { 
-    // Find the button that triggered this (based on status) and disable it
-    const buttons = document.querySelectorAll(`button[onclick*="kurirUpdateStatus('${id}', '${status}']`);
-    buttons.forEach(btn => {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Memproses...';
-    });
-    return API.cod.kurirUpdateStatus(id, status, note)
-        .then(res => {
-            // Re-enable all status buttons for this COD on success
-            document.querySelectorAll(`button[onclick*="kurirUpdateStatus('${id}',"]`).forEach(btn => {
-                btn.disabled = false;
-                btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML;
+            // Find the button that triggered this (based on status) and disable it
+            const selector = `button[onclick*="kurirUpdateStatus('${id}', '${status}'"]`;
+            const buttons = document.querySelectorAll(selector);
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Memproses...';
             });
-            return res;
-        })
-        .catch(err => {
-            // Re-enable on error
-            document.querySelectorAll(`button[onclick*="kurirUpdateStatus('${id}',"]`).forEach(btn => {
-                btn.disabled = false;
-                btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML;
-            });
-            throw err;
-        });
-};
+            return API.cod.kurirUpdateStatus(id, status, note)
+                .then(res => {
+                    // Re-enable all status buttons for this COD on success
+                    document.querySelectorAll(selector).forEach(btn => {
+                        btn.disabled = false;
+                        btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML;
+                    });
+                    return res;
+                })
+                .catch(err => {
+                    // Re-enable on error
+                    document.querySelectorAll(selector).forEach(btn => {
+                        btn.disabled = false;
+                        btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML;
+                    });
+                    throw err;
+                });
+        };
         window.renderTransferStok = renderTransferStok;
         window.renderTransferTable = renderTransferTable;
         window.searchCustomer = searchCustomer;

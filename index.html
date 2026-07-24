@@ -2606,38 +2606,52 @@ const c = document.getElementById('view-container');
         let _trxSearchTimer = null;
 
         // ── CUSTOMER SEARCH (debounced 300ms) ──
-        function searchCustomerTrx(query) {
-            const dropdown = document.getElementById('trx-customer-dropdown');
-            if (!dropdown) return;
-            clearTimeout(_trxSearchTimer);
-            // Reset selected customer when user types (unless exact match)
-            if (_trxSelectedCustomer && query !== _trxSelectedCustomer.nama) {
-                _trxSelectedCustomer = null;
-                document.getElementById('trx-poin-section')?.classList.add('hidden');
-                document.getElementById('trx-poin').value = 0;
-                hitungPoin();
-            }
-            if (!query || query.trim().length < 2) {
-                dropdown.classList.add('hidden');
-                dropdown.innerHTML = '';
-                return;
-            }
-            _trxSearchTimer = setTimeout(async () => {
-                try {
-                    const res = await API.customers.list({ q: query.trim() });
-                    const list = res.data || [];
-                    if (!list.length) {
-                        dropdown.innerHTML = '<div class="px-4 py-3 text-xs dark:text-zinc-500 text-zinc-400">Tidak ditemukan — ketik nama baru</div>';
-                    } else {
-                        dropdown.innerHTML = list.map(cu => `
-                                                  <div data-customer='${JSON.stringify(cu).replace(/'/g, "'")}' class="flex items-center justify-between px-4 py-3 cursor-pointer dark:hover:bg-zinc-800 hover:bg-zinc-50 transition-colors" onclick="selectCustomerTrx(this.dataset.customer)">
-                            <div>
-                              <div class="text-xs font-medium dark:text-zinc-100 text-zinc-800">${cu.nama}</div>
-                              <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${cu.kontak || '-'}</div>
-                            </div>
-                            <span class="text-[10px] font-medium dark:text-amber-400 text-amber-500">${starSvg} ${cu.points || 0} poin</span>
-                          </div>`).join('');
+                function searchCustomerTrx(query) {
+                    const dropdown = document.getElementById('trx-customer-dropdown');
+                    if (!dropdown) return;
+                    clearTimeout(_trxSearchTimer);
+                    // Reset selected customer when user types (unless exact match)
+                    if (_trxSelectedCustomer && query !== _trxSelectedCustomer.nama) {
+                        _trxSelectedCustomer = null;
+                        document.getElementById('trx-poin-section')?.classList.add('hidden');
+                        document.getElementById('trx-poin').value = 0;
+                        hitungPoin();
                     }
+                    // Show/hide poin section based on input value
+                    const poinSection = document.getElementById('trx-poin-section');
+                    if (query && query.trim()) {
+                        poinSection?.classList.remove('hidden');
+                    } else {
+                        poinSection?.classList.add('hidden');
+                    }
+                    if (!query || query.trim().length < 2) {
+                        dropdown.classList.add('hidden');
+                        dropdown.innerHTML = '';
+                        return;
+                    }
+                    _trxSearchTimer = setTimeout(async () => {
+                        try {
+                            const res = await API.customers.list({ q: query.trim() });
+                            const list = res.data || [];
+                            if (!list.length) {
+                                dropdown.innerHTML = '<div class="px-4 py-3 text-xs dark:text-zinc-500 text-zinc-400">Tidak ditemukan — ketik nama baru</div>';
+                            } else {
+                                dropdown.innerHTML = list.map(cu => `
+                                                          <div data-customer='${JSON.stringify(cu).replace(/'/g, "&apos;")}' class="flex items-center justify-between px-4 py-3 cursor-pointer dark:hover:bg-zinc-800 hover:bg-zinc-50 transition-colors" onclick="selectCustomerTrx(this.dataset.customer)">
+                                    <div>
+                                      <div class="text-xs font-medium dark:text-zinc-100 text-zinc-800">${cu.nama}</div>
+                                      <div class="text-[10px] dark:text-zinc-500 text-zinc-400">${cu.kontak || '-'}</div>
+                                    </div>
+                                    <span class="text-[10px] font-medium dark:text-amber-400 text-amber-500">${starSvg} ${cu.points || 0} poin</span>
+                                  </div>`).join('');
+                            }
+                            dropdown.classList.remove('hidden');
+                        } catch (e) {
+                            dropdown.innerHTML = '<div class="px-4 py-3 text-xs text-red-400">Gagal memuat</div>';
+                            dropdown.classList.remove('hidden');
+                        }
+                    }, 300);
+                }
                     dropdown.classList.remove('hidden');
                 } catch (e) {
                     dropdown.innerHTML = '<div class="px-4 py-3 text-xs text-red-400">Gagal memuat</div>';
@@ -2670,14 +2684,19 @@ const c = document.getElementById('view-container');
             const poinMaks = document.getElementById('trx-poin-maks');
             const poinInput = document.getElementById('trx-poin');
 
+            // Always show poin section when a customer is selected (customer name has value)
+            poinSection?.classList.remove('hidden');
+            
             if (cu.points && cu.points > 0) {
-                poinSection.classList.remove('hidden');
                 poinInfo.textContent = `Poin: ${cu.points} (Rp ${(cu.points * 1000).toLocaleString('id-ID')})`;
                 poinMaks.textContent = cu.points;
                 poinInput.max = cu.points;
                 poinInput.value = 0;
             } else {
-                poinSection.classList.add('hidden');
+                // Customer selected but has 0 points - show section but with 0 points info
+                poinInfo.textContent = `Poin: 0 (Rp 0)`;
+                poinMaks.textContent = 0;
+                poinInput.max = 0;
                 poinInput.value = 0;
             }
             hitungPoin();
@@ -5976,6 +5995,15 @@ async function renderKurirMonitoring() {
         const res = await API.cod.kurirMonitoring(params);
         const kurirs = res.data || [];
 
+        // Summary stats
+        const totalKurirs = kurirs.length;
+        const totalCOD = kurirs.reduce((sum, k) => sum + k.total_cod, 0);
+        const totalBeli = kurirs.reduce((sum, k) => sum + k.cod_beli, 0);
+        const totalJual = kurirs.reduce((sum, k) => sum + k.cod_jual, 0);
+        const totalSelesai = kurirs.reduce((sum, k) => sum + k.status_selesai, 0);
+        const totalGagal = kurirs.reduce((sum, k) => sum + k.status_gagal, 0);
+        const avgSuccessRate = totalKurirs > 0 ? Math.round(kurirs.reduce((sum, k) => sum + k.success_rate, 0) / totalKurirs) : 0;
+
         c.innerHTML = `<div class="space-y-6">
             <div class="flex items-center justify-between flex-wrap gap-3">
                 <div>
@@ -5986,69 +6014,98 @@ async function renderKurirMonitoring() {
 
             ${renderDateFilter('renderKurirMonitoring')}
 
-            <div class="table-wrap rounded-2xl overflow-hidden"><div class="overflow-x-auto">
-                <table class="w-full text-xs">
-                    <thead>
-                        <tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
-                            <th class="px-5 py-3.5 font-medium">Kurir</th>
-                            <th class="px-5 py-3.5 font-medium">Cabang</th>
-                            <th class="px-5 py-3.5 font-medium text-center">Total COD</th>
-                            <th class="px-5 py-3.5 font-medium text-center">Beli</th>
-                            <th class="px-5 py-3.5 font-medium text-center">Jual</th>
-                            <th class="px-5 py-3.5 font-medium text-center">Menunggu</th>
-                            <th class="px-5 py-3.5 font-medium text-center">Diterima</th>
-                            <th class="px-5 py-3.5 font-medium text-center">Proses</th>
-                            <th class="px-5 py-3.5 font-medium text-center">Selesai</th>
-                            <th class="px-5 py-3.5 font-medium text-center">Gagal</th>
-                            <th class="px-5 py-3.5 font-medium text-center">Ditolak</th>
-                            <th class="px-5 py-3.5 font-medium text-right">Success Rate</th>
-                            <th class="px-5 py-3.5 font-medium text-right">Total Harga Beli</th>
-                            <th class="px-5 py-3.5 font-medium text-right">Total Harga Jual</th>
-                            <th class="px-5 py-3.5 font-medium text-center">Last Activity</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${kurirs.length ? kurirs.map(k => `
-                            <tr class="tbl-row">
-                                <td class="px-5 py-4">
-                                    <p class="font-medium dark:text-zinc-100 text-zinc-800">${k.kurir_name}</p>
-                                    <p class="text-[10px] dark:text-zinc-500 text-zinc-400">${k.kurir_id}</p>
-                                </td>
-                                <td class="px-5 py-4 text-xs dark:text-zinc-300 text-zinc-700">${k.cabang || '-'}</td>
-                                <td class="px-5 py-4 text-center font-semibold dark:text-zinc-100 text-zinc-800">${k.total_cod}</td>
-                                <td class="px-5 py-4 text-center text-xs dark:text-zinc-500 text-zinc-400">${k.cod_beli}</td>
-                                <td class="px-5 py-4 text-center text-xs dark:text-zinc-500 text-zinc-400">${k.cod_jual}</td>
-                                <td class="px-5 py-4 text-center">
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/8 text-amber-400 border border-amber-500/15">${k.status_menunggu}</span>
-                                </td>
-                                <td class="px-5 py-4 text-center">
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/8 text-blue-400 border border-blue-500/15">${k.status_diterima}</span>
-                                </td>
-                                <td class="px-5 py-4 text-center">
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-500/8 text-indigo-400 border border-indigo-500/15">${k.status_proses}</span>
-                                </td>
-                                <td class="px-5 py-4 text-center">
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/8 text-emerald-400 border border-emerald-500/15">${k.status_selesai}</span>
-                                </td>
-                                <td class="px-5 py-4 text-center">
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500/8 text-red-400 border border-red-500/15">${k.status_gagal}</span>
-                                </td>
-                                <td class="px-5 py-4 text-center">
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500/8 text-red-400 border border-red-500/15">${k.status_ditolak}</span>
-                                </td>
-                                <td class="px-5 py-4 text-right font-semibold dark:text-zinc-100 text-zinc-800">${k.success_rate}%</td>
-                                <td class="px-5 py-4 text-right font-mono dark:text-zinc-300 text-zinc-600">${k.total_offer_price.toLocaleString('id-ID')}</td>
-                                <td class="px-5 py-4 text-right font-mono dark:text-zinc-300 text-zinc-600">${k.total_transaksi_price.toLocaleString('id-ID')}</td>
-                                <td class="px-5 py-4 text-center text-[10px] dark:text-zinc-600 text-zinc-400">${k.last_activity ? new Date(k.last_activity).toLocaleString('id-ID') : '-'}</td>
-                            </tr>
-                        `).join('') : `
-                            <tr>
-                                <td colspan="16" class="px-5 py-12 text-center text-xs dark:text-zinc-500 text-zinc-400">Tidak ada data kurir</td>
-                            </tr>
-                        `}
-                    </tbody>
-                </table>
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="panel rounded-2xl p-4">
+                    <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Total Kurir</p>
+                    <p class="text-3xl font-bold dark:text-zinc-100 text-zinc-800 mt-1">${totalKurirs}</p>
                 </div>
+                <div class="panel rounded-2xl p-4">
+                    <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Total COD</p>
+                    <p class="text-3xl font-bold dark:text-zinc-100 text-zinc-800 mt-1">${totalCOD}</p>
+                </div>
+                <div class="panel rounded-2xl p-4">
+                    <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Selesai / Gagal</p>
+                    <p class="text-3xl font-bold dark:text-zinc-100 text-zinc-800 mt-1">${totalSelesai} / ${totalGagal}</p>
+                </div>
+                <div class="panel rounded-2xl p-4">
+                    <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Avg Success Rate</p>
+                    <p class="text-3xl font-bold dark:text-zinc-100 text-zinc-800 mt-1">${avgSuccessRate}%</p>
+                </div>
+            </div>
+
+            <!-- Kurir Cards -->
+            <div class="space-y-4">
+                ${kurirs.length ? kurirs.map(k => {
+                    const beliPercent = k.total_cod > 0 ? Math.round((k.cod_beli / k.total_cod) * 100) : 0;
+                    const jualPercent = k.total_cod > 0 ? Math.round((k.cod_jual / k.total_cod) * 100) : 0;
+                    const successRate = k.success_rate || 0;
+                    const successColor = successRate >= 80 ? 'emerald' : successRate >= 60 ? 'amber' : 'red';
+                    
+                    return `
+                    <div class="panel rounded-2xl overflow-hidden border dark:border-zinc-800 border-zinc-200 transition-all hover:border-blue-500/30">
+                        <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 border-b dark:border-zinc-800 border-zinc-200 flex items-center justify-between flex-wrap gap-3">
+                            <div>
+                                <p class="font-semibold dark:text-zinc-100 text-zinc-800">${k.kurir_name}</p>
+                                <p class="text-[10px] dark:text-zinc-500 text-zinc-400">${k.kurir_id} • ${k.cabang || '-'}</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="px-2 py-1 rounded-full text-[10px] font-medium bg-${successColor}-500/8 text-${successColor}-400 border border-${successColor}-500/15">${successRate}% Success</span>
+                                <span class="text-[10px] dark:text-zinc-600 text-zinc-400">${k.last_activity ? new Date(k.last_activity).toLocaleString('id-ID') : '-'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-4 space-y-3">
+                            <!-- COD Type Breakdown -->
+                            <div class="flex items-center gap-4 text-xs">
+                                <span class="px-2 py-1 rounded-full bg-blue-500/8 text-blue-400 border border-blue-500/15">
+                                    Beli: ${k.cod_beli} (${beliPercent}%)
+                                </span>
+                                <span class="px-2 py-1 rounded-full bg-purple-500/8 text-purple-400 border border-purple-500/15">
+                                    Jual: ${k.cod_jual} (${jualPercent}%)
+                                </span>
+                                <span class="px-2 py-1 rounded-full bg-zinc-500/8 text-zinc-400 border border-zinc-500/15">
+                                    Total: ${k.total_cod}
+                                </span>
+                            </div>
+                            
+                            <!-- Status Breakdown -->
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-2 py-1 rounded-full text-[10px] font-medium bg-amber-500/8 text-amber-400 border border-amber-500/15">
+                                    🕐 Menunggu: ${k.status_menunggu}
+                                </span>
+                                <span class="px-2 py-1 rounded-full text-[10px] font-medium bg-blue-500/8 text-blue-400 border border-blue-500/15">
+                                    📦 Diterima: ${k.status_diterima}
+                                </span>
+                                <span class="px-2 py-1 rounded-full text-[10px] font-medium bg-indigo-500/8 text-indigo-400 border border-indigo-500/15">
+                                    ⚙️ Proses: ${k.status_proses}
+                                </span>
+                                <span class="px-2 py-1 rounded-full text-[10px] font-medium bg-emerald-500/8 text-emerald-400 border border-emerald-500/15">
+                                    ✅ Selesai: ${k.status_selesai}
+                                </span>
+                                <span class="px-2 py-1 rounded-full text-[10px] font-medium bg-red-500/8 text-red-400 border border-red-500/15">
+                                    ❌ Gagal: ${k.status_gagal}
+                                </span>
+                                <span class="px-2 py-1 rounded-full text-[10px] font-medium bg-red-500/8 text-red-400 border border-red-500/15">
+                                    🚫 Ditolak: ${k.status_ditolak}
+                                </span>
+                            </div>
+                            
+                            <!-- Financial Summary -->
+                            <div class="grid grid-cols-2 gap-3 pt-2 border-t dark:border-zinc-800 border-zinc-200">
+                                <div>
+                                    <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Total Harga Beli</p>
+                                    <p class="font-semibold dark:text-zinc-100 text-zinc-800">Rp ${(k.total_offer_price || 0).toLocaleString('id-ID')}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Total Harga Jual</p>
+                                    <p class="font-semibold text-[#4FD1C5]">Rp ${(k.total_transaksi_price || 0).toLocaleString('id-ID')}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join('') : '<div class="panel rounded-2xl p-8 text-center"><p class="text-xs dark:text-zinc-500 text-zinc-400">Tidak ada data kurir</p></div>'}
             </div>
         </div>`;
     } catch (e) {

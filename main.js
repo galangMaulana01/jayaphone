@@ -414,6 +414,14 @@ var API = {
     kurirLog: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/cod/kurir/log' + (q ? '?' + q : '')); },
     kurirMonitoring: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/cod/kurir/monitoring' + (q ? '?' + q : '')); },
   },
+  customer: {
+    list: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/customers' + (q ? '?' + q : '')); },
+    create: function(b) { return request('POST', '/customers', b); },
+    approve: function(id) { return request('PATCH', '/customers/' + id + '/approve', { action: 'approve' }); },
+    reject: function(id, reason) { return request('PATCH', '/customers/' + id + '/reject', { action: 'reject', reason: reason }); },
+    resubmit: function(id) { return request('PATCH', '/customers/' + id + '/resubmit', {}); },
+    pendingCount: function() { return request('GET', '/customers/pending-count'); },
+  },
   influencer: {
     dashboard: function(hari, platform) { var q = 'hari=' + (hari || 90); if (platform) q += '&platform=' + platform; return request('GET', '/influencer/dashboard/stats?' + q); },
     catalog: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/influencer/catalog' + (q ? '?' + q : '')); },

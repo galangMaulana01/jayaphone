@@ -2665,6 +2665,40 @@ const c = document.getElementById('view-container');
             }
         });
 
+        // ── CUSTOMER TYPE TOGGLE ──
+        function toggleCustomerType(type) {
+            _trxCustomerType = type; // 'member' | 'guest'
+            
+            const memberFields = document.getElementById('trx-member-fields');
+            const guestFields = document.getElementById('trx-guest-fields');
+            const poinSection = document.getElementById('trx-poin-section');
+            const statusSection = document.getElementById('trx-customer-status');
+            const poinSectionEl = document.getElementById('trx-poin-section');
+            const warningEl = document.getElementById('trx-customer-warning');
+            const statusEl = document.getElementById('trx-customer-status');
+            const poinInput = document.getElementById('trx-poin');
+            
+            if (type === 'member') {
+                memberFields.classList.remove('hidden');
+                guestFields.classList.add('hidden');
+                // For member, show poin section only when customer selected
+                _trxSelectedCustomer = null;
+                statusSection.classList.add('hidden');
+                warningEl?.classList.add('hidden');
+                poinSectionEl.classList.add('hidden');
+            } else {
+                // Guest
+                memberFields.classList.add('hidden');
+                guestFields.classList.remove('hidden');
+                _trxSelectedCustomer = { points: 0, status: 'guest' };
+                statusSection.classList.add('hidden');
+                warningEl?.classList.add('hidden');
+                poinSectionEl.classList.add('hidden');
+                // Guest doesn't get poin section
+            }
+            hitungPoin();
+        }
+
         // ── SELECT CUSTOMER ──
                 function selectCustomerTrx(cu) {
                     if (typeof cu === 'string') {
@@ -2749,19 +2783,36 @@ const c = document.getElementById('view-container');
                 }
 
         // ── POINTS CALCULATION ──
-        function hitungPoin() {
-            const poinDipakai = parseInt(document.getElementById('trx-poin')?.value) || 0;
-            const maxPoin = _trxSelectedCustomer?.points || 0;
-            const hargaUnit = _trxUnitHarga || 0;
-            let hargaSparepart = 0;
-            _spKeranjang.forEach(k => { hargaSparepart += k.harga_jual * k.jumlah; });
-            const totalHarga = hargaUnit + hargaSparepart;
-            const poinValid = Math.min(poinDipakai, maxPoin);
-            const diskon = poinValid * 1000;
-            const hargaFinal = Math.max(totalHarga - diskon, 0);
-            const poinDapat = Math.floor(hargaFinal / 100000);
+                function hitungPoin() {
+                    const isGuest = _trxCustomerType === 'guest';
+                    const hargaUnit = _trxUnitHarga || 0;
+                    let hargaSparepart = 0;
+                    _spKeranjang.forEach(k => { hargaSparepart += k.harga_jual * k.jumlah; });
+                    const totalHarga = hargaUnit + hargaSparepart;
+            
+                    let diskon = 0;
+                    let hargaFinal = totalHarga;
+                    let poinDapat = 0;
 
-            const breakdown = document.getElementById('trx-harga-breakdown');
+                    // For guest, no points can be used or earned
+                    if (isGuest) {
+                        document.getElementById('trx-poin-section').classList.add('hidden');
+                        document.getElementById('trx-poin-dapat-row').classList.add('hidden');
+                        // Guest gets no points, no diskon
+                    } else {
+                        // Member logic
+                        const poinDipakai = parseInt(document.getElementById('trx-poin')?.value) || 0;
+                        const maxPoin = _trxSelectedCustomer?.points || 0;
+                        const poinValid = Math.min(poinDipakai, maxPoin);
+                        diskon = poinValid * 1000;
+                        hargaFinal = Math.max(totalHarga - diskon, 0);
+                        poinDapat = Math.floor(hargaFinal / 100000);
+                
+                        document.getElementById('trx-poin-section').classList.remove('hidden');
+                        document.getElementById('trx-poin-dapat-row').classList.remove('hidden');
+                    }
+            
+                    const breakdown = document.getElementById('trx-harga-breakdown');
             const hargaUnitRow = document.getElementById('trx-harga-unit-row');
             const hargaUnitEl = document.getElementById('trx-harga-unit');
             const hargaSpRow = document.getElementById('trx-harga-sp-row');
@@ -2880,55 +2931,85 @@ const c = document.getElementById('view-container');
                 </div>
 
                 <!-- Customer Section -->
-                <div class="panel rounded-2xl p-5">
-                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Customer</p>
-                  <div class="space-y-3">
-                    <div>
-                      <label class="label">Nama Customer</label>
-                      <div class="relative">
-                        <input id="trx-customer-nama" type="text" class="${input}" placeholder="Ketik nama customer..."
-                          oninput="searchCustomerTrx(this.value); hitungPoin();" onfocus="searchCustomerTrx(this.value)" autocomplete="off"/>
-                        <div id="trx-customer-dropdown" class="hidden absolute z-50 left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto rounded-xl border dark:border-zinc-700 border-zinc-200 dark:bg-zinc-900 bg-white shadow-lg"></div>
-                      </div>
-                    </div>
-                    <div>
-                      <label class="label">Kontak Customer</label>
-                      <input id="trx-customer-kontak" type="text" class="${input}" placeholder="08xxxxxxxxxx / email"/>
-                    </div>
+                                <div class="panel rounded-2xl p-5">
+                                  <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Customer</p>
+                  
+                                  <!-- Customer Type Toggle: Member vs Guest -->
+                                  <div class="mb-4">
+                                    <label class="label">Tipe Customer</label>
+                                    <div class="flex gap-4">
+                                      <label class="flex items-center gap-2 cursor-pointer flex-1">
+                                        <input type="radio" name="trx-customer-type" value="member" checked 
+                                               onchange="toggleCustomerType(this.value)" 
+                                               class="w-4 h-4 rounded accent-blue-500">
+                                        <span class="text-sm font-medium dark:text-zinc-100 text-zinc-800">Member</span>
+                                      </label>
+                                      <label class="flex items-center gap-2 cursor-pointer flex-1">
+                                        <input type="radio" name="trx-customer-type" value="guest" 
+                                               onchange="toggleCustomerType(this.value)" 
+                                               class="w-4 h-4 rounded accent-blue-500">
+                                        <span class="text-sm font-medium dark:text-zinc-100 text-zinc-800">Guest</span>
+                                      </label>
+                                    </div>
+                                    <p id="trx-customer-type-hint" class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-1">Member: bisa dapat/claim poin, butuh verifikasi. Guest: tidak dapat poin, tidak perlu verifikasi.</p>
+                                  </div>
 
-                    <!-- Customer Status Indicator -->
-                    <div id="trx-customer-status" class="hidden p-3 rounded-xl text-[10px] font-medium">
-                      <span id="trx-customer-status-icon"></span>
-                      <span id="trx-customer-status-text"></span>
-                    </div>
+                                  <!-- Member Fields (default visible) -->
+                                  <div id="trx-member-fields">
+                                    <div>
+                                      <label class="label">Nama Customer</label>
+                                      <div class="relative">
+                                        <input id="trx-customer-nama" type="text" class="${input}" placeholder="Ketik nama customer..."
+                                          oninput="searchCustomerTrx(this.value); hitungPoin();" onfocus="searchCustomerTrx(this.value)" autocomplete="off"/>
+                                        <div id="trx-customer-dropdown" class="hidden absolute z-50 left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto rounded-xl border dark:border-zinc-700 border-zinc-200 dark:bg-zinc-900 bg-white shadow-lg"></div>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label class="label">Kontak Customer</label>
+                                      <input id="trx-customer-kontak" type="text" class="${input}" placeholder="08xxxxxxxxxx / email"/>
+                                    </div>
+                                  </div>
 
-                    <!-- Customer Points Info (hidden by default) -->
-                    <div id="trx-poin-section" class="hidden">
-                      <div class="flex items-center gap-2 p-3 rounded-xl dark:bg-emerald-500/8 bg-emerald-50 border dark:border-emerald-500/20 border-emerald-200">
-                        <span class="text-base">${starSvg}</span>
-                        <div class="flex-1">
-                          <p id="trx-poin-info" class="text-xs font-medium dark:text-emerald-400 text-emerald-600"></p>
-                          <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-0.5">1 poin = Rp 1.000 diskon</p>
-                        </div>
-                      </div>
-                      <div class="mt-3">
-                        <label class="label">Pakai Poin (opsional)</label>
-                        <div class="flex gap-2 items-center">
-                          <input id="trx-poin" type="number" min="0" value="0" class="${input}" placeholder="0" oninput="hitungPoin()"/>
-                          <span class="text-[10px] dark:text-zinc-500 text-zinc-400 whitespace-nowrap">maks: <span id="trx-poin-maks">0</span></span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- Warning for non-verified customers -->
-                    <div id="trx-customer-warning" class="hidden p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                      <div class="flex items-center gap-2">
-                        <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6a1 1 0 00-2 0v4z" clip-rule="evenodd"></path></svg>
-                        <span class="text-xs dark:text-amber-400 text-amber-700 font-medium" id="trx-customer-warning-text"></span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                                  <!-- Guest Fields (hidden by default) -->
+                                  <div id="trx-guest-fields" class="hidden">
+                                    <div>
+                                      <label class="label">Nama Pembeli (Guest)</label>
+                                      <input id="trx-guest-nama" type="text" class="${input}" placeholder="Nama pembeli guest" oninput="hitungPoin();"/>
+                                    </div>
+                                  </div>
+
+                                  <!-- Customer Status Indicator -->
+                                  <div id="trx-customer-status" class="hidden p-3 rounded-xl text-[10px] font-medium">
+                                    <span id="trx-customer-status-icon"></span>
+                                    <span id="trx-customer-status-text"></span>
+                                  </div>
+
+                                  <!-- Customer Points Info (hidden by default) -->
+                                  <div id="trx-poin-section" class="hidden">
+                                    <div class="flex items-center gap-2 p-3 rounded-xl dark:bg-emerald-500/8 bg-emerald-50 border dark:border-emerald-500/20 border-emerald-200">
+                                      <span class="text-base">${starSvg}</span>
+                                      <div class="flex-1">
+                                        <p id="trx-poin-info" class="text-xs font-medium dark:text-emerald-400 text-emerald-600"></p>
+                                        <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mt-0.5">1 poin = Rp 1.000 diskon</p>
+                                      </div>
+                                    </div>
+                                    <div class="mt-3">
+                                      <label class="label">Pakai Poin (opsional)</label>
+                                      <div class="flex gap-2 items-center">
+                                        <input id="trx-poin" type="number" min="0" value="0" class="${input}" placeholder="0" oninput="hitungPoin()"/>
+                                        <span class="text-[10px] dark:text-zinc-500 text-zinc-400 whitespace-nowrap">maks: <span id="trx-poin-maks">0</span></span>
+                                      </div>
+                                    </div>
+                                  </div>
+                  
+                                  <!-- Warning for non-verified customers -->
+                                  <div id="trx-customer-warning" class="hidden p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                                    <div class="flex items-center gap-2">
+                                      <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6a1 1 0 00-2 0v4z" clip-rule="evenodd"></path></svg>
+                                      <span class="text-xs dark:text-amber-400 text-amber-700 font-medium" id="trx-customer-warning-text"></span>
+                                    </div>
+                                  </div>
+                                </div>
 
                 <!-- Price Breakdown -->
                 <div id="trx-harga-breakdown" class="hidden panel rounded-2xl p-5 space-y-2 text-xs">
@@ -3158,8 +3239,25 @@ const c = document.getElementById('view-container');
             const catatan = document.getElementById('trx-catatan')?.value || '';
             const garansi_hari  = parseInt(document.getElementById('trx-garansi')?.value || '7');
             const biaya_garansi = parseInt(document.getElementById('trx-biaya-garansi')?.value || '0');
-            const customer_nama = document.getElementById('trx-customer-nama')?.value?.trim() || '';
-            const customer_kontak = document.getElementById('trx-customer-kontak')?.value?.trim() || '';
+            
+            // Customer type handling
+            const isGuest = _trxCustomerType === 'guest';
+            let customer_nama = '';
+            let customer_kontak = '';
+            
+            if (isGuest) {
+                customer_nama = document.getElementById('trx-guest-nama')?.value?.trim() || '';
+                if (!customer_nama) {
+                    showToast('Nama pembeli Guest wajib diisi', 'error'); return;
+                }
+            } else {
+                customer_nama = document.getElementById('trx-customer-nama')?.value?.trim() || '';
+                customer_kontak = document.getElementById('trx-customer-kontak')?.value?.trim() || '';
+                if (customer_nama && !customer_kontak) {
+                    showToast('Kontak customer wajib diisi untuk Member', 'error'); return;
+                }
+            }
+            
             const poin_dipakai = parseInt(document.getElementById('trx-poin')?.value) || 0;
 
             // Validate: at least one item
@@ -3183,7 +3281,7 @@ const c = document.getElementById('view-container');
             btn.innerHTML = `<span class="spinner"></span> Memproses...`;
             btn.disabled = true;
             try {
-                const payload = {};
+                const payload = { customer_type: isGuest ? 'guest' : 'member' };
                 if (unit_id) payload.unit_id = unit_id;
                 if (imei) payload.imei = imei;
                 if (catatan) payload.catatan = catatan;

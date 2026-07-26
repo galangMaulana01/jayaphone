@@ -3403,6 +3403,17 @@ const c = document.getElementById('view-container');
                             <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-2">Catatan</p>
                             <p class="text-xs dark:text-zinc-300 text-zinc-600 p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50">${t.catatan}</p>
                         </div>` : ''}
+                       
+                        <!-- Customer Info -->
+                        <div class="panel rounded-2xl p-5">
+                            <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Customer</p>
+                            <div class="grid grid-cols-2 gap-3 text-xs">
+                                <div class="p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50"><p class="dark:text-zinc-500 text-zinc-400">Tipe</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${t.customer_type === 'guest' ? 'Guest' : 'Member'}</p></div>
+                                <div class="p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50"><p class="dark:text-zinc-500 text-zinc-400">Nama</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${t.customer_nama || '—'}</p></div>
+                                <div class="p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50"><p class="dark:text-zinc-500 text-zinc-400">Kontak</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${t.customer_kontak || '—'}</p></div>
+                                <div class="p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50"><p class="dark:text-zinc-500 text-zinc-400">Poin Dipakai</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${t.poin_dipakai || 0}</p></div>
+                            </div>
+                        </div>
                         
                         <div class="flex gap-2 mt-4 pt-3 border-t dark:border-zinc-700 border-zinc-200">
                             <button onclick="closeModalBtn()" class="btn btn-ghost flex-1">Tutup</button>

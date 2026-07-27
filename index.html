@@ -3,316 +3,438 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JAYAPONA — Dashboard</title>
+    <title>Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;450;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- DOMPurify for XSS Protection -->
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.0/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
     <script>
       window.BACKEND_URL = 'https://phonejaya.vercel.app';
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'system-ui', 'sans-serif'],
-              mono: ['JetBrains Mono', 'SF Mono', 'Menlo', 'monospace'],
-            },
-            colors: {
-              bg: '#0A0A0A',
-              panel: '#111111',
-              'panel-hover': '#161616',
-              border: '#232323',
-              'text-primary': '#EDEDED',
-              'text-secondary': '#8A8A8A',
-              'text-tertiary': '#5C5C5C',
-              accent: '#0072F5',
-              success: '#3DD68C',
-              warning: '#F5A623',
-              error: '#E5484D',
-            },
-            borderRadius: {
-              'sm': '4px',
-              'md': '6px',
-              'lg': '8px',
-            },
-            keyframes: {
-              fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
-              slideUp: { from: { opacity: 0, transform: 'translateY(8px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
-              spin: { to: { transform: 'rotate(360deg)' } },
-            },
-            animation: {
-              'fade-in': 'fadeIn 150ms ease-out',
-              'slide-up': 'slideUp 200ms ease-out',
-              'spin': 'spin 600ms linear infinite',
-            },
-          },
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Geist', 'system-ui', 'sans-serif'],
+                        mono: ['Geist Mono', 'monospace'],
+                    },
+                    colors: {
+                        sidebar: '#0B0B0D',
+                        'sidebar-hover': '#18181B',
+                        'sidebar-border': '#202020',
+                    },
+                    keyframes: {
+                        fadeUp: { from: { opacity: 0, transform: 'translateY(10px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+                        fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+                        shimmer: { '0%': { backgroundPosition: '200% 0' }, '100%': { backgroundPosition: '-200% 0' } },
+                        spin: { to: { transform: 'rotate(360deg)' } },
+                        toastIn: { from: { opacity: 0, transform: 'translateX(110%)' }, to: { opacity: 1, transform: 'translateX(0)' } },
+                        pulse: { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.4 } },
+                    },
+                    animation: {
+                        'fade-up': 'fadeUp 0.22s cubic-bezier(0.16,1,0.3,1)',
+                        'fade-in': 'fadeIn 0.15s ease-out',
+                        shimmer: 'shimmer 1.5s ease infinite',
+                        spin: 'spin 0.7s linear infinite',
+                        toast: 'toastIn 0.3s cubic-bezier(0.16,1,0.3,1)',
+                        pulse: 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite',
+                    },
+                }
+            }
         }
-      }
     </script>
     <style>
-      *, *::before, *::after { box-sizing: border-box; }
-      body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-      
-      ::-webkit-scrollbar { width: 6px; height: 6px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #232323; border-radius: 99px; }
-      
-      .sidebar-width { width: 256px; min-width: 256px; }
-      .content-width { width: calc(100% - 256px); }
-      
-      .nav-link {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 0.8125rem;
-        font-weight: 450;
-        color: #8A8A8A;
-        cursor: pointer;
-        transition: all 120ms ease;
-        border: none;
-        background: none;
-        width: 100%;
-        text-align: left;
-        font-family: inherit;
-        letter-spacing: -0.01em;
-      }
-      .nav-link:hover { background: #161616; color: #EDEDED; }
-      .nav-link.active { background: #161616; color: #EDEDED; font-weight: 500; }
-      .nav-link.active .icon-container { background: #0072F5; color: #fff; }
-      .nav-link.active svg { color: #fff; }
-      .nav-link:not(.active) svg { color: #8A8A8A; }
-      
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 0.8125rem;
-        font-weight: 500;
-        cursor: pointer;
-        border: none;
-        transition: all 120ms ease;
-        font-family: inherit;
-        white-space: nowrap;
-        letter-spacing: -0.01em;
-        height: 36px;
-      }
-      .btn-primary { background: #0072F5; color: #fff; }
-      .btn-primary:hover { background: #005CC7; }
-      .btn-ghost { background: transparent; color: #8A8A8A; border: 1px solid #232323; }
-      .btn-ghost:hover { background: #161616; color: #EDEDED; border-color: #333; }
-      .btn-success { background: #3DD68C; color: #0A0A0A; }
-      .btn-success:hover { background: #2FC978; }
-      .btn-error { background: #E5484D; color: #fff; }
-      .btn-error:hover { background: #C73A3E; }
-      
-      .tbl-row { border-bottom: 1px solid #232323; transition: background 80ms; }
-      .tbl-row:hover { background: #161616; }
-      .tbl-row:last-child { border-bottom: none; }
-      
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 3px 8px;
-        border-radius: 99px;
-        font-size: 0.6875rem;
-        font-weight: 500;
-        border: 1px solid;
-        letter-spacing: 0.01em;
-      }
-      .badge-success { background: rgba(61,214,140,0.1); color: #3DD68C; border-color: rgba(61,214,140,0.2); }
-      .badge-warning { background: rgba(245,166,35,0.1); color: #F5A623; border-color: rgba(245,166,35,0.2); }
-      .badge-error { background: rgba(229,72,77,0.1); color: #E5484D; border-color: rgba(229,72,77,0.2); }
-      .badge-info { background: rgba(0,114,245,0.1); color: #0072F5; border-color: rgba(0,114,245,0.2); }
-      .badge-neutral { background: #232323; color: #8A8A8A; border-color: #333; }
-      
-      .skeleton {
-        background: linear-gradient(90deg, #161616 25%, #232323 50%, #161616 75%);
-        background-size: 200% 100%;
-        animation: shimmer 1.5s ease infinite;
-        border-radius: 6px;
-      }
-      
-      .spinner {
-        width: 12px; height: 12px;
-        border: 1.5px solid currentColor;
-        border-top-color: transparent;
-        border-radius: 50%;
-        animation: spin 600ms linear infinite;
-        display: inline-block; flex-shrink: 0;
-      }
-      
-      .filter-tab {
-        padding: 5px 12px;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        font-weight: 450;
-        cursor: pointer;
-        border: 1px solid transparent;
-        background: transparent;
-        transition: all 100ms;
-        font-family: inherit;
-      }
-      .filter-tab { color: #8A8A8A; }
-      .filter-tab:hover { background: #161616; color: #EDEDED; border-color: #333; }
-      .filter-tab.active { background: #161616; color: #EDEDED; border-color: #333; }
-      
-      .progress-track { height: 3px; border-radius: 99px; overflow: hidden; background: #232323; }
-      .progress-fill { height: 100%; border-radius: 99px; transition: width 300ms ease; }
-      
-      .stat-card {
-        border-radius: 8px;
-        padding: 20px 22px;
-        background: #111111;
-        border: 1px solid #232323;
-        transition: border-color 120ms, box-shadow 120ms;
-      }
-      .stat-card:hover { border-color: #333; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
-      
-      .card {
-        border-radius: 8px;
-        background: #111111;
-        border: 1px solid #232323;
-      }
-      
-      .panel {
-        border-radius: 8px;
-        background: #111111;
-        border: 1px solid #232323;
-      }
-      
-      .label {
-        display: block;
-        font-size: 0.75rem;
-        font-weight: 500;
-        margin-bottom: 6px;
-        color: #8A8A8A;
-        letter-spacing: -0.01em;
-      }
-      
-      .divider { border: none; border-top: 1px solid #232323; }
-      
-      select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238A8A8A' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px !important; }
-      
-      .hamburger { display: none; }
-      @media (max-width: 768px) { .hamburger { display: flex; } }
-      
-      /* Body themes */
-      body { background: #0A0A0A; color: #EDEDED; }
-      
-      /* Header */
-      .app-header { background: rgba(10,10,10,0.85); border-color: #232323; backdrop-filter: blur(8px); }
-      
-      /* Sidebar */
-      #app-sidebar { background: #0A0A0A; border-right: 1px solid #232323; }
-      
-      /* Main */
-      #page-app { background: #0A0A0A; }
-      
-      /* Login */
-      #page-login { background: #0A0A0A; }
-      
-      /* Modal */
-      .modal-inner { background: #111111; border: 1px solid #232323; border-radius: 8px; }
-      .modal-bg { background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); }
-      .sidebar-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
-      
-      /* Table header */
-      .tbl-head { color: #5C5C5C; border-color: #232323; font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
-      
-      /* Table wrap */
-      .table-wrap { background: #111111; border: 1px solid #232323; border-radius: 8px; }
-      
-      /* Toast */
-      .toast-success { background: #111111; border-color: rgba(61,214,140,0.2); color: #3DD68C; }
-      .toast-error { background: #111111; border-color: rgba(229,72,77,0.2); color: #E5484D; }
-      .toast-info { background: #111111; border-color: rgba(0,114,245,0.2); color: #0072F5; }
-      
-      /* Theme toggle */
-      .theme-toggle {
-        width: 32px; height: 32px;
-        border-radius: 6px;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer; background: transparent;
-        transition: all 120ms; border: 1px solid #232323; color: #5C5C5C;
-      }
-      .theme-toggle:hover { background: #161616; color: #EDEDED; }
-      
-      /* Icon dots */
-      .stat-icon {
-        width: 36px; height: 36px;
-        border-radius: 8px;
-        display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0;
-      }
-      
-      /* Divider */
-      .border-divider { border-color: #232323; }
-      
-      /* Page transitions */
-      #view-container { transition: opacity 100ms ease; }
-      
-      /* Inputs */
-      input, select, textarea {
-        background: #111111;
-        border: 1px solid #232323;
-        border-radius: 6px;
-        color: #EDEDED;
-        padding: 8px 12px;
-        font-size: 0.8125rem;
-        font-family: inherit;
-        transition: border-color 120ms, box-shadow 120ms;
-      }
-      input:focus, select:focus, textarea:focus {
-        outline: none;
-        border-color: #0072F5;
-        box-shadow: 0 0 0 3px rgba(0,114,245,0.15);
-      }
-      input::placeholder { color: #5C5C5C; }
-      
-      /* Buttons */
-      button { font-family: inherit; }
-      
-      /* Focus visible */
-      *:focus-visible { outline: none; ring: 2px; ring-offset: 2px; ring-color: #0072F5; ring-offset-color: #0A0A0A; }
-      
-      /* Modal body */
-      #modal-body { padding: 24px; }
-      
-      /* Empty state */
-      .empty-state { padding: 48px 24px; text-align: center; color: #8A8A8A; }
-      .empty-state svg { width: 48px; height: 48px; margin-bottom: 16px; color: #5C5C5C; }
-      .empty-state p { font-size: 0.875rem; font-weight: 500; }
-      
-      /* Error state */
-      .error-state { padding: 48px 24px; text-align: center; }
-      .error-state svg { width: 40px; height: 40px; margin-bottom: 16px; color: #E5484D; }
-      .error-state p { font-size: 0.875rem; font-weight: 500; margin-bottom: 8px; }
-      .error-state small { color: #8A8A8A; }
-      
-      /* Responsive sidebar */
-      @media (max-width: 768px) {
-        .hamburger { display: flex; }
-        #app-sidebar { transform: translateX(-100%); }
-        #app-sidebar.open { transform: translateX(0); }
-        .content-width { width: 100%; }
-      }
-      
-      /* Table responsive */
-      @media (max-width: 768px) {
-        .table-wrap { border-radius: 0; border-left: none; border-right: none; }
-      }
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Geist', system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 99px; }
+
+        /* ── SIDEBAR ── */
+        .sidebar-width { width: 260px; min-width: 260px; }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.8125rem;
+            font-weight: 450;
+            color: #000;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+            letter-spacing: -0.01em;
+        }
+        .nav-link:hover {
+            background: #EDEDED;
+            color: #000;
+        }
+        .nav-link.active {
+            background: #fff;
+            color: #000;
+            font-weight: 500;
+        }
+        
+        .nav-link.active .icon-container {
+            background-color: #4FD1C5;
+            color: #fff; 
+        }
+
+        .nav-link.active svg { color: #fff; }
+        .nav-link:not(.active) svg {
+            color: #4FD1C5 !important;
+        }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 18px;
+            border-radius: 12px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s ease;
+            font-family: inherit;
+            white-space: nowrap;
+            letter-spacing: -0.01em;
+            height: 38px;
+        }
+        .dark .btn-primary { background: #fafafa; color: #0A0A0A; }
+        .dark .btn-primary:hover { background: #e4e4e7; box-shadow: 0 0 0 1px #27272a; transform: translateY(-0.5px); }
+        
+        html:not(.dark) .btn-primary {
+            background: #18181b;
+            color: #fafafa;
+            transition: background 0.15s ease, transform 0.15s ease;
+        }
+
+        html:not(.dark) .btn-primary:hover {
+            background: #27272a;
+            transform: translateY(-0.5px);
+        }
+
+        .dark .btn-ghost {
+            background: transparent;
+            color: #71717a;
+            border: 1px solid #27272a;
+        }
+        .dark .btn-ghost:hover { background: #18181b; color: #e4e4e7; border-color: #3f3f46; }
+        html:not(.dark) .btn-ghost {
+            background: transparent;
+            color: #71717a;
+            border: 1px solid #e4e4e7;
+        }
+        html:not(.dark) .btn-ghost:hover { background: #f4f4f5; color: #18181b; }
+
+        .dark .btn-success { background: #16a34a; color: #fff; }
+        .dark .btn-success:hover { background: #15803d; }
+        html:not(.dark) .btn-success { background: #16a34a; color: #fff; }
+
+        /* ── TABLE ── */
+        .tbl-row { border-bottom: 1px solid; transition: background 0.08s; }
+        .dark .tbl-row { border-color: #18181b; }
+        .dark .tbl-row:hover { background: #18181b; }
+        html:not(.dark) .tbl-row { border-color: #f4f4f5; }
+        html:not(.dark) .tbl-row:hover { background: #fafafa; }
+        .tbl-row:last-child { border-bottom: none; }
+
+        /* ── BADGES ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-size: 0.6875rem;
+            font-weight: 500;
+            border: 1px solid;
+            letter-spacing: 0.01em;
+        }
+        .badge-tersedia { background: rgba(16,185,129,0.08); color: #10b981; border-color: rgba(16,185,129,0.18); }
+        .badge-sold     { background: rgba(239,68,68,0.08);   color: #ef4444; border-color: rgba(239,68,68,0.18); }
+        .badge-booking  { background: rgba(245,158,11,0.08);  color: #f59e0b; border-color: rgba(245,158,11,0.18); }
+        .badge-service  { background: rgba(99,102,241,0.08);  color: #818cf8; border-color: rgba(99,102,241,0.18); }
+        .badge-masuk    { background: rgba(113,113,122,0.08); color: #a1a1aa; border-color: rgba(113,113,122,0.18); }
+        .badge-proses   { background: rgba(59,130,246,0.08);  color: #60a5fa; border-color: rgba(59,130,246,0.18); }
+        .badge-selesai  { background: rgba(16,185,129,0.08);  color: #34d399; border-color: rgba(16,185,129,0.18); }
+        /* Approved = unit sudah disetujui kasir, masuk stok */
+        .badge-diambil  { background: rgba(79,209,197,0.08);  color: #4FD1C5; border-color: rgba(79,209,197,0.18); }
+        /* Ditolak = unit tidak bisa diperbaiki */
+        .badge-ditolak  { background: rgba(239,68,68,0.08);   color: #ef4444; border-color: rgba(239,68,68,0.18); }
+        /* Facebook platform badge */
+        .badge-facebook { background: rgba(24,119,242,0.08);  color: #1877F2; border-color: rgba(24,119,242,0.18); }
+
+        /* ── SKELETON ── */
+        .dark .skeleton {
+            background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease infinite;
+            border-radius: 10px;
+        }
+        html:not(.dark) .skeleton {
+            background: linear-gradient(90deg, #f4f4f5 25%, #e4e4e7 50%, #f4f4f5 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease infinite;
+            border-radius: 10px;
+        }
+
+        .spinner {
+            width: 13px; height: 13px;
+            border: 1.5px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.65s linear infinite;
+            display: inline-block; flex-shrink: 0;
+        }
+
+        .toast { animation: toast 0.3s cubic-bezier(0.16,1,0.3,1); }
+
+        .modal-bg {
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .sidebar-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+
+        /* ── FILTER TABS ── */
+        .filter-tab {
+            padding: 5px 14px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 450;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: transparent;
+            transition: all 0.1s;
+            font-family: inherit;
+        }
+        .dark .filter-tab { color: #71717a; }
+        .dark .filter-tab:hover { background: #18181b; color: #d4d4d8; border-color: #27272a; }
+        .dark .filter-tab.active { background: #27272a; color: #fafafa; border-color: #3f3f46; }
+        html:not(.dark) .filter-tab { color: #71717a; }
+        html:not(.dark) .filter-tab:hover { background: #f4f4f5; color: #18181b; }
+        html:not(.dark) .filter-tab.active { background: #18181b; color: #fafafa; }
+
+        /* ── PROGRESS ── */
+        .progress-track {
+            height: 3px; border-radius: 99px; overflow: hidden;
+        }
+        .dark .progress-track { background: #27272a; }
+        html:not(.dark) .progress-track { background: #e4e4e7; }
+        .progress-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+
+        .battery-track { width: 32px; height: 3px; border-radius: 99px; overflow: hidden; display: inline-block; }
+        .dark .battery-track { background: #27272a; }
+        html:not(.dark) .battery-track { background: #e4e4e7; }
+
+        /* ── SVC CARD ── */
+        .svc-card {
+            border-radius: 10px;
+            padding: 18px;
+            transition: border-color 0.15s;
+        }
+        .dark .svc-card { border: 1px solid #27272a; background: #111111; }
+        .dark .svc-card:hover { border-color: #3f3f46; }
+        html:not(.dark) .svc-card { border: 1px solid #e4e4e7; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        html:not(.dark) .svc-card:hover { border-color: #d4d4d8; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+        .label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
+        }
+        .dark .label { color: #a1a1aa; }
+        html:not(.dark) .label { color: #71717a; }
+
+        .divider { border: none; }
+        .dark .divider { border-top: 1px solid #27272a; }
+        html:not(.dark) .divider { border-top: 1px solid #f4f4f5; }
+
+        select {
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px !important;
+        }
+
+        .hamburger { display: none; }
+        @media (max-width: 768px) { .hamburger { display: flex; } }
+
+        /* ── CARD SURFACE ── */
+        .card {
+            border-radius: 10px;
+            transition: box-shadow 0.2s ease;
+        }
+        .dark .card {
+            background: #111111;
+            border: 1px solid #1c1c1f;
+        }
+        html:not(.dark) .card {
+            background: #ffffff;
+            border: 1px solid #e4e4e7;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        html:not(.dark) .card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        }
+
+        /* ── STAT CARD ── */
+        .stat-card {
+            border-radius: 10px;
+            padding: 20px 22px;
+        }
+        .dark .stat-card { 
+            background: #111111; 
+            border: 1px 
+            solid #1c1c1f; 
+        }
+        html:not(.dark) .stat-card {
+            background: #FFFFFF;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        /* ── BODY THEMES ── */
+        .dark body, body.dark-body { background: #0A0A0A; color: #e4e4e7; }
+        html:not(.dark) body { background: #FFFFFF; color: #18181b; }
+
+        /* ── HEADER ── */
+        .dark .app-header { background: rgba(9,9,11,0.85); border-color: #1c1c1f; }
+        html:not(.dark) .app-header { background: rgba(250,250,251,0.9); border-color: #e4e4e7; }
+
+        /* ── SIDEBAR SKIN ── */
+        #app-sidebar {
+          background: #F8F9FA;
+            /* background: linear-gradient(to bottom left, #151928,  #313860); */
+        }
+
+        /* ── MOBILE TOPBAR ── */
+        .dark #mobile-topbar { background: #0A0A0A; border-color: #1c1c1f; }
+        html:not(.dark) #mobile-topbar { background: #FFFFFF; border-color: #e4e4e7; }
+
+        /* ── MAIN BG ── */
+        .dark #page-app { background: #0A0A0A; }
+        html:not(.dark) #page-app { background: #FFFFFF; }
+
+        /* ── LOGIN BG ── */
+        .dark #page-login { background: #0A0A0A; }
+        html:not(.dark) #page-login { background: #FFFFFF; }
+
+        /* ── MODAL ── */
+        .dark #modal .modal-inner { background: #111111; border: 1px solid #27272a; }
+        html:not(.dark) #modal .modal-inner {
+            background: #fff;
+            border: 1px solid #e4e4e7;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.12);
+        }
+
+        /* ── TABLE HEADER ── */
+        .dark .tbl-head { color: #52525b; border-color: #1c1c1f; }
+        html:not(.dark) .tbl-head { color: #a1a1aa; border-color: #f4f4f5; }
+
+        /* ── TABLE WRAP ── */
+        .dark .table-wrap { background: #111111; border: 1px solid #1c1c1f; }
+        html:not(.dark) .table-wrap {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        /* ── SECTION PANELS ── */
+        .dark .panel { background: #111111; border: 1px solid #1c1c1f; }
+        html:not(.dark) .panel {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        /* ── TOAST SKIN ── */
+        .dark .toast-success { background: #111111; border-color: rgba(16,185,129,0.2); color: #34d399; }
+        .dark .toast-error   { background: #111111; border-color: rgba(239,68,68,0.2);  color: #f87171; }
+        .dark .toast-info    { background: #111111; border-color: rgba(99,102,241,0.2); color: #818cf8; }
+        html:not(.dark) .toast-success { background: #fff; border-color: rgba(16,185,129,0.3); color: #059669; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        html:not(.dark) .toast-error   { background: #fff; border-color: rgba(239,68,68,0.3);  color: #dc2626; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        html:not(.dark) .toast-info    { background: #fff; border-color: rgba(99,102,241,0.3); color: #6366f1; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+
+        /* ── THEME TOGGLE ── */
+        .theme-toggle {
+            width: 34px; height: 34px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            background: transparent;
+            transition: all 0.15s;
+            border: 1px solid #27272a;
+            color: #52525b;
+        }
+        .theme-toggle:hover { background: #18181b; color: #e4e4e7; }
+
+        /* ── ICON DOTS ── */
+        .stat-icon {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* ── DIVIDER LINE ── */
+        .dark .border-divider { border-color: #1c1c1f; }
+        html:not(.dark) .border-divider { border-color: #f4f4f5; }
+
+        /* ── LOG ROW ── */
+        .dark .log-row:hover { background: #111111; }
+        html:not(.dark) .log-row:hover { background: #fafafa; }
+
+        /* ── SEARCH INPUT WRAPPER ── */
+        .search-wrap { position: relative; }
+        .search-icon {
+            position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+            color: #52525b; pointer-events: none;
+        }
+        .search-field { padding-left: 40px !important; }
+
+        /* ── PAGE TRANSITIONS ── */
+        #view-container { transition: opacity 0.1s ease; }
+
+        /* ── FOCUS VISIBLE (aksesibilitas keyboard) ── */
+        :focus-visible {
+            outline: 2px solid #4FD1C5;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
+        /* ── HORMATI PREFERENSI REDUCED MOTION ── */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
     </style>
 </head>
+
 <body class="min-h-screen transition-colors duration-200">
 
     <!-- TOAST -->
@@ -320,81 +442,82 @@
 
     <!-- MODAL -->
     <div id="modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 modal-bg" onclick="closeModal(event)">
-        <div class="modal-inner w-full max-w-md rounded-lg animate-slide-up max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
-            <div id="modal-body"></div>
+        <div class="modal-inner w-full max-w-md rounded-lg animate-fade-up max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div id="modal-body" class="p-6"></div>
         </div>
     </div>
 
     <!-- MOBILE SIDEBAR OVERLAY -->
     <div id="sidebar-overlay" class="hidden fixed inset-0 z-40 sidebar-overlay" onclick="closeMobileSidebar()"></div>
 
-    <!-- LOGIN -->
+    <!-- ═══ LOGIN ═══ -->
     <div id="page-login" class="min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-sm">
+            <!-- Brand -->
             <div class="text-center mb-8">
                 <div class="inline-flex items-center gap-2 mb-3">
-                    <span class="text-base font-semibold tracking-tight">JAYAPONA</span>
+                    <span class="text-base font-semibold tracking-tight dark:text-white text-gray-900">Welcome!</span>
                 </div>
             </div>
             <div class="panel rounded-lg p-7">
                 <div class="flex flex-col gap-4">
                     <div>
-                        <label class="label">Username</label>
-                        <input id="login-user" type="text" class="w-full" placeholder="Masukkan username" onkeydown="if(event.key==='Enter')doLogin()" />
+                        <label class="label">Name</label>
+                        <input id="login-user" class="bg-gray-100 dark:bg-[#18181B] p-2 rounded-xl outline-none  border-[1.5px] border-transparent w-full focus:border-[#4FD1C5] placeholder:text-sm placeholder:text-gray-500 dark:placeholder:text-gray-400" placeholder="Masukkan username" onkeydown="if(event.key==='Enter')doLogin()">
                     </div>
                     <div>
                         <label class="label">Password</label>
-                        <input id="login-pass" type="password" class="w-full" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()" />
+                        <input id="login-pass" type="password" class="bg-gray-100 dark:bg-[#18181B] p-2 rounded-xl outline-none  border-[1.5px] border-transparent w-full focus:border-[#4FD1C5] placeholder:text-sm placeholder:text-gray-500 dark:placeholder:text-gray-400" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()">
                     </div>
-                    <div id="login-error" class="hidden text-xs text-error bg-error/10 border border-error/20 rounded-lg px-3 py-2.5"></div>
-                    <button id="login-btn" onclick="doLogin()" class="btn btn-primary w-full" style="height:40px;font-size:0.8125rem;border-radius:6px;">Masuk</button>
+                    <div id="login-error" class="hidden text-xs text-red-400 bg-red-500/8 rounded-xl px-3.5 py-2.5 border border-red-500/15"></div>
+                    <button id="login-btn" onclick="doLogin()" class="btn btn-primary w-full" style="height:44px;font-size:0.875rem;border-radius:14px;">Masuk</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- APP -->
+    <!-- ═══ APP ═══ -->
     <div id="page-app" class="hidden min-h-screen">
 
         <!-- Mobile Topbar -->
         <div id="mobile-topbar" class="md:hidden fixed top-0 left-0 right-0 z-30 border-b px-4 h-12 flex items-center justify-between">
-            <button class="hamburger items-center justify-center w-8 h-8 rounded-lg hover:bg-white/5 transition-colors" onclick="openMobileSidebar()">
+            <button class="hamburger items-center justify-center w-8 h-8 rounded-lg dark:text-zinc-400 text-zinc-500 dark:hover:bg-zinc-800 hover:bg-zinc-100 transition-colors" onclick="openMobileSidebar()">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
-            <span class="text-sm font-semibold tracking-tight">JAYAPONA</span>
+            <span class="text-sm font-semibold tracking-tight text-white">JAYAPONA</span>
         </div>
 
         <!-- SIDEBAR -->
-        <aside id="app-sidebar" class="sidebar-width fixed top-0 left-0 h-screen z-40 flex flex-col md:translate-x-0 -translate-x-full transition-transform duration-200 border-r">
+        <aside id="app-sidebar" class="sidebar-width fixed top-0 left-0 h-screen z-40 flex flex-col md:translate-x-0 -translate-x-full transition-transform duration-200">
 
             <!-- User card -->
-            <div class="px-4 pt-4 pb-2 flex-shrink-0 border-b">
-                <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg">
-                    <div id="avatar" class="rounded-full flex items-center justify-center text-xs font-semibold text-accent flex-shrink-0 overflow-hidden w-9 h-9">
+            <div class="px-3 pt-4 pb-2 flex-shrink-0">
+                <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl">
+                    <div id="avatar" class="rounded-full flex items-center justify-center text-xs font-semibold text-[#4FD1C5] flex-shrink-0 overflow-hidden">
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div id="user-name" class="text-xs font-medium truncate"></div>
-                        <div id="user-role-label" class="text-[10px] text-tertiary capitalize"></div>
+                        <div id="user-name" class="text-xs font-medium text-black truncate"></div>
+                        <div id="user-role-label" class="text-[10px] text-zinc-500 capitalize"></div>
                     </div>
                 </div>
             </div>
 
             <!-- Nav label -->
             <div class="px-5 pt-4 pb-1.5">
-                <span class="text-xs font-semibold text-secondary tracking-widest uppercase">Menu</span>
+                <span class="text-sm font-semibold text-black tracking-widest">Menu</span>
             </div>
 
             <!-- Nav -->
             <nav id="sidebar-nav" class="flex-1 px-3 py-1 space-y-0.5 overflow-y-auto"></nav>
 
             <!-- Bottom -->
-            <div class="px-3 pb-4 pt-2 space-y-0.5 flex-shrink-0 border-t">
+            <div class="px-3 pb-4 pt-2 space-y-0.5 flex-shrink-0">
                 <button onclick="toggleTheme()" class="nav-link w-full">
                     <svg class="w-3.5 h-3.5 hidden dark:block flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
                     <svg class="w-3.5 h-3.5 block dark:hidden flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                     <span id="theme-label">Light Mode</span>
                 </button>
-                <button onclick="doLogout()" class="nav-link w-full text-error hover:text-error">
+                <button onclick="doLogout()" class="nav-link w-full text-black hover:text-red-500">
                     <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                     Keluar
                 </button>
@@ -402,29 +525,31 @@
         </aside>
 
         <!-- MAIN -->
-        <main class="md:ml-[256px] min-h-screen flex flex-col">
+        <main class="md:ml-[260px] min-h-screen flex flex-col">
 
             <!-- Header -->
-            <header class="app-header sticky top-0 md:top-0 top-12 z-20 backdrop-blur-sm px-6 h-[56px] flex items-center justify-between flex-shrink-0">
+            <header class="app-header sticky top-0 md:top-0 top-12 z-20 backdrop-blur-md px-6 h-[60px] flex items-center justify-between flex-shrink-0">
                 <div class="flex items-center gap-3 min-w-0">
-                    <h1 id="page-title" class="text-base font-semibold tracking-tight truncate"></h1>
+                    <h1 id="page-title" class="text-base font-semibold dark:text-zinc-100 text-zinc-800 truncate tracking-tight"></h1>
                 </div>
+                <!-- NOTIFIKASI BELL -->
                 <div class="relative flex-shrink-0" id="notif-wrapper">
-                    <button id="notif-bell" onclick="toggleNotifPanel()" class="relative w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/5 transition-colors">
-                        <svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                        </svg>
-                        <span id="notif-badge" class="hidden absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-error text-[9px] font-bold text-white flex items-center justify-center">0</span>
-                    </button>
-                    <div id="notif-panel" class="hidden absolute right-0 top-11 w-80 rounded-lg shadow-lg z-50 border overflow-hidden panel">
-                        <div class="flex items-center justify-between px-4 py-3 border-b">
-                          <p class="text-xs font-semibold">Notifikasi</p>
-                          <button onclick="clearNotif()" class="text-[11px] text-tertiary hover:text-error transition-colors">Hapus semua</button>
-                        </div>
-                        <div id="notif-list" class="max-h-72 overflow-y-auto divide-y">
-                          <div class="px-4 py-6 text-center text-xs text-tertiary">Tidak ada notifikasi</div>
-                        </div>
+                  <button id="notif-bell" onclick="toggleNotifPanel()" class="relative w-9 h-9 rounded-xl flex items-center justify-center dark:hover:bg-zinc-800 hover:bg-zinc-100 transition-colors">
+                    <svg class="w-4 h-4 dark:text-zinc-400 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    </svg>
+                    <span id="notif-badge" class="hidden absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center">0</span>
+                  </button>
+                  <!-- Notif Panel -->
+                  <div id="notif-panel" class="hidden absolute right-0 top-11 w-80 rounded-lg shadow-xl z-50 border dark:bg-[#111111] bg-white dark:border-zinc-800 border-zinc-200 overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-3 border-b dark:border-zinc-800 border-zinc-100">
+                      <p class="text-xs font-semibold dark:text-zinc-200 text-zinc-700">Notifikasi</p>
+                      <button onclick="clearNotif()" class="text-[11px] dark:text-zinc-500 text-zinc-400 hover:text-red-400 transition-colors">Hapus semua</button>
                     </div>
+                    <div id="notif-list" class="max-h-72 overflow-y-auto divide-y dark:divide-zinc-800 divide-zinc-100">
+                      <div class="px-4 py-6 text-center text-xs dark:text-zinc-600 text-zinc-400">Tidak ada notifikasi</div>
+                    </div>
+                  </div>
                 </div>
             </header>
 
@@ -432,8 +557,13 @@
             <div id="view-container" class="flex-1 p-6 md:p-8 pt-6 mt-12 md:mt-0"></div>
         </main>
     </div>
-</html>
-EOF<script>
+
+    <!-- API CLIENT -->
+    <script src="main.js"></script>
+    <script src="svg.js"></script>
+
+    <!-- APP LOGIC -->
+    <script>
         'use strict';
 
         // ── THEME ──
@@ -585,7 +715,7 @@ EOF<script>
         function emptyState(msg, icon) {
             const svgIcon = (typeof emojiSvgMap !== 'undefined' && emojiSvgMap[icon]) || emojiSvgMap['📭'] || icon;
             return `<div class="flex flex-col items-center justify-center py-16 text-center">
-                <div class="w-12 h-12 rounded-2xl dark:bg-zinc-800/50 bg-zinc-100 flex items-center justify-center mb-3 text-zinc-400 dark:text-zinc-500">${svgIcon}</div>
+                <div class="w-12 h-12 rounded-lg dark:bg-zinc-800/50 bg-zinc-100 flex items-center justify-center mb-3 text-zinc-400 dark:text-zinc-500">${svgIcon}</div>
                 <p class="text-sm dark:text-zinc-500 text-zinc-400 font-medium">${msg}</p>
             </div>`;
         }
@@ -593,7 +723,7 @@ EOF<script>
         function errorState(msg, fn = '') {
             const isTimeout = msg.toLowerCase().includes('timeout') || msg.toLowerCase().includes('cold start');
             return `<div class="flex flex-col items-center justify-center py-16 text-center">
-                <div class="w-11 h-11 rounded-2xl bg-red-500/8 flex items-center justify-center mb-3">
+                <div class="w-11 h-11 rounded-lg bg-red-500/8 flex items-center justify-center mb-3">
                   <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 </div>
                 <p class="text-sm font-medium dark:text-zinc-200 text-zinc-700 mb-1">Gagal memuat data</p>
@@ -863,7 +993,7 @@ function renderDateFilter(refreshCallback) {
   const cb = typeof refreshCallback === 'string' ? refreshCallback : (refreshCallback.name || '');
   return `
      <div class="flex items-center gap-2 flex-wrap">
-       <div class="flex bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-1 text-xs font-medium">
+       <div class="flex bg-zinc-100 dark:bg-zinc-900 rounded-lg p-1 text-xs font-medium">
          <button onclick="setPresetFilter('7d', '${cb}')"  class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='7d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">7 Hari</button>
          <button onclick="setPresetFilter('30d', '${cb}')" class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='30d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">30 Hari</button>
          <button onclick="setPresetFilter('90d', '${cb}')" class="filter-tab px-4 py-2 rounded-xl ${currentFilter.preset==='90d'?'bg-white dark:bg-zinc-800 shadow-sm':''}">3 Bulan</button>
@@ -1000,7 +1130,7 @@ let _dashCabangFilter = '';
             ` : ''}
 
             <!-- TREND CHART -->
-            <div class="panel rounded-2xl p-6">
+            <div class="panel rounded-lg p-6">
               <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
                 <div>
                   <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 tracking-tight">Trend Penjualan</p>
@@ -1017,7 +1147,7 @@ let _dashCabangFilter = '';
 
             <!-- KEUANGAN + STATUS UNIT -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div class="lg:col-span-2 panel rounded-2xl p-6">
+              <div class="lg:col-span-2 panel rounded-lg p-6">
                 <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Ringkasan Keuangan</p>
                 <div class="divide-y dark:divide-zinc-800 divide-zinc-100">
                   ${finRow('Profit Hari Ini',  rp(keu.profit_harian), 'text-[#4FD1C5]')}
@@ -1026,7 +1156,7 @@ let _dashCabangFilter = '';
                   ${finRow('Gross Profit',     rp(keu.total_profit),  'text-[#4FD1C5]')}
                 </div>
               </div>
-              <div class="panel rounded-2xl p-6">
+              <div class="panel rounded-lg p-6">
                 <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Status Unit</p>
                 <div class="space-y-4">
                   ${statusBar('Tersedia', unit.tersedia, unit.total)}
@@ -1038,7 +1168,7 @@ let _dashCabangFilter = '';
             </div>
 
             <!-- TRANSAKSI TERBARU -->
-            <div class="table-wrap rounded-2xl overflow-hidden">
+            <div class="table-wrap rounded-lg overflow-hidden">
               <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
                 <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Transaksi Terbaru</p>
                 <button onclick="navigate('transaksi')" class="text-xs dark:text-zinc-500 text-zinc-400 dark:hover:text-zinc-300 hover:text-zinc-600 transition-colors">Lihat semua</button>
@@ -1244,7 +1374,7 @@ let _stokSearchTimer = null;
     
     const units = (await API.units.list(params)).data;
 
-    wrap.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+    wrap.innerHTML = `<div class="table-wrap rounded-lg overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-xs">
           <thead>
@@ -1616,7 +1746,7 @@ let _trxCabangFilter = '';
         ${renderDateFilter('renderTransaksi')}
         ${STATE.user.role === 'owner' ? renderCabangFilter(_trxCabangFilter, '_trxCabangFilter=this.value;renderTransaksi()') : ''}
       </div>
-      <div class="table-wrap rounded-2xl overflow-hidden">
+      <div class="table-wrap rounded-lg overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
           <p class="text-sm font-medium">Semua Transaksi</p>
           <span class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} transaksi</span>
@@ -1709,7 +1839,7 @@ let _trxCabangFilter = '';
                     ${statCard('Gross Profit',  rp(keu.total_profit),  'keuntungan bersih', 'green')}
                   </div>
                   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div class="panel rounded-2xl p-6">
+                    <div class="panel rounded-lg p-6">
                       <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Breakdown Keuangan</p>
                       <div class="divide-y dark:divide-zinc-800 divide-zinc-100">
                         ${finRow('Total Penjualan (Revenue)', rp(keu.total_revenue), 'text-[#4FD1C5]')}
@@ -1717,7 +1847,7 @@ let _trxCabangFilter = '';
                         ${finRow('Gross Profit',              rp(keu.total_profit),  'text-[#4FD1C5]')}
                       </div>
                     </div>
-                    <div class="panel rounded-2xl p-6">
+                    <div class="panel rounded-lg p-6">
                       <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Profit per Transaksi</p>
                       <div class="space-y-0 max-h-64 overflow-y-auto -mr-2 pr-2">
                         ${list.length ? list.map(t=>`<div class="flex justify-between items-center py-3 border-b border-divider last:border-0">
@@ -1768,7 +1898,7 @@ let _svcStatusFilter = '';
                         </select>` : ''}
                     </div>
                   </div>
-                <div class="table-wrap rounded-2xl overflow-hidden">
+                <div class="table-wrap rounded-lg overflow-hidden">
                   <div class="flex items-center justify-between px-6 py-4 border-b border-divider">
                     <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Semua Data Service</p>
                     <span class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} tiket</span>
@@ -1924,7 +2054,7 @@ let _svcStatusFilter = '';
                     ${STATE.user.role === 'kepala_cabang' ? `<button onclick="modalTambahKaryawan()" class="btn btn-primary" style="height:36px;padding:0 16px;font-size:0.75rem;">+ Tambah Karyawan</button>` : ''}
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    ${list.length ? list.map(k=>`<div class="panel rounded-2xl p-5 hover:-translate-y-0.5 transition-all duration-200">
+                    ${list.length ? list.map(k=>`<div class="panel rounded-lg p-5 hover:-translate-y-0.5 transition-all duration-200">
                       <div class="flex items-start gap-3 mb-4">
                         ${k.foto_profil_url && isValidProfilePhotoUrl(k.foto_profil_url) ? `<img src="${k.foto_profil_url}" class="w-10 h-10 rounded-xl object-cover border dark:border-zinc-700 border-zinc-200 flex-shrink-0" alt="Profile" />` : `<div class="w-10 h-10 rounded-xl dark:bg-zinc-800 bg-zinc-100 flex items-center justify-center text-sm font-bold dark:text-zinc-300 text-zinc-600 flex-shrink-0">${k.nama[0]}</div>`}
                         <div class="flex-1 min-w-0">
@@ -2132,7 +2262,7 @@ let _svcStatusFilter = '';
                 ];
                 const filterHtml = `
                 <div class="flex items-center gap-2 flex-wrap mb-5">
-                  <div class="flex bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-1 text-xs font-medium">
+                  <div class="flex bg-zinc-100 dark:bg-zinc-900 rounded-lg p-1 text-xs font-medium">
                     ${tabs.map(t => `
                     <button onclick="_setKarFilter('${t.key}')"
                       class="kar-filter-tab px-3 py-1.5 rounded-xl transition-colors ${_karStatsFilter.preset === t.key && !_karStatsFilter.start ? 'bg-white dark:bg-zinc-800 shadow-sm font-semibold' : 'dark:text-zinc-500 text-zinc-400'}">
@@ -2149,16 +2279,16 @@ let _svcStatusFilter = '';
                 if (isKasir) {
                     statCards = `
                     <div class="grid grid-cols-3 gap-3 mb-5">
-                      <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50">
+                      <div class="p-4 rounded-lg dark:bg-zinc-800/60 bg-zinc-50">
                         <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-1">Transaksi</p>
                         <p class="text-2xl font-bold dark:text-zinc-100 text-zinc-800">${d.jumlah_transaksi}</p>
                         <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mt-0.5">≈ ${d.rata_per_hari}/hari</p>
                       </div>
-                      <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50">
+                      <div class="p-4 rounded-lg dark:bg-zinc-800/60 bg-zinc-50">
                         <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-1">Total Omzet</p>
                         <p class="text-lg font-bold text-[#4FD1C5]">${rp(d.total_omzet)}</p>
                       </div>
-                      <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50">
+                      <div class="p-4 rounded-lg dark:bg-zinc-800/60 bg-zinc-50">
                         <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-1">Total Profit</p>
                         <p class="text-lg font-bold text-emerald-400">${rp(d.total_profit)}</p>
                       </div>
@@ -2167,16 +2297,16 @@ let _svcStatusFilter = '';
                     const breakdown = d.status_breakdown || {};
                     statCards = `
                     <div class="grid grid-cols-3 gap-3 mb-5">
-                      <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50">
+                      <div class="p-4 rounded-lg dark:bg-zinc-800/60 bg-zinc-50">
                         <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-1">Total Service</p>
                         <p class="text-2xl font-bold dark:text-zinc-100 text-zinc-800">${d.total_service}</p>
                       </div>
-                      <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50">
+                      <div class="p-4 rounded-lg dark:bg-zinc-800/60 bg-zinc-50">
                         <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-1">Selesai</p>
                         <p class="text-2xl font-bold text-emerald-400">${d.jumlah_selesai}</p>
                         <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mt-0.5">≈ ${d.rata_selesai_per_hari}/hari</p>
                       </div>
-                      <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50">
+                      <div class="p-4 rounded-lg dark:bg-zinc-800/60 bg-zinc-50">
                         <p class="text-[10px] dark:text-zinc-500 text-zinc-400 mb-2">Status</p>
                         ${Object.entries(breakdown).map(([s,n]) =>
                           `<div class="flex justify-between text-[11px]"><span class="dark:text-zinc-500 text-zinc-400">${s}</span><span class="font-semibold dark:text-zinc-200 text-zinc-700">${n}</span></div>`
@@ -2195,7 +2325,7 @@ let _svcStatusFilter = '';
                 const chartColor = isKasir ? '#4FD1C5' : '#34d399';
 
                 body.innerHTML = filterHtml + statCards + `
-                <div class="rounded-2xl dark:bg-zinc-800/40 bg-zinc-50 p-4">
+                <div class="rounded-lg dark:bg-zinc-800/40 bg-zinc-50 p-4">
                   <p class="text-xs font-medium dark:text-zinc-400 text-zinc-500 mb-3">${chartLabel} — Trend Harian</p>
                   ${trend.length ? `<canvas id="kar-stats-chart" height="160"></canvas>` : `<p class="text-xs dark:text-zinc-600 text-zinc-400 text-center py-6">Belum ada data dalam periode ini</p>`}
                 </div>
@@ -2293,7 +2423,7 @@ async function renderLog() {
       'Reset Password Karyawan': 'bg-red-500/8 text-red-400 border border-red-500/15',
     };
     
-    c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+    c.innerHTML = `<div class="table-wrap rounded-lg overflow-hidden">
           <div class="px-6 py-4 border-b border-divider flex items-center justify-between flex-wrap gap-3">
             <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Sistem</p>
             <div class="flex items-center gap-3 flex-wrap">
@@ -2355,7 +2485,7 @@ const c = document.getElementById('view-container');
                     `${u.merk} ${u.tipe} ${u.unit_id} ${u.imei}`.toLowerCase().includes(q.toLowerCase())
                 ) : _stokKasirCache;
 
-                wrap.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+                wrap.innerHTML = `<div class="table-wrap rounded-lg overflow-hidden">
                   <div class="overflow-x-auto">
                     <table class="w-full text-xs">
                       <thead>
@@ -2755,7 +2885,7 @@ const c = document.getElementById('view-container');
             _trxUnitHarga = 0;
             c.innerHTML = `<div class="max-w-lg space-y-4">
                 <!-- Header -->
-                <div class="panel rounded-2xl p-5">
+                <div class="panel rounded-lg p-5">
                   <div class="flex items-center justify-between">
                     <div>
                       <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Input Transaksi</p>
@@ -2765,7 +2895,7 @@ const c = document.getElementById('view-container');
                 </div>
 
                 <!-- Unit HP Section -->
-                <div class="panel rounded-2xl p-5">
+                <div class="panel rounded-lg p-5">
                   <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3"><span class="inline-block align-middle mr-1">${smartphoneSvg}</span> Unit HP <span class="text-[10px] normal-case tracking-normal dark:text-zinc-600 text-zinc-400">(opsional)</span></p>
                   <div class="space-y-3">
                     <div>
@@ -2788,7 +2918,7 @@ const c = document.getElementById('view-container');
                 </div>
 
                 <!-- Sparepart Section -->
-                <div class="panel rounded-2xl p-5">
+                <div class="panel rounded-lg p-5">
                   <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">${wrenchSvg} Sparepart <span class="text-[10px] normal-case tracking-normal dark:text-zinc-600 text-zinc-400">(opsional)</span></p>
                   <div class="space-y-3">
                     <div class="relative">
@@ -2804,7 +2934,7 @@ const c = document.getElementById('view-container');
                 </div>
 
                 <!-- Keranjang -->
-                <div class="panel rounded-2xl p-5">
+                <div class="panel rounded-lg p-5">
                   <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Keranjang</p>
                   <div id="sp-keranjang" class="space-y-2 min-h-[60px]">
                     <p class="text-xs dark:text-zinc-600 text-zinc-400 text-center py-4">Belum ada item dipilih</p>
@@ -2818,7 +2948,7 @@ const c = document.getElementById('view-container');
                 </div>
 
                 <!-- Customer Section -->
-                                <div class="panel rounded-2xl p-5">
+                                <div class="panel rounded-lg p-5">
                                   <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Customer</p>
                   
                                   <!-- Customer Type Toggle: Member vs Guest -->
@@ -2899,7 +3029,7 @@ const c = document.getElementById('view-container');
                                 </div>
 
                 <!-- Price Breakdown -->
-                <div id="trx-harga-breakdown" class="hidden panel rounded-2xl p-5 space-y-2 text-xs">
+                <div id="trx-harga-breakdown" class="hidden panel rounded-lg p-5 space-y-2 text-xs">
                   <div id="trx-harga-unit-row" class="hidden flex justify-between">
                     <span class="dark:text-zinc-500 text-zinc-400">Harga Unit</span>
                     <span id="trx-harga-unit" class="dark:text-zinc-300 text-zinc-600 font-medium">Rp 0</span>
@@ -2923,13 +3053,13 @@ const c = document.getElementById('view-container');
                 </div>
 
                 <!-- Catatan -->
-                <div class="panel rounded-2xl p-5">
+                <div class="panel rounded-lg p-5">
                   <label class="label">Catatan</label>
                   <textarea id="trx-catatan" rows="2" class="${input} resize-none" style="height:auto;" placeholder="Opsional..."></textarea>
                 </div>
 
                 <!-- Foto Bukti Serah Terima (WAJIB jika ada unit) -->
-                <div class="panel rounded-2xl p-5" id="trx-foto-section">
+                <div class="panel rounded-lg p-5" id="trx-foto-section">
                   <label class="label">Foto Bukti Serah Terima <span class="text-red-400">*</span></label>
                   <p class="text-[11px] dark:text-zinc-500 text-zinc-400 mt-1 mb-2">Wajib ambil foto kondisi HP sebelum diserahkan ke customer. Minimal 1 foto.</p>
                   ${imageUploaderHTML({ id: 'trx-foto', maxFiles: 1, required: true, label: 'Foto Bukti Serah Terima', capture: 'environment', folder: 'jayaphone/transactions', helper: 'Ambil foto kondisi HP dari berbagai sudut (depan, belakang, samping).' })}
@@ -3240,7 +3370,7 @@ const c = document.getElementById('view-container');
                 document.getElementById('modal-body').innerHTML = `
                     <div class="space-y-4">
                         <!-- Product Info -->
-                        <div class="panel rounded-2xl p-5">
+                        <div class="panel rounded-lg p-5">
                             <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Informasi Produk</p>
                             <div class="flex gap-4">
                                 <div class="w-32 h-32 rounded-xl dark:bg-zinc-800/50 bg-zinc-100 flex-shrink-0 overflow-hidden">
@@ -3256,13 +3386,13 @@ const c = document.getElementById('view-container');
                         
                         ${t.foto_serah_terima ? `
                         <!-- Foto Bukti Serah Terima -->
-                        <div class="panel rounded-2xl p-5">
+                        <div class="panel rounded-lg p-5">
                             <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Foto Bukti Serah Terima</p>
                             ${proofPhoto}
                         </div>` : ''}
                         
                         <!-- Financial Breakdown -->
-                        <div class="panel rounded-2xl p-5">
+                        <div class="panel rounded-lg p-5">
                             <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Rincian Keuangan</p>
                             <div class="space-y-2 text-xs">
                                 <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Harga Modal</span><span class="font-medium dark:text-blue-400 text-blue-600">${rp(t.harga_modal || 0)}</span></div>
@@ -3275,7 +3405,7 @@ const c = document.getElementById('view-container');
                         </div>
                         
                         <!-- Payment Info -->
-                        <div class="panel rounded-2xl p-5">
+                        <div class="panel rounded-lg p-5">
                             <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Pembayaran</p>
                             <div class="grid grid-cols-2 gap-3 text-xs">
                                 <div class="p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50"><p class="dark:text-zinc-500 text-zinc-400">Metode</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${t.metode_bayar || 'Cash'}</p></div>
@@ -3286,13 +3416,13 @@ const c = document.getElementById('view-container');
                         </div>
                         
                         ${t.catatan ? `
-                        <div class="panel rounded-2xl p-5">
+                        <div class="panel rounded-lg p-5">
                             <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-2">Catatan</p>
                             <p class="text-xs dark:text-zinc-300 text-zinc-600 p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50">${t.catatan}</p>
                         </div>` : ''}
                        
                         <!-- Customer Info -->
-                        <div class="panel rounded-2xl p-5">
+                        <div class="panel rounded-lg p-5">
                             <p class="text-[10px] dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-3">Customer</p>
                             <div class="grid grid-cols-2 gap-3 text-xs">
                                 <div class="p-2 rounded-lg dark:bg-zinc-800/50 bg-zinc-50"><p class="dark:text-zinc-500 text-zinc-400">Tipe</p><p class="font-medium dark:text-zinc-200 text-zinc-700">${t.customer_type === 'guest' ? 'Guest' : 'Member'}</p></div>
@@ -3320,7 +3450,7 @@ const c = document.getElementById('view-container');
             openModal(`
                 ${modalHeader('${checkCircleSvg} Transaksi Berhasil')}
                 <div class="space-y-3">
-                  <div class="p-4 rounded-2xl dark:bg-zinc-800/60 bg-zinc-50 space-y-2 text-xs">
+                  <div class="p-4 rounded-lg dark:bg-zinc-800/60 bg-zinc-50 space-y-2 text-xs">
                     <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">No. Struk</span><span class="font-mono font-semibold dark:text-zinc-200 text-zinc-700">${trx.trx_id}</span></div>
                     <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Item</span><span class="dark:text-zinc-200 text-zinc-700 text-right max-w-[55%]">${trx.unit_label}</span></div>
                     <div class="flex justify-between"><span class="dark:text-zinc-500 text-zinc-400">Harga</span><span class="font-semibold dark:text-zinc-200 text-zinc-700">${rp(trx.harga_jual)}</span></div>
@@ -3425,7 +3555,7 @@ const c = document.getElementById('view-container');
         async function renderTambahUnit() {
             const c = document.getElementById('view-container');
             c.innerHTML = `<div class="max-w-xl">
-                <div class="panel rounded-2xl p-7">
+                <div class="panel rounded-lg p-7">
                   <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-6">Form Tambah Unit / Barang Masuk</p>
                   ${_unitFormFields()}
                   <button id="btn-simpan-unit" onclick="simpanUnit(true)" class="btn btn-primary w-full mt-5">Simpan Unit</button>
@@ -3452,7 +3582,7 @@ const c = document.getElementById('view-container');
                       Tambah
                     </button>
                   </div>
-                  <div id="customer-list" class="table-wrap rounded-2xl overflow-hidden">
+                  <div id="customer-list" class="table-wrap rounded-lg overflow-hidden">
                     ${renderCustomerTable(list)}
                   </div>
                 </div>`;
@@ -3759,7 +3889,7 @@ const c = document.getElementById('view-container');
         }
 
         function renderServiceList(list) {
-            if (!list.length) return `<div class="table-wrap rounded-2xl py-2">${emptyState('Tidak ada tiket service', settingSvg)}</div>`;
+            if (!list.length) return `<div class="table-wrap rounded-lg py-2">${emptyState('Tidak ada tiket service', settingSvg)}</div>`;
             return `<div class="space-y-3">` + list.map(s => {
                 // Teknisi bisa update jika status masih Antrian atau Proses
                 // Setelah Selesai, hanya kasir/owner yang bisa approve
@@ -3895,7 +4025,7 @@ const c = document.getElementById('view-container');
                     'Teknisi': 'bg-indigo-500/8 text-indigo-400 border border-indigo-500/15',
                 };
                 
-                c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+                c.innerHTML = `<div class="table-wrap rounded-lg overflow-hidden">
                     <div class="px-6 py-4 border-b border-divider flex items-center justify-between flex-wrap gap-3">
                         <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Teknisi</p>
                         <div class="flex items-center gap-3 flex-wrap">
@@ -3956,7 +4086,7 @@ const c = document.getElementById('view-container');
                       </button>
                     </div>
                   </div>`).join('') + `</div>`
-                  : `<div class="table-wrap rounded-2xl py-2">${emptyState('Tidak ada tiket menunggu approval', settingSvg)}</div>`}
+                  : `<div class="table-wrap rounded-lg py-2">${emptyState('Tidak ada tiket menunggu approval', settingSvg)}</div>`}
                 </div>`;
             } catch (e) { c.innerHTML = errorState(e.message, 'renderApprovalRepair()'); }
         }
@@ -4067,7 +4197,7 @@ const c = document.getElementById('view-container');
                     <p class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} item sparepart</p>
                     <button onclick="modalTambahSparepart()" class="btn btn-primary" style="height:36px;padding:0 16px;font-size:0.75rem;">+ Tambah Sparepart</button>
                   </div>
-                  <div class="table-wrap rounded-2xl overflow-hidden">
+                  <div class="table-wrap rounded-lg overflow-hidden">
                     <div class="overflow-x-auto">
                       <table class="w-full text-xs">
                         <thead>
@@ -4205,7 +4335,7 @@ async function renderRequestSparepart() {
                 <button onclick="modalBuatRequestSP()" class="btn btn-primary">+ Request Baru</button>
                 ` : ''}
             </div>
-            <div id="request-list" class="table-wrap rounded-2xl overflow-hidden">
+            <div id="request-list" class="table-wrap rounded-lg overflow-hidden">
                 ${renderRequestTable(list)}
             </div>
         </div>`;
@@ -4430,7 +4560,7 @@ function modalResponRequest(req_id, nama_sp) {
   openModal(`
     ${modalHeader('Respon Request Sparepart')}
     <div class="space-y-5">
-      <div class="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-2xl">
+      <div class="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
         <p class="text-sm font-medium">${nama_sp}</p>
       </div>
       
@@ -4507,7 +4637,7 @@ function modalApproveRequest(req_id, nama_sp, jumlah) {
   openModal(`
     ${modalHeader('Approval Sparepart Kasir', nama_sp)}
     <div class="space-y-5">
-      <div class="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-2xl">
+      <div class="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
         <p class="text-sm font-medium">${nama_sp}</p>
         <p class="text-xs dark:text-zinc-500 text-zinc-400 mt-0.5">Jumlah: ${jumlah} unit</p>
       </div>
@@ -4628,7 +4758,7 @@ async function renderApprovalSparepart() {
         </div>
       </div>
 
-      <div class="table-wrap rounded-2xl overflow-hidden">
+      <div class="table-wrap rounded-lg overflow-hidden">
         <div class="overflow-x-auto">
         <table class="w-full text-xs">
             <thead>
@@ -4730,7 +4860,7 @@ async function renderTransferStok() {
             </button>`).join('')}
         </div>
 
-        <div id="trf-list" class="table-wrap rounded-2xl overflow-hidden">
+        <div id="trf-list" class="table-wrap rounded-lg overflow-hidden">
           ${renderTransferTable(transfers, isKepala || isOwner)}
         </div>
       </div>`;
@@ -5161,7 +5291,7 @@ function modalDetailTransfer(transfer_id) {
                   </div>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     ${list.length ? list.map(cab => `
-                    <div class="panel rounded-2xl p-5 space-y-3">
+                    <div class="panel rounded-lg p-5 space-y-3">
                       <div class="flex items-start justify-between">
                         <div>
                           <div class="flex items-center gap-2">
@@ -5360,7 +5490,7 @@ async function renderInfluencerDashboard() {
             </div>
 
             <!-- TREND CHART -->
-            <div class="panel rounded-2xl p-6">
+            <div class="panel rounded-lg p-6">
                 <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
                     <div>
                         <p class="text-sm font-semibold dark:text-zinc-100 text-zinc-800 tracking-tight">Trend Views per Minggu</p>
@@ -5374,7 +5504,7 @@ async function renderInfluencerDashboard() {
             </div>
 
             <!-- TOP 5 VIDEOS -->
-            <div class="panel rounded-2xl p-6">
+            <div class="panel rounded-lg p-6">
                 <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Top 5 Video Terbanyak Dilihat</p>
                 ${s.top_videos && s.top_videos.length > 0 ? `
                 <div class="space-y-3">
@@ -5700,7 +5830,7 @@ async function renderInfluencerLog() {
             'Influencer': 'bg-indigo-500/8 text-indigo-400 border border-indigo-500/15',
         };
         
-        c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+        c.innerHTML = `<div class="table-wrap rounded-lg overflow-hidden">
             <div class="px-6 py-4 border-b border-divider flex items-center justify-between flex-wrap gap-3">
                 <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Influencer</p>
                 <div class="flex items-center gap-3 flex-wrap">
@@ -5766,7 +5896,7 @@ async function renderInfluencerMonitor() {
             </div>
 
             <!-- BY CABANG -->
-            <div class="panel rounded-2xl p-6">
+            <div class="panel rounded-lg p-6">
                 <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-5">Performa per Cabang</p>
                 <div class="overflow-x-auto">
                     <table class="w-full text-xs">
@@ -5795,7 +5925,7 @@ async function renderInfluencerMonitor() {
             </div>
 
             <!-- TOP INFLUENCERS -->
-            <div class="panel rounded-2xl p-6">
+            <div class="panel rounded-lg p-6">
                 <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
                     <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Top Influencer by Views</p>
                     <select id="owner-inf-filter-inf" class="bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs font-medium dark:text-zinc-300 text-zinc-600 outline-none" onchange="filterOwnerInfluencerVideos()">
@@ -5821,7 +5951,7 @@ async function renderInfluencerMonitor() {
             </div>
 
             <!-- RECENT VIDEOS -->
-            <div class="panel rounded-2xl p-6">
+            <div class="panel rounded-lg p-6">
                 <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
                     <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Video Terbaru (Semua Influencer)</p>
                     <select id="owner-inf-filter-platform" class="bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl px-3 py-2 text-xs font-medium dark:text-zinc-300 text-zinc-600 outline-none" onchange="filterOwnerInfluencerVideos()">
@@ -5944,7 +6074,7 @@ async function renderKurirDashboard() {
                 </div>
             </div>
             
-            <div class="table-wrap rounded-2xl overflow-hidden">
+            <div class="table-wrap rounded-lg overflow-hidden">
                 <div class="overflow-x-auto">
                 <table class="w-full text-xs">
                     <thead>
@@ -6119,7 +6249,7 @@ async function renderKurirLog() {
             'COD Request Ditolak': 'bg-red-500/8 text-red-400 border border-red-500/15',
         };
         
-        c.innerHTML = `<div class="table-wrap rounded-2xl overflow-hidden">
+        c.innerHTML = `<div class="table-wrap rounded-lg overflow-hidden">
             <div class="px-6 py-4 border-b border-divider flex items-center justify-between flex-wrap gap-3">
                 <p class="text-sm font-medium dark:text-zinc-200 text-zinc-800 tracking-tight">Log Aktivitas Kurir</p>
                 <div class="flex items-center gap-3 flex-wrap">
@@ -6193,19 +6323,19 @@ async function renderKurirMonitoring() {
 
                         <!-- Summary Cards -->
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div class="panel rounded-2xl p-4">
+                            <div class="panel rounded-lg p-4">
                                 <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Total Kurir</p>
                                 <p class="text-3xl font-bold dark:text-zinc-100 text-zinc-800 mt-1">${totalKurirs}</p>
                             </div>
-                            <div class="panel rounded-2xl p-4">
+                            <div class="panel rounded-lg p-4">
                                 <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Total COD</p>
                                 <p class="text-3xl font-bold dark:text-zinc-100 text-zinc-800 mt-1">${totalCOD}</p>
                             </div>
-                            <div class="panel rounded-2xl p-4">
+                            <div class="panel rounded-lg p-4">
                                 <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Selesai / Gagal</p>
                                 <p class="text-3xl font-bold dark:text-zinc-100 text-zinc-800 mt-1">${totalSelesai} / ${totalGagal}</p>
                             </div>
-                            <div class="panel rounded-2xl p-4">
+                            <div class="panel rounded-lg p-4">
                                 <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest">Avg Success Rate</p>
                                 <p class="text-3xl font-bold dark:text-zinc-100 text-zinc-800 mt-1">${avgSuccessRate}%</p>
                             </div>
@@ -6220,7 +6350,7 @@ async function renderKurirMonitoring() {
                                 const successColor = successRate >= 80 ? 'emerald' : successRate >= 60 ? 'amber' : 'red';
                     
                                 return `
-                                <div class="panel rounded-2xl overflow-hidden border dark:border-zinc-800 border-zinc-200 transition-all hover:border-blue-500/30">
+                                <div class="panel rounded-lg overflow-hidden border dark:border-zinc-800 border-zinc-200 transition-all hover:border-blue-500/30">
                                     <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 border-b dark:border-zinc-800 border-zinc-200 flex items-center justify-between flex-wrap gap-3">
                                         <div>
                                             <p class="font-semibold dark:text-zinc-100 text-zinc-800">${k.kurir_name}</p>
@@ -6288,7 +6418,7 @@ async function renderKurirMonitoring() {
                                     </div>
                                 </div>
                                 `;
-                            }).join('') : '<div class="panel rounded-2xl p-8 text-center"><p class="text-xs dark:text-zinc-500 text-zinc-400">Tidak ada data kurir</p></div>'}
+                            }).join('') : '<div class="panel rounded-lg p-8 text-center"><p class="text-xs dark:text-zinc-500 text-zinc-400">Tidak ada data kurir</p></div>'}
                         </div>
                     </div>`;
 
@@ -6319,7 +6449,7 @@ async function renderKurirMonitoring() {
 async function renderCodBeli() {
     const c = document.getElementById('view-container');
     c.innerHTML = `<div class="max-w-xl mx-auto">
-        <div class="panel rounded-2xl p-7">
+        <div class="panel rounded-lg p-7">
             <p class="text-xs font-medium dark:text-zinc-500 text-zinc-400 uppercase tracking-widest mb-6">Buat Order COD Beli</p>
             <div class="space-y-4">
                 <div>
@@ -6378,7 +6508,7 @@ async function renderApprovalCod() {
                 <h1 class="text-2xl font-bold tracking-tight">Approval COD Beli</h1>
                 <span class="badge">${cods.length} menunggu</span>
             </div>
-            <div class="table-wrap rounded-2xl overflow-hidden"><div class="overflow-x-auto">
+            <div class="table-wrap rounded-lg overflow-hidden"><div class="overflow-x-auto">
                 <table class="w-full text-xs">
                     <thead><tr class="tbl-head text-left text-[10px] uppercase tracking-widest border-b">
                         <th class="px-5 py-3.5 font-medium">Waktu</th>
@@ -7010,3 +7140,4 @@ const NOTIF = {
         window.updateThemeLabel = updateThemeLabel;
 </script>
 </body>
+</html>

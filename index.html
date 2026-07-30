@@ -559,8 +559,8 @@
     </div>
 
     <!-- API CLIENT -->
-    <script src="main.js"></script>
-    <script src="svg.js"></script>
+    <script src="main.js?v=20260730"></script>
+    <script src="svg.js?v=20260730"></script>
 
     <!-- APP LOGIC -->
     <script>
@@ -836,7 +836,7 @@
                 { page: 'stok-kasir',        label: 'Cek Stok',          d: stokSvg2 },
                 { page: 'input-transaksi',   label: 'Input Transaksi',   d: transaksiSvg2 },
                 { page: 'tambah-unit',       label: 'Tambah Unit',       d: tambahSvg },
-                { page: 'cod-beli',          label: 'COD Beli',          d: upSvg },
+                { page: 'cod-beli',          label: 'COD Beli',          d: moneySvg },
                 { page: 'approval-cod',      label: 'Approval COD',      d: settingSvg },
                 { page: 'approval-repair',   label: 'Approval Repair',   d: settingSvg },
                 { page: 'approval-sparepart', label: 'Approval Sparepart', d: settingSvg },
@@ -969,12 +969,22 @@
             document.querySelectorAll('.nav-link').forEach(el => {
                 el.classList.toggle('active', el.getAttribute('onclick')?.includes(`navigate('${page}')`));
             });
-            const [title] = PAGE_META[page];
-            document.getElementById('page-title').textContent = title;
             const c = document.getElementById('view-container');
             c.className = 'flex-1 p-6 md:p-8 pt-6 mt-12 md:mt-0 animate-fade-up';
+
+            const meta = PAGE_META[page];
+            const view = VIEWS[page];
+            if (!meta || !view) {
+                // Halaman tidak terdaftar — tampilkan error yang jelas, jangan silent-fail
+                document.getElementById('page-title').textContent = 'Halaman Tidak Ditemukan';
+                c.innerHTML = errorState(`Halaman "${page}" tidak dikenali. Coba refresh atau hubungi admin.`, `navigate('${page}')`);
+                console.error(`[navigate] Page "${page}" tidak ada di PAGE_META atau VIEWS.`);
+                return;
+            }
+
+            document.getElementById('page-title').textContent = meta[0];
             c.innerHTML = '';
-            VIEWS[page]?.();
+            view();
         }
 
 // === GLOBAL DATE FILTER (Tambahkan di sini) ===

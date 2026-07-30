@@ -4524,7 +4524,6 @@ function modalBuatRequestSP() {
         <label class="label">Nama Sparepart / Barang <span class="text-red-400">*</span></label>
         <input id="req-nama" type="text" class="${input}" placeholder="Contoh: LCD iPhone 13"/>
       </div>
-                  <div>                    <label class="label">Sparepart ID (opsional)</label>                    <input id="req-sparepart-id" type="text" class="${input}" placeholder="Contoh: SP-017"/>                    <p class="text-[11px] text-zinc-500 mt-1">Leave empty to create a new sparepart</p>                  </div>      
       <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="label">Jumlah <span class="text-red-400">*</span></label>
@@ -4538,7 +4537,7 @@ function modalBuatRequestSP() {
      
             <div>
               <label class="label">Link Produk <span class="text-red-400">*</span></label>
-              <label class="label">Link Produk <span class="text-dark-gray-400">(hanya diperlukan untuk sparepart baru)</span></label>
+              <input id="req-link" type="number" placeholder="paste link" class="${input}"/>
               </div>
      
             <div>

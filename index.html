@@ -805,9 +805,11 @@
             owner: [
                 { page: 'dashboard',         label: 'Dashboard',         d: dashboardSvg },
                 { page: 'stok',              label: 'Manajemen Stok',    d: stokSvg1 },
+                { page: 'transfer-stok',     label: 'Transfer Stok',     d: stokSvg2 },
                 { page: 'transaksi',         label: 'Transaksi',         d: transaksiSvg },
                 { page: 'laporan',           label: 'Laporan',           d: laporanSvg },
                 { page: 'service',           label: 'Data Service',      d: settingSvg },
+                { page: 'approval-repair',   label: 'Approval Repair',   d: settingSvg },
                 { page: 'karyawan',          label: 'Karyawan',          d: karyawanSvg },
                 { page: 'cabang',            label: 'Manajemen Cabang',  d: stokSvg2 },
                 { page: 'log',               label: 'Log Aktivitas',     d: logSvg },
@@ -983,6 +985,19 @@
                 return;
             }
 
+            // Client-side defense-in-depth: the backend enforces every real access
+            // control decision, but nothing previously stopped navigate() itself
+            // from rendering a page outside the current role's menu (e.g. called
+            // directly from devtools) — it would just error/403 on the first API
+            // call inside that view. Refuse it here with a clear message instead.
+            const allowedPages = (NAV[STATE.user?.role] || []).map(n => n.page);
+            if (!allowedPages.includes(page)) {
+                document.getElementById('page-title').textContent = 'Akses Ditolak';
+                c.innerHTML = errorState(`Halaman "${page}" tidak tersedia untuk role ${STATE.user?.role || '-'}.`, `navigate('${allowedPages[0] || 'settings'}')`);
+                console.error(`[navigate] Role "${STATE.user?.role}" tidak punya akses ke halaman "${page}".`);
+                return;
+            }
+
             document.getElementById('page-title').textContent = meta[0];
             c.innerHTML = '';
             view();
@@ -991,12 +1006,27 @@
 // === GLOBAL DATE FILTER (Tambahkan di sini) ===
 let currentFilter = { preset: '30d', start: null, end: null };
 
+function _fmtLocalDate(d) {
+  // YYYY-MM-DD in local time (matches the native <input type="date"> value format;
+  // avoids toISOString()'s UTC shift, which can land on the wrong calendar day).
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function getDateFilterParams() {
   if (currentFilter.start && currentFilter.end) {
     return { date_from: currentFilter.start, date_to: currentFilter.end };
   }
+  // Presets are converted to explicit date_from/date_to here (instead of sending
+  // `hari`), because most list/stats endpoints (e.g. GET /dashboard/stats,
+  // GET /transaksi) only understand date_from/date_to, not `hari` — sending
+  // `hari` to those silently filters nothing.
   const presetMap = { '7d': 7, '30d': 30, '90d': 90, '1y': 365 };
-  return { hari: presetMap[currentFilter.preset] || 30 };
+  const hari = presetMap[currentFilter.preset] || 30;
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - (hari - 1));
+  return { date_from: _fmtLocalDate(start), date_to: _fmtLocalDate(end) };
 }
 
 function renderDateFilter(refreshCallback) {
@@ -1095,7 +1125,7 @@ let _dashCabangFilter = '';
 
         // Fetch stats & trend paralel
         const [statsRes, trendRes] = await Promise.allSettled([
-            API.dashboard.stats(_dashCabangFilter),
+            API.dashboard.stats({...params, ...(_dashCabangFilter ? {cabang: _dashCabangFilter} : {})}),
             API.dashboard.trend({...params, ...(_dashCabangFilter ? {cabang: _dashCabangFilter} : {})}),
         ]);
 
@@ -1674,6 +1704,11 @@ function getKadaluarsaBadge(dateStr) {
                 showToast('Keluhan wajib diisi untuk unit Repair', 'error');
                 return;
             }
+            const imeiValue = document.getElementById('u-imei').value.trim() || '-';
+            if (imeiValue !== '-' && !/^\d{14,16}$/.test(imeiValue)) {
+                showToast('IMEI harus 14-16 digit angka', 'error');
+                return;
+            }
 
             btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             btn.disabled = true;
@@ -1687,7 +1722,7 @@ function getKadaluarsaBadge(dateStr) {
                                     storage:        document.getElementById('u-storage').value || '-',
                                     ram:            document.getElementById('u-ram').value || '-',
                                     warna:          document.getElementById('u-warna').value || '-',
-                                    imei:           document.getElementById('u-imei').value || '-',
+                                    imei:           imeiValue,
                                     imei2:          document.getElementById('u-imei2')?.value || '-',
                                     tipe_sim:       document.getElementById('u-tipe-sim')?.value || 'Single SIM',
                                     keamanan:       document.getElementById('u-keamanan')?.value || 'Tidak Ada',
@@ -1809,10 +1844,10 @@ let _trxCabangFilter = '';
                 const dateParams = getDateFilterParams();
                 const trxParams = { limit: 200, ...dateParams };
                 if (_lapCabangFilter) { trxParams.cabang = _lapCabangFilter; }
-                const statsParams = { ...(_lapCabangFilter ? { cabang: _lapCabangFilter } : {}) };
+                const statsParams = { ...dateParams, ...(_lapCabangFilter ? { cabang: _lapCabangFilter } : {}) };
 
                 const [sRes, tRes] = await Promise.all([
-                    API.dashboard.stats(_lapCabangFilter),
+                    API.dashboard.stats(statsParams),
                     API.transaksi.list(trxParams),
                 ]);
                 const keu = sRes.data.keuangan;
@@ -2220,7 +2255,7 @@ let _svcStatusFilter = '';
             _karStatsCurrent = { id, nama, jabatan };
             _karStatsFilter  = { preset: '30d', start: null, end: null };
             openModal(`
-                ${modalHeader('${starSvg} Statistik ' + nama)}
+                ${modalHeader(`${starSvg} Statistik ${nama}`)}
                 <div id="kar-stats-body">
                   <div class="flex justify-center py-8"><span class="spinner"></span></div>
                 </div>
@@ -2395,7 +2430,7 @@ let _svcStatusFilter = '';
             closeModalBtn();
             // Re-open stats modal
             const { id, nama, jabatan } = _karStatsCurrent;
-            openModal(modalHeader('${starSvg} Statistik ' + nama) + '<div id="kar-stats-body"><div class="flex justify-center py-8"><span class="spinner"></span></div></div>', 'max-w-2xl');
+            openModal(modalHeader(`${starSvg} Statistik ${nama}`) + '<div id="kar-stats-body"><div class="flex justify-center py-8"><span class="spinner"></span></div></div>', 'max-w-2xl');
             _loadKarStats();
         }
 
@@ -2801,9 +2836,10 @@ const c = document.getElementById('view-container');
                 function hitungPoin() {
                     const isGuest = _trxCustomerType === 'guest';
                     const hargaUnit = _trxUnitHarga || 0;
+                    const biayaGaransi = _trxUnitHarga > 0 ? (parseInt(document.getElementById('trx-biaya-garansi')?.value) || 0) : 0;
                     let hargaSparepart = 0;
                     _spKeranjang.forEach(k => { hargaSparepart += k.harga_jual * k.jumlah; });
-                    const totalHarga = hargaUnit + hargaSparepart;
+                    const totalHarga = hargaUnit + biayaGaransi + hargaSparepart;
             
                     let diskon = 0;
                     let hargaFinal = totalHarga;
@@ -2848,6 +2884,12 @@ const c = document.getElementById('view-container');
                 if (hargaSpRow) {
                     if (hargaSparepart > 0) { hargaSpRow.classList.remove('hidden'); if (hargaSpEl) hargaSpEl.textContent = rp(hargaSparepart); }
                     else { hargaSpRow.classList.add('hidden'); }
+                }
+                const biayaGaransiRow = document.getElementById('trx-biaya-garansi-row');
+                const biayaGaransiEl = document.getElementById('trx-biaya-garansi-preview');
+                if (biayaGaransiRow) {
+                    if (biayaGaransi > 0) { biayaGaransiRow.classList.remove('hidden'); if (biayaGaransiEl) biayaGaransiEl.textContent = rp(biayaGaransi); }
+                    else { biayaGaransiRow.classList.add('hidden'); }
                 }
                 if (diskon > 0) { diskonRow?.classList.remove('hidden'); if (diskonPoin) diskonPoin.textContent = '- ' + rp(diskon); }
                 else { diskonRow?.classList.add('hidden'); }
@@ -2911,6 +2953,16 @@ const c = document.getElementById('view-container');
                     <div>
                       <label class="label">Verifikasi IMEI</label>
                       <input id="trx-imei" type="text" class="${input}" placeholder="Masukkan IMEI unit"/>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                      <div>
+                        <label class="label">Garansi Toko (hari)</label>
+                        <input id="trx-garansi" type="number" min="0" value="7" class="${input}" placeholder="7"/>
+                      </div>
+                      <div>
+                        <label class="label">Biaya Garansi Tambahan</label>
+                        <input id="trx-biaya-garansi" type="number" min="0" value="0" class="${input}" placeholder="0" oninput="hitungPoin()"/>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3035,6 +3087,10 @@ const c = document.getElementById('view-container');
                   <div id="trx-harga-sp-row" class="hidden flex justify-between">
                     <span class="dark:text-zinc-500 text-zinc-400">Harga Sparepart</span>
                     <span id="trx-harga-sp" class="dark:text-zinc-300 text-zinc-600 font-medium">Rp 0</span>
+                  </div>
+                  <div id="trx-biaya-garansi-row" class="hidden flex justify-between">
+                    <span class="dark:text-zinc-500 text-zinc-400">Biaya Garansi Tambahan</span>
+                    <span id="trx-biaya-garansi-preview" class="dark:text-zinc-300 text-zinc-600 font-medium">Rp 0</span>
                   </div>
                   <div id="trx-diskon-row" class="hidden flex justify-between">
                     <span class="dark:text-zinc-500 text-zinc-400">Diskon Poin</span>
@@ -3291,6 +3347,15 @@ const c = document.getElementById('view-container');
                     return;
                 }
             }
+            // COD delivery fields must be validated BEFORE the sale is committed —
+            // checking after API.transaksi.create() succeeds means a missing
+            // address leaves the sale already done with no way to recover cleanly.
+            const codToggle = document.getElementById('trx-cod-toggle');
+            const codChecked = !!(codToggle && codToggle.checked);
+            const codAlamat = codChecked ? (document.getElementById('trx-cod-alamat')?.value?.trim() || '') : '';
+            if (codChecked && !codAlamat) {
+                showToast('Alamat pengiriman wajib diisi', 'error'); return;
+            }
 
             const btn = document.getElementById('btn-konfirmasi');
             btn.innerHTML = `<span class="spinner"></span> Memproses...`;
@@ -3312,22 +3377,26 @@ const c = document.getElementById('view-container');
                     payload.foto_serah_terima = fotoUrls[0] || null;
                 }
                 const res = await API.transaksi.create(payload);
-                
-                // Create COD delivery if toggle checked
-                const codToggle = document.getElementById('trx-cod-toggle');
-                if (codToggle && codToggle.checked) {
-                    const alamat = document.getElementById('trx-cod-alamat')?.value?.trim();
+
+                // Create COD delivery if toggle checked (alamat already validated above)
+                if (codChecked) {
                     const waCust = document.getElementById('trx-cod-wa')?.value?.trim() || customer_kontak;
-                    if (!alamat) { showToast('Alamat pengiriman wajib diisi', 'error'); return; }
-                    await API.cod.create({
-                        type: 'delivery',
-                        trx_id: res.data.trx_id,
-                        delivery_address: alamat,
-                        wa_customer: waCust,
-                        location: 'Toko',
-                        wa_number: '',
-                    });
-                    showToast('COD Delivery berhasil dibroadcast ke kurir');
+                    try {
+                        await API.cod.create({
+                            type: 'delivery',
+                            trx_id: res.data.trx_id,
+                            delivery_address: codAlamat,
+                            wa_customer: waCust,
+                            location: 'Toko',
+                            wa_number: '',
+                        });
+                        showToast('COD Delivery berhasil dibroadcast ke kurir');
+                    } catch (codErr) {
+                        // The sale already succeeded at this point — don't let a COD
+                        // failure look like the whole transaction failed. Tell the
+                        // kasir the sale is done but delivery setup needs a retry.
+                        showToast('Transaksi tersimpan, tapi gagal membuat COD Delivery: ' + codErr.message, 'error');
+                    }
                 }
                 
                 _spKeranjang = [];
@@ -3593,6 +3662,10 @@ const c = document.getElementById('view-container');
         function renderCustomerTable(list) {
             if (!list.length) return emptyState('Belum ada customer', '${usersSvg}');
             const isKC = STATE.user.role === 'kepala_cabang' || STATE.user.role === 'owner';
+            // Resubmit is allowed by the backend for kasir/teknisi too
+            // (require_kasir_teknisi_or_owner on PATCH /customers/{id}/resubmit) —
+            // approve/reject stays kepala_cabang/owner-only (isKC).
+            const canResubmit = isKC || STATE.user.role === 'kasir' || STATE.user.role === 'teknisi';
             return `<div class="space-y-3">
                 <!-- Filter Status -->
                 ${isKC ? `
@@ -3612,7 +3685,7 @@ const c = document.getElementById('view-container');
                       <th class="px-6 py-3.5 font-medium hidden sm:table-cell">Bergabung</th>
                       <th class="px-6 py-3.5 font-medium">Status</th>
                       <th class="px-6 py-3.5 font-medium">Poin</th>
-                      ${isKC ? '<th class="px-6 py-3.5 font-medium">Aksi</th>' : ''}
+                      ${canResubmit ? '<th class="px-6 py-3.5 font-medium">Aksi</th>' : ''}
                     </tr>
                   </thead>
                   <tbody>
@@ -3633,10 +3706,10 @@ const c = document.getElementById('view-container');
                         </span>
                       </td>
                       <td class="px-6 py-4"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${cu.points > 0 ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"}">${starSvg} ${cu.points || 0}</span></td>
-                      ${isKC ? `
+                      ${canResubmit ? `
                       <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
-                          ${cu.status === 'Pending' ? `
+                          ${cu.status === 'Pending' && isKC ? `
                             <button onclick="approveCustomer('${cu.id}')" class="btn btn-success text-xs py-1 px-2" title="Approve">
                               <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                               Setujui
@@ -3728,7 +3801,7 @@ const c = document.getElementById('view-container');
             btn.innerHTML = `<span class="spinner"></span> Menyimpan...`; btn.disabled = true;
             btn.disabled = true;
             try {
-                await API.customers.create({ nama: document.getElementById('cu-nama').value, kontak: document.getElementById('cu-kontak').value });
+                await API.customers.create({ nama: document.getElementById('cu-nama').value, kontak: document.getElementById('cu-kontak').value, cabang: STATE.user.cabang || 'JYP' });
                 closeModalBtn(); showToast('Customer berhasil ditambahkan'); await renderCustomers();
             } catch (e) { showToast(e.message, 'error'); btn.innerHTML = 'Simpan Customer'; btn.disabled = false; }
         }
@@ -4209,10 +4282,14 @@ const c = document.getElementById('view-container');
             setLoading(c, 4);
             try {
                 const list = (await API.sparepart.list({})).data;
+                // POST /sparepart and PATCH /sparepart/{id}/stok are kepala_or_owner-only
+                // server-side; keep the create/stok-adjust actions hidden for other roles
+                // even if this page is ever reached directly (it's not in kasir's NAV today).
+                const canManage = STATE.user.role === 'kepala_cabang' || STATE.user.role === 'owner';
                 c.innerHTML = `<div class="space-y-5">
                   <div class="flex items-center justify-between">
                     <p class="text-xs dark:text-zinc-500 text-zinc-400">${list.length} item sparepart</p>
-                    <button onclick="modalTambahSparepart()" class="btn btn-primary" style="height:36px;padding:0 16px;font-size:0.75rem;">+ Tambah Sparepart</button>
+                    ${canManage ? `<button onclick="modalTambahSparepart()" class="btn btn-primary" style="height:36px;padding:0 16px;font-size:0.75rem;">+ Tambah Sparepart</button>` : ''}
                   </div>
                   <div class="table-wrap rounded-lg overflow-hidden">
                     <div class="overflow-x-auto">
@@ -4226,7 +4303,7 @@ const c = document.getElementById('view-container');
                             <th class="px-5 py-3.5 font-medium hidden md:table-cell">Harga Beli</th>
                             <th class="px-5 py-3.5 font-medium">Harga Jual</th>
                             <th class="px-5 py-3.5 font-medium hidden lg:table-cell">Dimensi</th>
-                            <th class="px-5 py-3.5 font-medium">Aksi</th>
+                            ${canManage ? '<th class="px-5 py-3.5 font-medium">Aksi</th>' : ''}
                           </tr>
                         </thead>
                         <tbody>
@@ -4245,9 +4322,9 @@ const c = document.getElementById('view-container');
                             <td class="px-5 py-4 whitespace-nowrap dark:text-zinc-500 text-zinc-400 hidden md:table-cell">${rp(s.harga_beli)}</td>
                             <td class="px-5 py-4 whitespace-nowrap font-semibold text-[#4FD1C5]">${rp(s.harga_jual)}</td>
                             <td class="px-5 py-4 dark:text-zinc-500 text-zinc-400 text-[11px] hidden lg:table-cell">${s.dimensi_str || '—'}</td>
-                            <td class="px-5 py-4">
+                            ${canManage ? `<td class="px-5 py-4">
                               <button onclick="modalUpdateStokSP('${s.sp_id}','${s.nama}',${s.stok})" class="btn btn-ghost" style="height:28px;padding:0 10px;font-size:0.6875rem;">Stok</button>
-                            </td>
+                            </td>` : ''}
                           </tr>`).join('') : `<tr><td colspan="8">${emptyState('Belum ada sparepart')}</td></tr>`}
                         </tbody>
                       </table>
@@ -4765,8 +4842,11 @@ async function rejectRequest(req_id) {
   }
 
   try {
+    // Backend validates harga_jual > 0 unconditionally on this endpoint, even
+    // though the value is never read when status="Ditolak" — sending 0 always
+    // 422s. Use a harmless placeholder; it has no effect on the reject path.
     const res = await API.requestSP.approve(req_id, {
-      harga_jual: 0,
+      harga_jual: 1,
       status: 'Ditolak',
       catatan: alasan
     });
@@ -5648,10 +5728,12 @@ function filterInfluencerCatalog() {
     const filter = document.getElementById('inf-cat-filter')?.value || 'all';
     const items = window._inf_catalog_all || [];
     const filtered = items.filter(i => {
-        const matchQ = !q || i.product_name.toLowerCase().includes(q) || i.unit_id.toLowerCase().includes(q);
+        const productName = `${i.merk || ''} ${i.tipe || ''} ${i.storage || ''}`.trim();
+        const matchQ = !q || productName.toLowerCase().includes(q) || (i.unit_id || '').toLowerCase().includes(q);
+        const needsContent = !i.has_video;
         let matchFilter = true;
-        if (filter === 'naked') matchFilter = i.needs_content;
-        else if (filter === 'has-content') matchFilter = !i.needs_content;
+        if (filter === 'naked') matchFilter = needsContent;
+        else if (filter === 'has-content') matchFilter = !needsContent;
         return matchQ && matchFilter;
     });
     renderInfluencerCatalogList(filtered);
@@ -5777,7 +5859,6 @@ async function renderInfluencerVideos() {
                     <option value="">Semua Platform</option>
                     <option value="tiktok">TikTok</option>
                     <option value="instagram">Instagram</option>
-                    <option value="facebook">Facebook</option>
                     <option value="youtube">YouTube</option>
                 </select>
             </div>
@@ -5842,6 +5923,9 @@ function renderInfluencerVideosList(items) {
                     <p class="text-[10px] dark:text-zinc-500 text-zinc-400">Comments</p>
                 </div>
             </div>
+            ${(!v.views && !v.likes && !v.comments) ? `
+                <p class="text-[10px] text-amber-500 mb-3">Metrik belum tersedia — bisa jadi masih menunggu sinkronisasi otomatis (tiap 1 jam) atau video ini genuinely belum ada aktivitas.</p>
+            ` : ''}
             <p class="text-[10px] dark:text-zinc-600 text-zinc-300 mb-3">Upload: ${v.uploaded_at}</p>
             <div class="flex gap-2">
                 <a href="${v.url}" target="_blank" class="btn btn-primary flex-1 text-xs">Buka Video</a>
@@ -5999,7 +6083,6 @@ async function renderInfluencerMonitor() {
                         <option value="">Semua Platform</option>
                         <option value="tiktok">TikTok</option>
                         <option value="instagram">Instagram</option>
-                        <option value="facebook">Facebook</option>
                         <option value="youtube">YouTube</option>
                     </select>
                 </div>
@@ -6015,15 +6098,28 @@ async function renderInfluencerMonitor() {
     }
 }
 
-function filterOwnerInfluencerVideos() {
+async function filterOwnerInfluencerVideos() {
     const infId = document.getElementById('owner-inf-filter-inf')?.value || '';
     const platform = document.getElementById('owner-inf-filter-platform')?.value || '';
-    const filtered = _owner_inf_videos_all.filter(v => {
-        const matchInf = !infId || v.influencer_id === infId;
-        const matchPlat = !platform || v.platform === platform;
-        return matchInf && matchPlat;
-    });
-    renderOwnerInfluencerVideosList(filtered);
+    const listEl = document.getElementById('owner-inf-vid-list');
+    if (!infId && !platform) {
+        // No filter selected — show the dashboard's recent-videos slice, no extra request.
+        renderOwnerInfluencerVideosList(_owner_inf_videos_all);
+        return;
+    }
+    // A filter is selected: query the real (unfiltered-by-recency) video list endpoint
+    // instead of only filtering the small "recent videos" slice from the dashboard —
+    // otherwise a match outside that small slice would wrongly show "Tidak ada video".
+    if (listEl) setLoading(listEl, 2);
+    try {
+        const params = {};
+        if (infId) params.influencer_id = infId;
+        if (platform) params.platform = platform;
+        const res = await API.ownerInfluencer.listVideos(params);
+        renderOwnerInfluencerVideosList(res.data || []);
+    } catch (e) {
+        if (listEl) listEl.innerHTML = errorState(e.message, 'filterOwnerInfluencerVideos()');
+    }
 }
 
 function renderOwnerInfluencerVideosList(items) {
@@ -6154,6 +6250,10 @@ async function renderKurirDashboard() {
                                         <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'kurir_menuju_toko')">Menuju Toko</button>
                                     ` : cod.status === 'diterima' && cod.type === 'beli' ? `
                                         <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'kurir_menuju_lokasi')">Menuju Lokasi</button>
+                                    ` : cod.status === 'diterima' && cod.type === 'jual' ? `
+                                        <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'barang_akan_dijemput')">Jemput Barang</button>
+                                    ` : cod.status === 'barang_akan_dijemput' ? `
+                                        <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'barang_sudah_diambil')">Barang Diambil</button>
                                     ` : cod.status === 'kurir_menuju_toko' ? `
                                         <button class="btn btn-primary text-xs px-3 py-1.5" onclick="kurirUpdateStatus('${cod.cod_id}', 'barang_sudah_diambil')">Ambil Barang</button>
                                     ` : cod.status === 'kurir_menuju_lokasi' ? `
@@ -6175,8 +6275,12 @@ async function renderKurirDashboard() {
                                         <button class="btn btn-ghost text-xs px-3 py-1.5 text-red-500 border-red-500" onclick="kurirUpdateStatus('${cod.cod_id}', 'gagal')">Gagal</button>
                                     ` : cod.status === 'menunggu_approval_kasir' ? `
                                         <span class="text-[10px] dark:text-zinc-500 text-zinc-400 italic">Menunggu approval kasir</span>
-                                    ` : cod.status === 'selesai' ? `
+                                    ` : cod.status === 'selesai' || cod.status === 'transaksi_berhasil' ? `
                                         <span class="text-[10px] text-emerald-500">Selesai</span>
+                                    ` : cod.status === 'terkirim' ? `
+                                        <span class="text-[10px] text-emerald-500">Terkirim</span>
+                                    ` : cod.status === 'gagal' || cod.status === 'ditolak' ? `
+                                        <span class="text-[10px] text-red-500">${statusLabels[cod.status] || cod.status}</span>
                                     ` : '<span class="text-[10px] dark:text-zinc-500 text-zinc-400">-</span>'
                                 }
                             </td>
@@ -6242,30 +6346,22 @@ async function doKurirInputStok(cod_id) {
                         return;
                     }
                     try {
-                        await API.units.create({
+                        // POST /units requires kasir/teknisi/kepala_cabang/owner — a kurir
+                        // calling it would 403. Use the purpose-built kurir input-stok
+                        // endpoint instead (POST /cod/kurir/input-stok, require_kurir).
+                        await API.cod.kurirInputStok({
                             imei: unit_data.imei,
                             merk: unit_data.merk,
                             tipe: unit_data.tipe,
                             ram: unit_data.ram,
                             storage: unit_data.storage,
                             warna: unit_data.warna,
-                            kondisi: unit_data.kondisi_hp,
-                            baterai: unit_data.battery,
+                            battery: unit_data.battery,
                             catatan: unit_data.catatan,
-                            created_by_role: 'Kurir',
-                            harga_beli: null,
-                            harga_jual: null,
-                            // Map additional fields
+                            foto_url: unit_data.foto_url,
                             kat_kode: 'AI',
                             kondisi_kode: unit_data.kondisi,
-                            tipe_sim: unit_data.tipe_sim,
-                            keamanan: unit_data.keamanan,
-                            speaker: unit_data.speaker,
-                            lcd: unit_data.lcd,
-                            battery_health: unit_data.battery_health,
-                            garansi_toko: unit_data.garansi_toko,
-                            foto_url: unit_data.foto_url,
-                            keluhan: unit_data.keluhan,
+                            kondisi_hp: unit_data.kondisi_hp,
                         });
                         closeModalBtn();
                         showToast('Stok berhasil ditambahkan');
@@ -6325,7 +6421,7 @@ async function renderKurirMonitoring() {
     try {
         const params = getDateFilterParams();
         // Add cabang filter for Owner
-        const isOwner = (window.currentUser && window.currentUser.role === 'owner');
+        const isOwner = STATE.user.role === 'owner';
         if (isOwner) {
             const cabangSelect = document.getElementById('km-cabang-filter');
             if (cabangSelect && cabangSelect.value) {
@@ -6340,7 +6436,10 @@ async function renderKurirMonitoring() {
         const totalCOD = kurirs.reduce((sum, k) => sum + k.total_cod, 0);
         const totalBeli = kurirs.reduce((sum, k) => sum + k.cod_beli, 0);
         const totalJual = kurirs.reduce((sum, k) => sum + k.cod_jual, 0);
-        const totalSelesai = kurirs.reduce((sum, k) => sum + k.status_selesai, 0);
+        const totalDelivery = kurirs.reduce((sum, k) => sum + (k.cod_delivery || 0), 0);
+        // "Selesai" here means completed regardless of type: beli uses status_selesai,
+        // jual uses status_transaksi_berhasil, delivery uses status_terkirim.
+        const totalSelesai = kurirs.reduce((sum, k) => sum + k.status_selesai + (k.status_transaksi_berhasil || 0) + (k.status_terkirim || 0), 0);
         const totalGagal = kurirs.reduce((sum, k) => sum + k.status_gagal, 0);
         const avgSuccessRate = totalKurirs > 0 ? Math.round(kurirs.reduce((sum, k) => sum + k.success_rate, 0) / totalKurirs) : 0;
 
@@ -6387,6 +6486,8 @@ async function renderKurirMonitoring() {
                             ${kurirs.length ? kurirs.map(k => {
                                 const beliPercent = k.total_cod > 0 ? Math.round((k.cod_beli / k.total_cod) * 100) : 0;
                                 const jualPercent = k.total_cod > 0 ? Math.round((k.cod_jual / k.total_cod) * 100) : 0;
+                                const deliveryPercent = k.total_cod > 0 ? Math.round(((k.cod_delivery || 0) / k.total_cod) * 100) : 0;
+                                const kurirSelesai = k.status_selesai + (k.status_transaksi_berhasil || 0) + (k.status_terkirim || 0);
                                 const successRate = k.success_rate || 0;
                                 const successColor = successRate >= 80 ? 'emerald' : successRate >= 60 ? 'amber' : 'red';
                     
@@ -6412,15 +6513,19 @@ async function renderKurirMonitoring() {
                                             <span class="px-2 py-1 rounded-full bg-purple-500/8 text-purple-400 border border-purple-500/15">
                                                 Jual: ${k.cod_jual} (${jualPercent}%)
                                             </span>
+                                            <span class="px-2 py-1 rounded-full bg-cyan-500/8 text-cyan-400 border border-cyan-500/15">
+                                                Delivery: ${k.cod_delivery || 0} (${deliveryPercent}%)
+                                            </span>
                                             <span class="px-2 py-1 rounded-full bg-zinc-500/8 text-zinc-400 border border-zinc-500/15">
                                                 Total: ${k.total_cod}
                                             </span>
                                         </div>
 
-                                        <!-- Proporsi Beli vs Jual -->
+                                        <!-- Proporsi Beli vs Jual vs Delivery -->
                                         <div class="h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden flex">
                                             <div class="h-full bg-blue-400" style="width:${beliPercent}%"></div>
                                             <div class="h-full bg-purple-400" style="width:${jualPercent}%"></div>
+                                            <div class="h-full bg-cyan-400" style="width:${deliveryPercent}%"></div>
                                         </div>
                             
                                         <!-- Status Breakdown -->
@@ -6435,7 +6540,7 @@ async function renderKurirMonitoring() {
                                                  Proses: ${k.status_proses}
                                             </span>
                                             <span class="px-2 py-1 rounded-full text-[10px] font-medium bg-emerald-500/8 text-emerald-400 border border-emerald-500/15">
-                                                 Selesai: ${k.status_selesai}
+                                                 Selesai: ${kurirSelesai}
                                             </span>
                                             <span class="px-2 py-1 rounded-full text-[10px] font-medium bg-red-500/8 text-red-400 border border-red-500/15">
                                                  Gagal: ${k.status_gagal}
@@ -6637,8 +6742,13 @@ async function doApproveCod(codId) {
     const unit_data = collectUnitFormData('ap-foto');
     unit_data.kat_kode = 'AI';
     unit_data.kondisi_kode = unit_data.kondisi;
-    try { 
-        await API.cod.approve(codId, { harga_jual: hargaJual, unit_data: unit_data }); 
+    // garansi_toko/catatan must be top-level fields — the backend reads them
+    // from the request root, not from inside unit_data (it only pulls a fixed
+    // set of known keys out of unit_data when building the new unit).
+    const garansi_toko = unit_data.garansi_toko;
+    const catatan = unit_data.catatan;
+    try {
+        await API.cod.approve(codId, { harga_jual: hargaJual, unit_data: unit_data, garansi_toko: garansi_toko, catatan: catatan });
         closeModalBtn(); 
         showToast('COD Disetujui — unit masuk inventory'); 
         renderApprovalCod(); 
@@ -6918,9 +7028,14 @@ const NOTIF = {
             },
 
             async poll() {
-                // Hanya polling untuk role kasir & owner yang bisa approve
+                // Hanya polling untuk role yang bisa approve DAN diizinkan backend
+                // (GET /service/pending-approval = require_kasir_teknisi_or_owner).
+                // teknisi sengaja dikecualikan di sini juga — mereka boleh akses
+                // endpointnya, tapi notifikasi approval tidak relevan untuk role
+                // yang tidak melakukan approval. kurir/influencer dikecualikan
+                // karena backend akan selalu menolak (403) permintaan mereka.
                 const role = STATE.user?.role;
-                if (!role || role === 'teknisi') return;
+                if (!['kasir', 'kepala_cabang', 'owner'].includes(role)) return;
                 try {
                     const res = await API.service.pendingApproval({ limit: 50 });
                     const list = res.data || [];

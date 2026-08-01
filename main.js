@@ -337,7 +337,7 @@ var API = {
     changePassword: function(data) { return request('PATCH', '/auth/me/password', data); },
   },
   dashboard: {
-    stats: function(cabang) { return request('GET', '/dashboard/stats' + (cabang ? '?cabang=' + cabang : '')); },
+    stats: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/dashboard/stats' + (q ? '?' + q : '')); },
     trend: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/dashboard/trend' + (q ? '?' + q : '')); },
   },
   units: {
@@ -406,6 +406,7 @@ var API = {
     kurirList: function(p) { var q = new URLSearchParams(p).toString(); return request('GET', '/cod/kurir-list' + (q ? '?' + q : '')); },
     kurirAccept: function(id) { return request('POST', '/cod/kurir/' + id + '/accept'); },
     kurirReject: function(id) { return request('POST', '/cod/kurir/' + id + '/reject'); },
+    kurirRejectBeli: function(id, reason) { return request('POST', '/cod/kurir/' + id + '/reject-beli', { reason: reason }); },
     kurirUpdateStatus: function(id, status, note) { return request('POST', '/cod/kurir/' + id + '/status', { status: status, note: note }); },
     kurirInputStok: function(b) { return request('POST', '/cod/kurir/input-stok', b); },
     kurirSubmitBeli: function(id, b) { return request('POST', '/cod/kurir/' + id + '/submit-beli', b); },

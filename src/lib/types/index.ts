@@ -43,16 +43,22 @@ export interface DashboardStats {
   unit: {
     total: number;
     tersedia: number;
-    terjual: number;
+    /** Legacy API field; the current backend returns sold. */
+    terjual?: number;
+    sold?: number;
     service: number;
   };
   keuangan: {
-    total_omzet: number;
+    /** Legacy API field; the current backend returns total_revenue. */
+    total_omzet?: number;
+    total_revenue?: number;
     total_profit: number;
-    profit_hari_ini: number;
+    /** Legacy API field; the current backend returns profit_harian. */
+    profit_hari_ini?: number;
+    profit_harian?: number;
     total_transaksi: number;
   };
-  recent_transaksi: TransaksiSummary[];
+  recent_transaksi?: TransaksiSummary[];
 }
 
 export interface DashboardTrendPoint {
@@ -62,8 +68,15 @@ export interface DashboardTrendPoint {
   jumlah: number;
 }
 export interface DashboardTrend {
-  trend: DashboardTrendPoint[];
-  periode: { dari: string; sampai: string; hari: number };
+  /** Legacy object-array format. */
+  trend?: DashboardTrendPoint[];
+  /** Current backend parallel-array format. */
+  labels?: string[];
+  revenue?: number[];
+  profit?: number[];
+  jumlah?: number[];
+  hari?: number;
+  periode?: { dari: string; sampai: string; hari: number };
 }
 
 // ─── Unit / Inventory ────────────────────────────────────────────────────

@@ -19,13 +19,27 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { DateFilterBar } from "@/components/ui/DateFilterBar";
 import { createDefaultDateFilter, toApiQueryParams } from "@/lib/utils/dateFilter";
 import { formatDateTimeShort, formatRupiah } from "@/lib/utils/formatters";
-import type { DashboardStats, DashboardTrend } from "@/lib/types";
+import type { DashboardStats, DashboardTrend, DashboardTrendPoint } from "@/lib/types";
+
+function normaliseTrendPoints(trendResponse: DashboardTrend): DashboardTrendPoint[] {
+  if (Array.isArray(trendResponse.trend)) return trendResponse.trend;
+  const labels = Array.isArray(trendResponse.labels) ? trendResponse.labels : [];
+  const revenue = Array.isArray(trendResponse.revenue) ? trendResponse.revenue : [];
+  const profit = Array.isArray(trendResponse.profit) ? trendResponse.profit : [];
+  const jumlah = Array.isArray(trendResponse.jumlah) ? trendResponse.jumlah : [];
+  return labels.map((tanggal, index) => ({
+    tanggal,
+    omzet: revenue[index] ?? 0,
+    profit: profit[index] ?? 0,
+    jumlah: jumlah[index] ?? 0,
+  }));
+}
 
 export default function DashboardPage(): JSX.Element {
   const { user: currentUser } = useAuth();
   const [dateFilterState, setDateFilterState] = useState(createDefaultDateFilter);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
-  const [dashboardTrend, setDashboardTrend] = useState<DashboardTrend | null>(null);
+  const [dashboardTrend, setDashboardTrend] = useState<DashboardTrendPoint[] | null>(null);
   const [isFetching, setIsFetching] = useState<boolean>(true);
   const [fetchErrorMessage, setFetchErrorMessage] = useState<string>("");
 
@@ -44,7 +58,9 @@ export default function DashboardPage(): JSX.Element {
         throw new Error(message);
       }
       setDashboardStats(statsResult.value.data);
-      setDashboardTrend(trendResult.status === "fulfilled" ? trendResult.value.data : null);
+      setDashboardTrend(
+        trendResult.status === "fulfilled" ? normaliseTrendPoints(trendResult.value.data) : null,
+      );
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Gagal memuat dashboard";
       setFetchErrorMessage(message);
@@ -59,6 +75,10 @@ export default function DashboardPage(): JSX.Element {
 
   const cabangSuffix =
     currentUser?.role === "kepala_cabang" ? ` — Cabang ${currentUser.cabang}` : "";
+  const totalTerjual = dashboardStats?.unit.terjual ?? dashboardStats?.unit.sold ?? 0;
+  const totalOmzet = dashboardStats?.keuangan.total_omzet ?? dashboardStats?.keuangan.total_revenue ?? 0;
+  const profitHariIni = dashboardStats?.keuangan.profit_hari_ini ?? dashboardStats?.keuangan.profit_harian ?? 0;
+  const recentTransaksi = dashboardStats?.recent_transaksi ?? [];
 
   return (
     <div className="space-y-6">
@@ -85,7 +105,7 @@ export default function DashboardPage(): JSX.Element {
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <StatCard label="Total Unit" value={dashboardStats.unit.total} subtitle="Semua status" accent="blue" />
             <StatCard label="Stok Tersedia" value={dashboardStats.unit.tersedia} subtitle="Siap dijual" accent="green" />
-            <StatCard label="Total Terjual" value={dashboardStats.unit.terjual} subtitle="Sesuai filter" accent="orange" />
+            <StatCard label="Total Terjual" value={totalTerjual} subtitle="Sesuai filter" accent="orange" />
             <StatCard label="Gross Profit" value={formatRupiah(dashboardStats.keuangan.total_profit)} subtitle="Sesuai filter" accent="profit" />
           </div>
 
@@ -94,11 +114,11 @@ export default function DashboardPage(): JSX.Element {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div>
                 <p className="text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Total Omzet</p>
-                <p className="mt-1 text-lg font-bold">{formatRupiah(dashboardStats.keuangan.total_omzet)}</p>
+                <p className="mt-1 text-lg font-bold">{formatRupiah(totalOmzet)}</p>
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Profit Hari Ini</p>
-                <p className="mt-1 text-lg font-bold">{formatRupiah(dashboardStats.keuangan.profit_hari_ini)}</p>
+                <p className="mt-1 text-lg font-bold">{formatRupiah(profitHariIni)}</p>
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Total Transaksi</p>
@@ -133,7 +153,7 @@ export default function DashboardPage(): JSX.Element {
                     </tr>
                   </thead>
                   <tbody>
-                    {dashboardTrend.trend.map((trendPoint) => (
+                    {dashboardTrend.map((trendPoint) => (
                       <tr key={trendPoint.tanggal} className="tbl-row">
                         <td className="py-1.5">{trendPoint.tanggal}</td>
                         <td className="py-1.5 text-right">{formatRupiah(trendPoint.omzet)}</td>
@@ -149,7 +169,7 @@ export default function DashboardPage(): JSX.Element {
 
           <div className="card p-5">
             <h2 className="mb-4 text-sm font-semibold">Transaksi Terbaru</h2>
-            {dashboardStats.recent_transaksi.length === 0 ? (
+            {recentTransaksi.length === 0 ? (
               <EmptyState message="Belum ada transaksi" iconName="transaksiSvg" />
             ) : (
               <table className="w-full text-xs">
@@ -163,7 +183,7 @@ export default function DashboardPage(): JSX.Element {
                   </tr>
                 </thead>
                 <tbody>
-                  {dashboardStats.recent_transaksi.map((transaksiEntry) => (
+                  {recentTransaksi.map((transaksiEntry) => (
                     <tr key={transaksiEntry.trx_id} className="tbl-row">
                       <td className="py-2 font-mono">{transaksiEntry.trx_id}</td>
                       <td className="py-2">{transaksiEntry.kasir}</td>

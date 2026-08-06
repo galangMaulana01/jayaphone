@@ -167,7 +167,7 @@ export function ImageUploader({
         {label} {required && <span className="text-red-400">*</span>}
       </label>
       <div
-        className={`rounded-xl border border-dashed p-3 transition-colors ${isDragging ? "border-brand-teal bg-brand-teal/5" : "border-zinc-300 dark:border-zinc-700"}`}
+        className={`rounded-xl border border-dashed p-3 transition-colors ${isDragging ? "border-jp-text bg-jp-surface-subtle dark:border-jp-text-dark dark:bg-jp-surface-subtle-dark" : "border-jp-border dark:border-jp-border-dark"}`}
         onDragOver={(event) => { event.preventDefault(); if (!disabled) setIsDragging(true); }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={(event) => { event.preventDefault(); setIsDragging(false); if (!disabled) void uploadFiles(event.dataTransfer.files); }}
@@ -185,7 +185,7 @@ export function ImageUploader({
       </div>
 
       {helper && <p className="text-[11px] text-zinc-400 dark:text-zinc-500">{helper}</p>}
-      {isUploading && <div className="progress-track" aria-label={`Upload ${progress}%`}><div className="progress-fill bg-brand-teal" style={{ width: `${Math.max(progress, 10)}%` }} /></div>}
+      {isUploading && <div className="progress-track" aria-label={`Upload ${progress}%`}><div className="progress-fill bg-jp-text dark:bg-jp-text-dark" style={{ width: `${Math.max(progress, 10)}%` }} /></div>}
       {error && <p role="alert" className="text-xs text-red-500">{error}</p>}
       {camera.error && <p role="alert" className="text-xs text-red-500">{camera.error}</p>}
 

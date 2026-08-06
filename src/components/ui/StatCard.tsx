@@ -44,17 +44,22 @@ export function StatCard({ label, value, subtitle, accent = "blue", onClick }: S
       }
       className={`stat-card transition-all duration-200 hover:-translate-y-0.5 ${isInteractive ? "cursor-pointer" : "cursor-default"}`}
     >
+      {/*
+       * v2 §6 — stat card ini flat/neutral. Ikon dibungkus surface-subtle
+       * (bukan warna teal solid lagi) supaya nggak bertabrakan dengan hero
+       * card (satu-satunya card gradient per halaman, lihat HeroCard).
+       */}
       <div className="mb-4 flex items-start justify-between">
-        <div className="stat-icon bg-brand-teal">
+        <div className="stat-icon bg-jp-surface-subtle text-jp-text dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark">
           <Icon name={accentToIconName[accent]} className="h-5 w-5" />
         </div>
       </div>
-      <p className="mb-1.5 text-2xl font-bold leading-none tracking-tight text-black dark:text-white">
+      <p className="mb-1.5 text-2xl font-bold leading-none tracking-tight text-jp-text dark:text-jp-text-dark">
         {value}
       </p>
-      <p className="text-xs text-zinc-400 dark:text-zinc-500">{label}</p>
+      <p className="text-xs text-jp-muted dark:text-jp-muted-dark">{label}</p>
       {subtitle && (
-        <p className="mt-0.5 text-[11px] text-zinc-300 dark:text-zinc-600">{subtitle}</p>
+        <p className="mt-0.5 text-[11px] text-jp-muted/80 dark:text-jp-muted-dark/80">{subtitle}</p>
       )}
     </div>
   );

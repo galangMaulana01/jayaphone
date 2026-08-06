@@ -3,115 +3,141 @@
 @tailwind utilities;
 
 /*
- * Legacy design-system classes.
+ * Jayaphone shared component classes.
  *
- * The old index.html used a handful of custom class names (btn, btn-primary,
- * label, input, badge, panel, card, table-wrap, tbl-row, tbl-head, svc-card,
- * stat-card, spinner, filter-tab, skeleton, animate-fade-up, divider,
- * search-wrap, progress-track, progress-fill, battery-track, badge-{status})
- * that weren't Tailwind utilities directly. To preserve pixel-perfect parity
- * during migration we redeclare each of them here via @apply so JSX pages can
- * keep using the same class strings.
+ * DESIGN.md v2 (2026-08-06) — dark-first monokrom. Two gradients only
+ * (bg-gradient-hero, bg-gradient-primary), one hero card per page, one
+ * gradient primary button per toolbar/form. Utility classes below cascade
+ * the treatment to every page automatically — most pages didn't need to be
+ * edited to receive v2, they just consume these classes.
  */
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium
-           transition-colors focus:outline-none focus:ring-2 focus:ring-brand-teal/40 disabled:opacity-60
-           disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-medium
+           transition-all focus:outline-none focus:ring-2 focus:ring-jp-teal/40
+           disabled:opacity-60 disabled:cursor-not-allowed;
   }
+  /*
+   * v2 primary: monokrom gradient, one per toolbar/form (§6).
+   * Dark mode: light bar on black shell with dark text.
+   * Light mode: dark bar on light shell with white text.
+   */
   .btn-primary {
-    @apply btn bg-brand-teal text-black hover:opacity-90;
+    @apply btn bg-gradient-primary-light text-white shadow-sm hover:shadow-md hover:-translate-y-px
+           dark:bg-gradient-primary dark:text-jp-text;
   }
+  /*
+   * v2 secondary: flat, sits next to primary without shouting (§6).
+   * Same radius/height as primary so they line up in toolbars.
+   */
   .btn-secondary {
-    @apply btn bg-zinc-100 text-zinc-800 hover:bg-zinc-200
-           dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700;
+    @apply btn border border-jp-border bg-jp-surface-subtle text-jp-text hover:bg-jp-border/60
+           dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark
+           dark:hover:bg-jp-border-dark/70;
   }
   .btn-ghost {
-    @apply btn border border-zinc-200 bg-transparent text-zinc-600 hover:bg-zinc-100
-           dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800/70;
+    @apply btn border border-jp-border bg-transparent text-jp-muted hover:bg-jp-surface-subtle hover:text-jp-text
+           dark:border-jp-border-dark dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark
+           dark:hover:text-jp-text-dark;
   }
   .btn-success {
-    @apply btn bg-emerald-500 text-white hover:bg-emerald-600;
+    @apply btn bg-jp-success text-white hover:opacity-90 dark:bg-jp-success-dark;
   }
+  /*
+   * Danger stays flat per §6 — gradient is only for positive/forward actions.
+   */
   .btn-error {
-    @apply btn bg-red-500 text-white hover:bg-red-600;
+    @apply btn bg-jp-danger text-white hover:opacity-90 dark:bg-jp-danger-dark;
   }
   .btn-warning {
-    @apply btn bg-amber-500 text-white hover:bg-amber-600;
+    @apply btn bg-jp-warning text-white hover:opacity-90 dark:bg-jp-warning-dark;
   }
 
   .label {
-    @apply mb-1 block text-[11px] font-medium text-zinc-500 dark:text-zinc-400;
+    @apply mb-1 block text-[11px] font-medium text-jp-muted dark:text-jp-muted-dark;
   }
 
   .panel {
-    @apply border border-jp-border bg-jp-surface dark:border-jp-border-dark dark:bg-jp-surface-dark;
+    @apply rounded-2xl border border-jp-border bg-jp-surface
+           dark:border-jp-border-dark dark:bg-jp-surface-dark;
   }
 
   .card {
-    @apply rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60;
+    @apply rounded-2xl border border-jp-border bg-jp-surface
+           dark:border-jp-border-dark dark:bg-jp-surface-dark;
   }
 
   .stat-card {
-    @apply rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm
-           dark:border-zinc-800 dark:bg-zinc-900/60;
+    @apply rounded-2xl border border-jp-border bg-jp-surface p-5
+           dark:border-jp-border-dark dark:bg-jp-surface-dark;
   }
 
   .stat-icon {
-    @apply flex h-9 w-9 items-center justify-center rounded-xl text-white;
+    @apply flex h-9 w-9 items-center justify-center rounded-xl text-jp-text dark:text-jp-text-dark;
+  }
+
+  /*
+   * v2 hero card (§6): the ONE gradient card per page.
+   * Consumers wrap it via <HeroCard> or apply the class directly.
+   */
+  .hero-card {
+    @apply relative overflow-hidden rounded-2xl border border-jp-border bg-gradient-hero-light p-6
+           text-jp-text shadow-sm
+           dark:border-jp-border-dark dark:bg-gradient-hero dark:text-jp-text-dark;
   }
 
   .badge {
     @apply inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold;
   }
   .badge-tersedia, .badge-selesai, .badge-diambil {
-    @apply border-emerald-500/20 bg-emerald-500/10 text-emerald-400;
+    @apply border-jp-success/20 bg-jp-success/10 text-jp-success dark:text-jp-success-dark;
   }
   .badge-sold {
-    @apply border-red-500/20 bg-red-500/10 text-red-400;
+    @apply border-jp-danger/20 bg-jp-danger/10 text-jp-danger dark:text-jp-danger-dark;
   }
   .badge-booking, .badge-masuk, .badge-proses {
-    @apply border-amber-500/20 bg-amber-500/10 text-amber-400;
+    @apply border-jp-warning/20 bg-jp-warning/10 text-jp-warning dark:text-jp-warning-dark;
   }
   .badge-service {
-    @apply border-blue-500/20 bg-blue-500/10 text-blue-400;
+    @apply border-jp-info/20 bg-jp-info/10 text-jp-info dark:text-jp-info-dark;
   }
-  .badge-beli   { @apply border-blue-500/20  bg-blue-500/10  text-blue-400; }
+  .badge-beli   { @apply border-jp-info/20 bg-jp-info/10 text-jp-info dark:text-jp-info-dark; }
   .badge-jual   { @apply border-purple-500/20 bg-purple-500/10 text-purple-400; }
   .badge-delivery { @apply border-cyan-500/20 bg-cyan-500/10 text-cyan-400; }
   .badge-tiktok { @apply border-pink-500/20  bg-pink-500/10  text-pink-400; }
   .badge-instagram { @apply border-fuchsia-500/20 bg-fuchsia-500/10 text-fuchsia-400; }
-  .badge-youtube { @apply border-red-500/20  bg-red-500/10  text-red-400; }
+  .badge-youtube { @apply border-jp-danger/20 bg-jp-danger/10 text-jp-danger dark:text-jp-danger-dark; }
 
   .table-wrap {
-    @apply border border-jp-border bg-jp-surface dark:border-jp-border-dark dark:bg-jp-surface-dark;
+    @apply rounded-2xl border border-jp-border bg-jp-surface
+           dark:border-jp-border-dark dark:bg-jp-surface-dark;
   }
   .tbl-head {
     @apply text-jp-muted dark:text-jp-muted-dark;
   }
   .tbl-row {
-    @apply border-b border-jp-border last:border-0 hover:bg-jp-surface-subtle/70
+    @apply border-b border-jp-border last:border-0 transition-colors hover:bg-jp-surface-subtle/70
            dark:border-jp-border-dark dark:hover:bg-jp-surface-subtle-dark/60;
   }
 
   .svc-card {
-    @apply rounded-xl border border-zinc-200 bg-white p-4 shadow-sm
-           dark:border-zinc-800 dark:bg-zinc-900/60;
+    @apply rounded-2xl border border-jp-border bg-jp-surface p-4
+           dark:border-jp-border-dark dark:bg-jp-surface-dark;
   }
 
   .nav-link {
-    @apply flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-xs font-medium
-           text-zinc-600 transition-colors hover:bg-zinc-100
-           dark:text-zinc-300 dark:hover:bg-zinc-800/60;
+    @apply flex w-full items-center gap-3 rounded-full px-3 py-2 text-left text-xs font-medium
+           text-jp-muted transition-colors hover:bg-jp-surface-subtle hover:text-jp-text
+           dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark dark:hover:text-jp-text-dark;
   }
   .nav-link.active {
-    @apply bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50;
+    @apply bg-jp-surface-subtle text-jp-text dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark;
   }
 
   .filter-tab {
-    @apply cursor-pointer text-xs font-medium text-zinc-500
-           dark:text-zinc-400;
+    @apply cursor-pointer text-xs font-medium text-jp-muted
+           dark:text-jp-muted-dark;
   }
 
   .icon-container {
@@ -119,56 +145,56 @@
   }
 
   .divider {
-    @apply h-px w-full bg-zinc-200 dark:bg-zinc-800;
+    @apply h-px w-full bg-jp-border dark:bg-jp-border-dark;
   }
   .border-divider {
-    @apply border-zinc-200 dark:border-zinc-800;
+    @apply border-jp-border dark:border-jp-border-dark;
   }
 
   .search-wrap {
     @apply relative;
   }
   .search-icon {
-    @apply pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500;
+    @apply pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-jp-muted dark:text-jp-muted-dark;
   }
   .search-field {
     @apply pl-8;
   }
 
   .skeleton {
-    @apply animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-800;
+    @apply animate-pulse rounded-xl bg-jp-surface-subtle dark:bg-jp-surface-subtle-dark;
   }
 
   .spinner {
     @apply inline-block h-3.5 w-3.5 animate-spin rounded-full border-2
-           border-zinc-300 border-t-transparent
-           dark:border-zinc-600 dark:border-t-transparent;
+           border-jp-border border-t-transparent
+           dark:border-jp-border-dark dark:border-t-transparent;
   }
 
   .progress-track {
-    @apply h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800;
+    @apply h-1.5 w-full overflow-hidden rounded-full bg-jp-surface-subtle dark:bg-jp-surface-subtle-dark;
   }
   .progress-fill {
     @apply h-full transition-all;
   }
   .battery-track {
-    @apply h-2 w-16 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800;
+    @apply h-2 w-16 overflow-hidden rounded-full bg-jp-surface-subtle dark:bg-jp-surface-subtle-dark;
   }
 
   .toast {
     @apply shadow-lg;
   }
   .toast-success {
-    @apply border-emerald-500/20 bg-emerald-50 text-emerald-800
-           dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300;
+    @apply border-jp-success/20 bg-jp-success/10 text-jp-success
+           dark:border-jp-success-dark/30 dark:text-jp-success-dark;
   }
   .toast-error {
-    @apply border-red-500/20 bg-red-50 text-red-800
-           dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300;
+    @apply border-jp-danger/20 bg-jp-danger/10 text-jp-danger
+           dark:border-jp-danger-dark/30 dark:text-jp-danger-dark;
   }
   .toast-info {
-    @apply border-blue-500/20 bg-blue-50 text-blue-800
-           dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300;
+    @apply border-jp-info/20 bg-jp-info/10 text-jp-info
+           dark:border-jp-info-dark/30 dark:text-jp-info-dark;
   }
 }
 

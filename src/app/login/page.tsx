@@ -65,12 +65,20 @@ export default function LoginPage(): JSX.Element {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 p-4 dark:from-zinc-950 dark:to-zinc-900">
-      <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mb-6 text-center">
-          <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Jayaphone</h1>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Masuk untuk melanjutkan</p>
+    <div className="flex min-h-screen items-center justify-center bg-jp-app p-4 dark:bg-jp-app-dark">
+      {/* v2 §1.1 — kesan pertama: shell netral, satu hero card gradient, kontennya panel flat di atasnya. */}
+      <div className="relative w-full max-w-sm">
+        <div className="hero-card mb-4 text-center">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-jp-text text-jp-surface shadow-sm dark:bg-jp-text-dark dark:text-jp-surface-dark">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+              <rect x="6" y="3" width="12" height="18" rx="2" />
+              <line x1="12" y1="17" x2="12" y2="17" />
+            </svg>
+          </div>
+          <h1 className="mt-3 text-lg font-semibold tracking-tight text-jp-text dark:text-jp-text-dark">Jayaphone</h1>
+          <p className="mt-1 text-xs text-jp-muted dark:text-jp-muted-dark">Masuk untuk melanjutkan</p>
         </div>
+        <div className="rounded-2xl border border-jp-border bg-jp-surface p-6 shadow-sm dark:border-jp-border-dark dark:bg-jp-surface-dark">
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <LabelledInput
@@ -93,7 +101,7 @@ export default function LoginPage(): JSX.Element {
           />
 
           {errorMessage && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-2.5 text-xs text-red-500">
+            <div className="rounded-xl border border-jp-danger/20 bg-jp-danger/10 p-2.5 text-xs text-jp-danger dark:text-jp-danger-dark">
               {errorMessage}
             </div>
           )}
@@ -112,6 +120,7 @@ export default function LoginPage(): JSX.Element {
             )}
           </button>
         </form>
+        </div>
       </div>
     </div>
   );

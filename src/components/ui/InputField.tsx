@@ -19,12 +19,12 @@ export function LabelledInput({ label, required, helper, errorMessage, className
       {label && (
         <label className="label">
           {label}
-          {required && <span className="text-red-400">*</span>}
+          {required && <span className="text-jp-danger dark:text-jp-danger-dark">*</span>}
         </label>
       )}
       <input {...restInputProps} className={`${sharedFieldClassName} ${className ?? ""}`} />
-      {helper && <p className="mt-1.5 text-[11px] text-zinc-400 dark:text-zinc-500">{helper}</p>}
-      {errorMessage && <p className="mt-1.5 text-[11px] text-red-400">{errorMessage}</p>}
+      {helper && <p className="mt-1.5 text-[11px] text-jp-muted dark:text-jp-muted-dark">{helper}</p>}
+      {errorMessage && <p className="mt-1.5 text-[11px] text-jp-danger dark:text-jp-danger-dark">{errorMessage}</p>}
     </div>
   );
 }
@@ -38,7 +38,7 @@ export function LabelledTextarea({ label, helper, className, ...restProps }: Lab
     <div>
       {label && <label className="label">{label}</label>}
       <textarea {...restProps} className={`${sharedFieldClassName} resize-none ${className ?? ""}`} />
-      {helper && <p className="mt-1.5 text-[11px] text-zinc-400 dark:text-zinc-500">{helper}</p>}
+      {helper && <p className="mt-1.5 text-[11px] text-jp-muted dark:text-jp-muted-dark">{helper}</p>}
     </div>
   );
 }

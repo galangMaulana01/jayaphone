@@ -26,6 +26,8 @@ const tailwindConfig: Config = {
           "muted-dark": "#A1A1AA",
           border: "#E8E8E2",
           "border-dark": "#2A2A2E",
+          // v2 §4 — gradient end-stop for hero card; pekat (deeper than surface-dark).
+          "abyss": "#050506",
           teal: "#4FD1C5",
           "teal-soft": "#DDF7F3",
           "teal-soft-dark": "#123B38",
@@ -66,6 +68,22 @@ const tailwindConfig: Config = {
       },
       animation: {
         "fade-up": "fade-up 180ms ease-out",
+      },
+      // DESIGN.md v2 §3.1 — the ONLY two gradients allowed in the app.
+      // Hero card: subtle diagonal from surface-dark to near-black, with a
+      //   soft top-left highlight, evocative of Payflow/Citadel — dark-first.
+      // Primary button: monochrome bar. Dark mode → light-to-white with dark
+      //   text; light mode → dark-to-black with white text (handled per-mode
+      //   via CSS custom properties in globals.css).
+      backgroundImage: {
+        "gradient-hero":
+          "radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 55%), linear-gradient(135deg, #141416 0%, #050506 100%)",
+        "gradient-hero-light":
+          "radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 55%), linear-gradient(135deg, #FFFFFF 0%, #E8E8E2 100%)",
+        "gradient-primary":
+          "linear-gradient(135deg, #F4F4F5 0%, #FFFFFF 100%)",
+        "gradient-primary-light":
+          "linear-gradient(135deg, #1D1D1F 0%, #050506 100%)",
       },
     },
   },

@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { HeroCard } from "@/components/ui/HeroCard";
 import { DateFilterBar } from "@/components/ui/DateFilterBar";
 import { createDefaultDateFilter, toApiQueryParams } from "@/lib/utils/dateFilter";
 import { formatDateTimeShort, formatRupiah } from "@/lib/utils/formatters";
@@ -110,11 +111,37 @@ export default function DashboardPage(): JSX.Element {
         <ErrorState message={fetchErrorMessage} onRetry={loadDashboardData} />
       ) : dashboardStats ? (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <DashboardMetricCard label="Total Transaksi" value={dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")} description="Tercatat pada periode ini" />
-            <DashboardMetricCard label="Unit Terjual" value={totalTerjual.toLocaleString("id-ID")} description="Sesuai filter tanggal" />
+          {/*
+           * v2 §7 — Omzet dipromosikan jadi hero card (satu-satunya gradient
+           * card di halaman); tiga metrik lain tetap flat neutral. Jangan
+           * menambah hero kedua di halaman ini.
+           */}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <HeroCard
+                label="Total Omzet"
+                value={formatRupiah(totalOmzet)}
+                description="Omzet transaksi pada periode yang dipilih"
+                mono
+                footer={
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-jp-muted dark:text-jp-muted-dark">Transaksi</p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums text-jp-text dark:text-jp-text-dark">{dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-jp-muted dark:text-jp-muted-dark">Unit Terjual</p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums text-jp-text dark:text-jp-text-dark">{totalTerjual.toLocaleString("id-ID")}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-jp-muted dark:text-jp-muted-dark">Gross Profit</p>
+                      <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-jp-text dark:text-jp-text-dark">{formatRupiah(dashboardStats.keuangan.total_profit)}</p>
+                    </div>
+                  </div>
+                }
+              />
+            </div>
             <DashboardMetricCard label="Stok Tersedia" value={dashboardStats.unit.tersedia.toLocaleString("id-ID")} description="Siap untuk transaksi" />
-            <DashboardMetricCard label="Gross Profit" value={formatRupiah(dashboardStats.keuangan.total_profit)} description="Profit transaksi periode ini" mono />
           </div>
 
           <section className="rounded-2xl border border-jp-border bg-jp-surface p-5 dark:border-jp-border-dark dark:bg-jp-surface-dark sm:p-6">

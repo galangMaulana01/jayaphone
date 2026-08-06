@@ -6,15 +6,7 @@ import { LabelledInput, LabelledSelect, LabelledTextarea } from "@/components/ui
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import type { UploadedImage } from "@/lib/types";
-// Kategori/kondisi codes mirror the backend's id-generator maps exactly
-// (app/utils/id_generator.py _KATEGORI_MAP / _KONDISI_MAP) — the server
-// derives both the generated unit_id AND the stored `kondisi` label from
-// these two codes, so the form must collect them instead of a free-text
-// Unit ID (FBUG-TU-001: the backend has no field for a client-supplied
-// unit_id at all; it always generates one from kat_kode + kondisi_kode).
-const KATEGORI_OPTIONS = [{ code: "IP", label: "iPhone" }, { code: "AI", label: "Android" }, { code: "TB", label: "Tablet" }, { code: "AC", label: "Accessories" }];
-const KONDISI_OPTIONS = [{ code: "BN", label: "Baru/Normal" }, { code: "MN", label: "Minus" }, { code: "EX", label: "Ex Inter" }, { code: "RJ", label: "Reject" }];
-const IMEI_PATTERN = /^\d{14,16}$/;
+import { KATEGORI_OPTIONS, KONDISI_OPTIONS, IMEI_PATTERN } from "@/lib/config/unitCodes";
 const EMPTY_FORM = { kat_kode: "", kondisi_kode: "", merk: "", tipe: "", storage: "", ram: "", warna: "", imei: "", imei2: "", tipe_sim: "", keamanan: "", speaker: "", lcd: "", kondisi_hp: "Mulus", battery: "100", harga_modal: "", harga_jual: "", garansi_toko: "7", catatan: "" };
 
 export default function TambahUnitPage(): JSX.Element {

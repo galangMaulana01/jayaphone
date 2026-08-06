@@ -250,6 +250,10 @@ export interface KaryawanStats {
 export type RequestSparepartStatus = "Pending" | "Menunggu_Kasir" | "Disetujui" | "Ditolak" | "Selesai" | string;
 export interface RequestSparepart {
   id: string;
+  /** The human-readable business ID (e.g. "JYP-REQ-002") — every PATCH
+   * /request-sparepart/{req_id}/... route matches on THIS field, not `id`
+   * (the Mongo _id). Always use req_id, not id, when calling respond()/approve(). */
+  req_id: string;
   tipe: string;
   service_id?: string | null;
   sp_id?: string | null;

@@ -298,9 +298,20 @@ const cod = {
     requestJson<ApiEnvelope<KurirListItem[]>>("GET", `/cod/kurir-list${buildQueryString(params)}`),
   kurirAccept: (codId: string) =>
     requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/accept`),
-  kurirReject: (codId: string) =>
-    requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/reject`),
-  /** Dedicated reject-beli endpoint — FBUG-007 fixed the missing binding here. */
+  /**
+   * Generic status-transition reject, for a COD still at menunggu_kurir
+   * (broadcast, not yet accepted) — matches COD_BELI_FLOW's
+   * menunggu_kurir -> ditolak transition. `note` is a query param on the
+   * backend route (app/routes/cod.py kurir_reject), not a JSON body.
+   */
+  kurirReject: (codId: string, note?: string) =>
+    requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/reject${buildQueryString({ note })}`),
+  /**
+   * Dedicated reject-beli endpoint — only valid AFTER the kurir has already
+   * met the seller (status sudah_bertemu_penjual); the service function's
+   * atomic filter requires exactly that status + kurir_id ownership, so
+   * calling this for a still-unassigned menunggu_kurir item always 409s.
+   */
   kurirRejectBeli: (codId: string, reason: string) =>
     requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/reject-beli`, { reason }),
   kurirUpdateStatus: (codId: string, status: CODStatus, note?: string) =>
@@ -309,7 +320,15 @@ const cod = {
     requestJson<ApiEnvelope<{ unit_id: string }>>("POST", "/cod/kurir/input-stok", body),
   kurirSubmitBeli: (codId: string, body: { deal_price: number; unit_data: Partial<Unit> }) =>
     requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/submit-beli`, body),
-  approve: (codId: string, body: { harga_jual: number; unit_data: Partial<Unit>; garansi_toko?: number; catatan?: string }) =>
+  /**
+   * unit_data carries kat_kode/kondisi_kode (drive the generated unit_id,
+   * same as Api.units.create) AND the resolved kategori/kondisi labels —
+   * unlike unit creation via Tambah Unit, this endpoint does not resolve a
+   * label from the code server-side, so the frontend must send both or the
+   * backend silently falls back to kategori="Android"/kondisi="Normal"
+   * regardless of the actual unit (see NF-001 in notfixedlogic.md).
+   */
+  approve: (codId: string, body: { harga_jual: number; unit_data: Partial<Unit> & { kat_kode?: string; kondisi_kode?: string; kategori?: string }; garansi_toko?: number; catatan?: string }) =>
     requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/${codId}/approve`, body),
   reject: (codId: string, reason: string) =>
     requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/${codId}/reject`, { reason }),

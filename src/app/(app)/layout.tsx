@@ -1,11 +1,5 @@
 "use client";
 
-// Protected layout for every authenticated page.
-// Wraps children in a sidebar + top header, and enforces two guards:
-//   1. If AuthContext status is "unauthenticated", replace to /login.
-//   2. If the current pageKey isn't in NAV[role], show an Access Denied
-//      screen (defense-in-depth, matches the frontend FBUG-021 fix).
-
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
@@ -23,15 +17,21 @@ export default function AuthenticatedAppLayout({ children }: { children: ReactNo
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    if (authStatus === "unauthenticated") {
-      router.replace("/login");
-    }
+    if (authStatus === "unauthenticated") router.replace("/login");
   }, [authStatus, router]);
 
-  // ── Loading splash while /auth/me resolves ────────────────────────
+  useEffect(() => {
+    if (!isMobileSidebarOpen) return;
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") setIsMobileSidebarOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMobileSidebarOpen]);
+
   if (authStatus === "restoring" || !currentUser) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-8">
+      <div className="flex min-h-screen items-center justify-center bg-jp-app p-8 dark:bg-jp-app-dark">
         <div className="w-full max-w-md">
           <LoadingSkeleton numberOfRows={6} />
         </div>
@@ -40,59 +40,45 @@ export default function AuthenticatedAppLayout({ children }: { children: ReactNo
   }
 
   const currentPageKey = currentPathname.replace(/^\//, "").split("/")[0] || "";
-  const isCurrentPageAllowed =
-    currentPageKey === "" || isPageAllowedForRole(currentUser.role, currentPageKey);
+  const isCurrentPageAllowed = currentPageKey === "" || isPageAllowedForRole(currentUser.role, currentPageKey);
 
   return (
-    <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      {/* Desktop sidebar */}
-      <aside className="hidden w-64 flex-shrink-0 border-r border-divider bg-white md:flex md:flex-col dark:bg-zinc-900/60">
-        <div className="border-b border-divider px-4 py-4">
-          <p className="text-sm font-semibold tracking-tight">Jayaphone</p>
-          <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
-            Cabang {currentUser.cabang || "-"}
-          </p>
-        </div>
-        <div className="flex-1">
-          <Sidebar />
-        </div>
+    <div className="flex min-h-screen bg-jp-app dark:bg-jp-app-dark">
+      <aside className="sticky top-0 hidden h-screen w-[260px] shrink-0 border-r border-jp-border md:flex md:flex-col dark:border-jp-border-dark">
+        <Sidebar />
       </aside>
 
-      {/* Mobile sidebar drawer */}
-      {isMobileSidebarOpen && (
+      {isMobileSidebarOpen ? (
         <>
-          <div
-            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black/20 md:hidden"
             onClick={() => setIsMobileSidebarOpen(false)}
-            aria-hidden="true"
+            aria-label="Tutup menu"
           />
-          <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-divider bg-white shadow-xl md:hidden dark:bg-zinc-900">
-            <div className="border-b border-divider px-4 py-4">
-              <p className="text-sm font-semibold tracking-tight">Jayaphone</p>
-              <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
-                Cabang {currentUser.cabang || "-"}
-              </p>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <Sidebar onNavigateFromMobile={() => setIsMobileSidebarOpen(false)} />
-            </div>
+          <aside id="mobile-navigation" role="dialog" aria-modal="true" aria-label="Navigasi mobile" className="fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col border-r border-jp-border bg-jp-surface md:hidden dark:border-jp-border-dark dark:bg-jp-surface-dark">
+            <Sidebar
+              onNavigateFromMobile={() => setIsMobileSidebarOpen(false)}
+              onCloseMobileDrawer={() => setIsMobileSidebarOpen(false)}
+            />
           </aside>
         </>
-      )}
+      ) : null}
 
-      {/* Main content */}
-      <div className="flex flex-1 flex-col">
-        <AppHeader onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)} />
-        <main className="flex-1 animate-fade-up p-6 md:p-8">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <AppHeader
+          onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
+          isMobileSidebarOpen={isMobileSidebarOpen}
+        />
+        <main className="flex-1 animate-fade-up p-4 sm:p-6 md:p-8">
           {isCurrentPageAllowed ? (
             children
           ) : (
             <ErrorState
-              message={`Halaman "${currentPageKey}" tidak tersedia untuk role ${currentUser.role}.`}
+              message={"Halaman \"" + currentPageKey + "\" tidak tersedia untuk role " + currentUser.role + "."}
               onRetry={() => {
-                const fallbackPageKey =
-                  navigationByRole[currentUser.role]?.[0]?.pageKey ?? landingPageByRole[currentUser.role];
-                router.replace(`/${fallbackPageKey}`);
+                const fallbackPageKey = navigationByRole[currentUser.role]?.[0]?.pageKey ?? landingPageByRole[currentUser.role];
+                router.replace("/" + fallbackPageKey);
               }}
             />
           )}

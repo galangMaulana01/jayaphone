@@ -12,17 +12,42 @@ const tailwindConfig: Config = {
   theme: {
     extend: {
       colors: {
-        // The single accent colour the original UI used across buttons, stats, and
-        // financial highlights. Kept as a named token so it's easy to rebrand later.
+        // Jayaphone Design System — use these semantic tokens instead of arbitrary colours.
+        jp: {
+          app: "#F7F7F3",
+          "app-dark": "#0B0B0D",
+          surface: "#FFFFFF",
+          "surface-dark": "#141416",
+          "surface-subtle": "#F1F1EC",
+          "surface-subtle-dark": "#1B1B1E",
+          text: "#161618",
+          "text-dark": "#F4F4F5",
+          muted: "#6F706F",
+          "muted-dark": "#A1A1AA",
+          border: "#E8E8E2",
+          "border-dark": "#2A2A2E",
+          teal: "#4FD1C5",
+          "teal-soft": "#DDF7F3",
+          "teal-soft-dark": "#123B38",
+          yellow: "#F6D74B",
+          success: "#2FAE74",
+          "success-dark": "#34D399",
+          warning: "#D99A22",
+          "warning-dark": "#FBBF24",
+          info: "#4886DA",
+          "info-dark": "#60A5FA",
+          danger: "#E85C5C",
+          "danger-dark": "#FB7185",
+        },
+        // Backward-compatible alias used by existing components.
         brand: {
           teal: "#4FD1C5",
         },
       },
       fontFamily: {
-        // The original CDN Tailwind build inherited the system stack; we lock it in
-        // explicitly so headings/body render identically after the migration.
         sans: [
-          "system-ui",
+          "var(--font-geist-sans)",
+          "ui-sans-serif",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
@@ -31,6 +56,7 @@ const tailwindConfig: Config = {
           "Arial",
           "sans-serif",
         ],
+        mono: ["var(--font-geist-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       keyframes: {
         "fade-up": {

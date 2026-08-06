@@ -4,7 +4,7 @@
 import type { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes, ReactNode } from "react";
 
 const sharedFieldClassName =
-  "w-full rounded-xl border-[1.5px] border-transparent bg-gray-100 p-2 outline-none placeholder:text-sm placeholder:text-gray-500 focus:border-brand-teal dark:bg-[#18181B] dark:placeholder:text-gray-400";
+  "min-h-11 w-full rounded-xl border border-jp-border bg-jp-surface-subtle px-3 py-2 text-sm text-jp-text outline-none placeholder:text-jp-muted focus:border-jp-teal focus:ring-2 focus:ring-jp-teal/20 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark dark:placeholder:text-jp-muted-dark";
 
 interface LabelledInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: ReactNode;

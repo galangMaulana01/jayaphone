@@ -1,18 +1,9 @@
 "use client";
 
-// Dashboard page — the landing page for owner and kepala_cabang.
-//
-// Migrated from `renderDashboard()` in index.html.bak (approx. lines 1090–1315).
-// The heavy chart wiring is deferred (see TODO markers) so this file focuses
-// on the layout + the four summary stat cards + the recent-transactions
-// table. All financial data respects the date filter — FBUG-002 fix on the
-// original code turned this into the canonical example of how a page should
-// consume `getDateFilterParams()`.
-
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Api, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { StatCard } from "@/components/ui/StatCard";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -20,6 +11,31 @@ import { DateFilterBar } from "@/components/ui/DateFilterBar";
 import { createDefaultDateFilter, toApiQueryParams } from "@/lib/utils/dateFilter";
 import { formatDateTimeShort, formatRupiah } from "@/lib/utils/formatters";
 import type { DashboardStats, DashboardTrend, DashboardTrendPoint } from "@/lib/types";
+
+const DashboardTrendChart = dynamic(
+  () => import("@/components/dashboard/DashboardTrendChart").then((module) => module.DashboardTrendChart),
+  {
+    ssr: false,
+    loading: () => <div className="h-64 animate-pulse rounded-xl bg-jp-surface-subtle dark:bg-jp-surface-subtle-dark md:h-72" />,
+  },
+);
+
+interface DashboardMetricCardProps {
+  label: string;
+  value: string | number;
+  description: string;
+  mono?: boolean;
+}
+
+function DashboardMetricCard({ label, value, description, mono = false }: DashboardMetricCardProps): JSX.Element {
+  return (
+    <section className="rounded-2xl border border-jp-border bg-jp-surface p-5 dark:border-jp-border-dark dark:bg-jp-surface-dark">
+      <p className="text-[11px] font-medium text-jp-muted dark:text-jp-muted-dark">{label}</p>
+      <p className={"mt-3 text-2xl font-semibold tracking-tight text-jp-text dark:text-jp-text-dark " + (mono ? "font-mono text-xl tabular-nums" : "tabular-nums")}>{value}</p>
+      <p className="mt-2 text-[11px] text-jp-muted dark:text-jp-muted-dark">{description}</p>
+    </section>
+  );
+}
 
 function normaliseTrendPoints(trendResponse: DashboardTrend): DashboardTrendPoint[] {
   if (Array.isArray(trendResponse.trend)) return trendResponse.trend;
@@ -58,9 +74,7 @@ export default function DashboardPage(): JSX.Element {
         throw new Error(message);
       }
       setDashboardStats(statsResult.value.data);
-      setDashboardTrend(
-        trendResult.status === "fulfilled" ? normaliseTrendPoints(trendResult.value.data) : null,
-      );
+      setDashboardTrend(trendResult.status === "fulfilled" ? normaliseTrendPoints(trendResult.value.data) : null);
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Gagal memuat dashboard";
       setFetchErrorMessage(message);
@@ -73,28 +87,22 @@ export default function DashboardPage(): JSX.Element {
     void loadDashboardData();
   }, [loadDashboardData]);
 
-  const cabangSuffix =
-    currentUser?.role === "kepala_cabang" ? ` — Cabang ${currentUser.cabang}` : "";
+  const cabangSuffix = currentUser?.role === "kepala_cabang" ? " — Cabang " + currentUser.cabang : "";
   const totalTerjual = dashboardStats?.unit.terjual ?? dashboardStats?.unit.sold ?? 0;
   const totalOmzet = dashboardStats?.keuangan.total_omzet ?? dashboardStats?.keuangan.total_revenue ?? 0;
-  const profitHariIni = dashboardStats?.keuangan.profit_hari_ini ?? dashboardStats?.keuangan.profit_harian ?? 0;
   const recentTransaksi = dashboardStats?.recent_transaksi ?? [];
 
   return (
-    <div className="space-y-6">
-      {cabangSuffix && (
-        <p className="text-xs text-zinc-400 dark:text-zinc-500">Dashboard{cabangSuffix}</p>
-      )}
-
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-8">
+      <header className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-jp-text dark:text-jp-text-dark">Dashboard</h1>
+          <p className="mt-2 text-sm text-jp-muted dark:text-jp-muted-dark">Kondisi operasional Jayaphone pada periode yang dipilih{cabangSuffix}.</p>
         </div>
-        <DateFilterBar
-          currentFilterState={dateFilterState}
-          onFilterStateChange={setDateFilterState}
-        />
-      </div>
+        <div className="self-start lg:self-auto">
+          <DateFilterBar currentFilterState={dateFilterState} onFilterStateChange={setDateFilterState} />
+        </div>
+      </header>
 
       {isFetching ? (
         <LoadingSkeleton numberOfRows={6} />
@@ -102,102 +110,65 @@ export default function DashboardPage(): JSX.Element {
         <ErrorState message={fetchErrorMessage} onRetry={loadDashboardData} />
       ) : dashboardStats ? (
         <>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard label="Total Unit" value={dashboardStats.unit.total} subtitle="Semua status" accent="blue" />
-            <StatCard label="Stok Tersedia" value={dashboardStats.unit.tersedia} subtitle="Siap dijual" accent="green" />
-            <StatCard label="Total Terjual" value={totalTerjual} subtitle="Sesuai filter" accent="orange" />
-            <StatCard label="Gross Profit" value={formatRupiah(dashboardStats.keuangan.total_profit)} subtitle="Sesuai filter" accent="profit" />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <DashboardMetricCard label="Total Transaksi" value={dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")} description="Tercatat pada periode ini" />
+            <DashboardMetricCard label="Unit Terjual" value={totalTerjual.toLocaleString("id-ID")} description="Sesuai filter tanggal" />
+            <DashboardMetricCard label="Stok Tersedia" value={dashboardStats.unit.tersedia.toLocaleString("id-ID")} description="Siap untuk transaksi" />
+            <DashboardMetricCard label="Gross Profit" value={formatRupiah(dashboardStats.keuangan.total_profit)} description="Profit transaksi periode ini" mono />
           </div>
 
-          <div className="card p-5">
-            <h2 className="mb-4 text-sm font-semibold">Ringkasan Keuangan</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <section className="rounded-2xl border border-jp-border bg-jp-surface p-5 dark:border-jp-border-dark dark:bg-jp-surface-dark sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Total Omzet</p>
-                <p className="mt-1 text-lg font-bold">{formatRupiah(totalOmzet)}</p>
+                <h2 className="text-lg font-semibold tracking-tight text-jp-text dark:text-jp-text-dark">Penjualan harian</h2>
+                <p className="mt-1 text-sm text-jp-muted dark:text-jp-muted-dark">Pergerakan omzet pada periode yang dipilih.</p>
               </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Profit Hari Ini</p>
-                <p className="mt-1 text-lg font-bold">{formatRupiah(profitHariIni)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Total Transaksi</p>
-                <p className="mt-1 text-lg font-bold">{dashboardStats.keuangan.total_transaksi}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Total Profit</p>
-                <p className="mt-1 text-lg font-bold text-brand-teal">{formatRupiah(dashboardStats.keuangan.total_profit)}</p>
-              </div>
+              <div className="font-mono text-xs text-jp-muted dark:text-jp-muted-dark">Omzet: {formatRupiah(totalOmzet)}</div>
             </div>
-          </div>
+            <div className="mt-6">
+              <DashboardTrendChart points={dashboardTrend ?? []} />
+            </div>
+          </section>
 
-          {/* TODO: chart. The legacy code used Chart.js to render dashboardTrend.trend as a
-              line chart. Migration to react-chartjs-2 is queued for a follow-up commit —
-              raw data is already available in `dashboardTrend` and honours the date filter. */}
-          {dashboardTrend && (
-            <div className="card p-5">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-                Trend Harian
-              </p>
-              <p className="text-xs text-zinc-400 dark:text-zinc-500">
-                Chart Chart.js belum di-porting; sementara ditampilkan sebagai tabel ringkas.
-              </p>
-              <div className="mt-3 max-h-64 overflow-y-auto text-xs">
-                <table className="w-full">
-                  <thead className="tbl-head">
+          <section className="overflow-hidden rounded-2xl border border-jp-border bg-jp-surface dark:border-jp-border-dark dark:bg-jp-surface-dark">
+            <div className="flex items-start justify-between gap-4 px-5 py-5 sm:px-6">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight text-jp-text dark:text-jp-text-dark">Transaksi terbaru</h2>
+                <p className="mt-1 text-sm text-jp-muted dark:text-jp-muted-dark">Lima transaksi terakhir pada periode ini.</p>
+              </div>
+              <p className="font-mono text-xs text-jp-muted dark:text-jp-muted-dark">{recentTransaksi.length} data</p>
+            </div>
+            {recentTransaksi.length === 0 ? (
+              <div className="border-t border-jp-border dark:border-jp-border-dark"><EmptyState message="Belum ada transaksi pada periode ini" iconName="transaksiSvg" /></div>
+            ) : (
+              <div className="overflow-x-auto border-t border-jp-border dark:border-jp-border-dark">
+                <table className="w-full min-w-[760px] text-[13px]">
+                  <thead className="text-left text-[11px] font-medium text-jp-muted dark:text-jp-muted-dark">
                     <tr>
-                      <th className="py-2 text-left">Tanggal</th>
-                      <th className="py-2 text-right">Omzet</th>
-                      <th className="py-2 text-right">Profit</th>
-                      <th className="py-2 text-right">Jumlah</th>
+                      <th className="px-5 py-3.5 font-medium sm:px-6">ID Transaksi</th>
+                      <th className="px-5 py-3.5 font-medium">Kasir</th>
+                      <th className="px-5 py-3.5 font-medium">Item</th>
+                      <th className="px-5 py-3.5 text-right font-medium">Harga</th>
+                      <th className="px-5 py-3.5 text-right font-medium">Waktu</th>
+                      <th className="px-5 py-3.5 text-right font-medium sm:px-6">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {dashboardTrend.map((trendPoint) => (
-                      <tr key={trendPoint.tanggal} className="tbl-row">
-                        <td className="py-1.5">{trendPoint.tanggal}</td>
-                        <td className="py-1.5 text-right">{formatRupiah(trendPoint.omzet)}</td>
-                        <td className="py-1.5 text-right">{formatRupiah(trendPoint.profit)}</td>
-                        <td className="py-1.5 text-right">{trendPoint.jumlah}</td>
+                    {recentTransaksi.map((transaksiEntry) => (
+                      <tr key={transaksiEntry.trx_id} className="h-14 border-t border-jp-border/80 transition-colors hover:bg-jp-surface-subtle/70 dark:border-jp-border-dark dark:hover:bg-jp-surface-subtle-dark/60">
+                        <td className="whitespace-nowrap px-5 font-mono text-[12px] text-jp-muted dark:text-jp-muted-dark sm:px-6">{transaksiEntry.trx_id}</td>
+                        <td className="whitespace-nowrap px-5 text-jp-text dark:text-jp-text-dark">{transaksiEntry.kasir}</td>
+                        <td className="max-w-[240px] truncate px-5 text-jp-text dark:text-jp-text-dark">{transaksiEntry.unit_label}</td>
+                        <td className="whitespace-nowrap px-5 text-right font-mono text-[12px] font-medium tabular-nums text-jp-text dark:text-jp-text-dark">{formatRupiah(transaksiEntry.harga_jual)}</td>
+                        <td className="whitespace-nowrap px-5 text-right text-[12px] text-jp-muted dark:text-jp-muted-dark">{formatDateTimeShort(transaksiEntry.waktu)}</td>
+                        <td className="whitespace-nowrap px-5 text-right sm:px-6"><span className="inline-flex rounded-full border border-jp-success/25 bg-jp-success/10 px-2 py-0.5 text-[10px] font-medium text-jp-success dark:text-jp-success-dark">Tercatat</span></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
-          )}
-
-          <div className="card p-5">
-            <h2 className="mb-4 text-sm font-semibold">Transaksi Terbaru</h2>
-            {recentTransaksi.length === 0 ? (
-              <EmptyState message="Belum ada transaksi" iconName="transaksiSvg" />
-            ) : (
-              <table className="w-full text-xs">
-                <thead className="tbl-head">
-                  <tr>
-                    <th className="py-2 text-left">TRX ID</th>
-                    <th className="py-2 text-left">Kasir</th>
-                    <th className="py-2 text-left">Item</th>
-                    <th className="py-2 text-right">Harga</th>
-                    <th className="py-2 text-right">Waktu</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentTransaksi.map((transaksiEntry) => (
-                    <tr key={transaksiEntry.trx_id} className="tbl-row">
-                      <td className="py-2 font-mono">{transaksiEntry.trx_id}</td>
-                      <td className="py-2">{transaksiEntry.kasir}</td>
-                      <td className="py-2">{transaksiEntry.unit_label}</td>
-                      <td className="py-2 text-right font-medium">{formatRupiah(transaksiEntry.harga_jual)}</td>
-                      <td className="py-2 text-right text-zinc-400 dark:text-zinc-500">
-                        {formatDateTimeShort(transaksiEntry.waktu)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             )}
-          </div>
+          </section>
         </>
       ) : null}
     </div>

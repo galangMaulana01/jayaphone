@@ -192,7 +192,7 @@ const service = {
 
 // ─── Customer ────────────────────────────────────────────────────────────
 const customer = {
-  list: (params?: { status?: string }) =>
+  list: (params?: { status?: string; q?: string }) =>
     requestJson<ApiEnvelope<Customer[]>>("GET", `/customers${buildQueryString(params)}`),
   create: (body: { nama: string; kontak: string; cabang: string }) =>
     requestJson<ApiEnvelope<Customer>>("POST", "/customers", body),

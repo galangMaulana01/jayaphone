@@ -1,12 +1,5 @@
 "use client";
 
-// The date-preset chip row that sits at the top of Dashboard / Laporan /
-// Transaksi / Log / Service etc. Replaces the legacy
-// `renderDateFilter(refreshCallback)` helper.
-//
-// Consumers own the DateFilterState in their own useState — this component is
-// purely presentational + calls back with the new state.
-
 import { useEffect, useState } from "react";
 import type { DateFilterPreset, DateFilterState } from "@/lib/utils/dateFilter";
 import { Modal } from "./Modal";
@@ -45,15 +38,18 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
 
   return (
     <>
-      <div className="flex flex-wrap gap-1.5 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
+      <div className="flex flex-wrap gap-1 rounded-xl border border-jp-border bg-jp-surface-subtle p-1.5 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark">
         {presetOptions.map((option) => {
           const isActive = currentFilterState.preset === option.key;
+          const buttonClassName = isActive
+            ? "bg-jp-surface text-jp-text dark:bg-jp-surface-dark dark:text-jp-text-dark"
+            : "text-jp-muted hover:text-jp-text dark:text-jp-muted-dark dark:hover:text-jp-text-dark";
           return (
             <button
               key={option.key}
               type="button"
               onClick={() => handlePresetClick(option.key)}
-              className={`filter-tab rounded-xl px-4 py-2 text-xs ${isActive ? "bg-white shadow-sm dark:bg-zinc-800" : ""}`}
+              className={"min-h-9 rounded-lg px-3 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-jp-teal/50 " + buttonClassName}
             >
               {option.label}
             </button>
@@ -62,18 +58,17 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
         <button
           type="button"
           onClick={() => setIsCustomModalOpen(true)}
-          className={`filter-tab rounded-xl px-4 py-2 text-xs ${currentFilterState.preset === "custom" ? "bg-white shadow-sm dark:bg-zinc-800" : ""}`}
+          className={"min-h-9 rounded-lg px-3 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-jp-teal/50 " + (
+            currentFilterState.preset === "custom"
+              ? "bg-jp-surface text-jp-text dark:bg-jp-surface-dark dark:text-jp-text-dark"
+              : "text-jp-muted hover:text-jp-text dark:text-jp-muted-dark dark:hover:text-jp-text-dark"
+          )}
         >
           Custom
         </button>
       </div>
 
-      <Modal
-        isOpen={isCustomModalOpen}
-        onClose={() => setIsCustomModalOpen(false)}
-        title="Pilih Rentang Tanggal"
-        maxWidthClassName="max-w-md"
-      >
+      <Modal isOpen={isCustomModalOpen} onClose={() => setIsCustomModalOpen(false)} title="Pilih Rentang Tanggal" maxWidthClassName="max-w-md">
         <div className="space-y-4 py-2">
           <div>
             <label className="label" htmlFor="date-filter-start">Dari Tanggal</label>
@@ -82,7 +77,7 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
               type="date"
               value={draftStartDate}
               onChange={(inputEvent) => setDraftStartDate(inputEvent.target.value)}
-              className="w-full rounded-xl border border-transparent bg-zinc-100 p-2 outline-none focus:border-brand-teal dark:bg-zinc-800"
+              className="w-full rounded-xl border border-jp-border bg-jp-surface-subtle p-2.5 text-jp-text outline-none focus:border-jp-teal focus:ring-2 focus:ring-jp-teal/20 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark"
             />
           </div>
           <div>
@@ -92,23 +87,14 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
               type="date"
               value={draftEndDate}
               onChange={(inputEvent) => setDraftEndDate(inputEvent.target.value)}
-              className="w-full rounded-xl border border-transparent bg-zinc-100 p-2 outline-none focus:border-brand-teal dark:bg-zinc-800"
+              className="w-full rounded-xl border border-jp-border bg-jp-surface-subtle p-2.5 text-jp-text outline-none focus:border-jp-teal focus:ring-2 focus:ring-jp-teal/20 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark"
             />
           </div>
         </div>
-        {draftStartDate && draftEndDate && draftStartDate > draftEndDate && <p className="text-xs text-red-500">Tanggal mulai harus sebelum tanggal akhir.</p>}
+        {draftStartDate && draftEndDate && draftStartDate > draftEndDate ? <p className="text-xs text-jp-danger">Tanggal mulai harus sebelum tanggal akhir.</p> : null}
         <div className="mt-6 flex gap-3">
-          <button type="button" onClick={() => setIsCustomModalOpen(false)} className="btn-ghost flex-1">
-            Batal
-          </button>
-          <button
-            type="button"
-            onClick={handleApplyCustom}
-            className="btn-primary flex-1"
-            disabled={!draftStartDate || !draftEndDate || draftStartDate > draftEndDate}
-          >
-            Terapkan Filter
-          </button>
+          <button type="button" onClick={() => setIsCustomModalOpen(false)} className="btn-ghost flex-1">Batal</button>
+          <button type="button" onClick={handleApplyCustom} className="btn-primary flex-1" disabled={!draftStartDate || !draftEndDate || draftStartDate > draftEndDate}>Terapkan Filter</button>
         </div>
       </Modal>
     </>

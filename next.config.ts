@@ -19,6 +19,12 @@ const nextConfig: NextConfig = {
     // runs in `next lint` and CI when it's enabled.
     ignoreDuringBuilds: true,
   },
+  typescript: {
+    // Type safety is verified explicitly by `npm run typecheck`; avoid doing
+    // the same work again in the memory-constrained production build.
+    ignoreBuildErrors: true,
+  },
+  output: "standalone",
 };
 
 export default nextConfig;

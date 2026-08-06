@@ -46,7 +46,7 @@
   }
 
   .panel {
-    @apply border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60;
+    @apply border border-jp-border bg-jp-surface dark:border-jp-border-dark dark:bg-jp-surface-dark;
   }
 
   .card {
@@ -85,14 +85,14 @@
   .badge-youtube { @apply border-red-500/20  bg-red-500/10  text-red-400; }
 
   .table-wrap {
-    @apply border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/60;
+    @apply border border-jp-border bg-jp-surface dark:border-jp-border-dark dark:bg-jp-surface-dark;
   }
   .tbl-head {
-    @apply text-zinc-500 dark:text-zinc-400;
+    @apply text-jp-muted dark:text-jp-muted-dark;
   }
   .tbl-row {
-    @apply border-b border-zinc-100 last:border-0 hover:bg-zinc-50
-           dark:border-zinc-800 dark:hover:bg-zinc-800/40;
+    @apply border-b border-jp-border last:border-0 hover:bg-jp-surface-subtle/70
+           dark:border-jp-border-dark dark:hover:bg-jp-surface-subtle-dark/60;
   }
 
   .svc-card {
@@ -176,7 +176,7 @@
    hoist them into base so they work without page-level classes. */
 @layer base {
   html, body {
-    @apply bg-white text-zinc-800 antialiased dark:bg-zinc-950 dark:text-zinc-100;
+    @apply bg-jp-app font-sans text-jp-text antialiased dark:bg-jp-app-dark dark:text-jp-text-dark;
   }
   * {
     -webkit-tap-highlight-color: transparent;

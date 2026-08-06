@@ -439,7 +439,22 @@ var API = {
   upload: {
     image: function(file) { return uploadFile('/upload/image', file); },
     images: function(files, uploadType, options) { return uploadFiles('/upload/images', files, uploadType, options); },
-    delete: function(publicId) { return uploadFile('/upload/image', new Blob([publicId], {type: 'application/json'})); },
+    delete: async function(publicId) {
+      var fd = new FormData();
+      fd.append('public_id', publicId);
+      var fullPath = BASE_URL + '/upload/image';
+      if (BASE_URL.startsWith('http') && !BASE_URL.includes('/api/v1')) {
+        fullPath = BASE_URL + '/api/v1/upload/image';
+      }
+      var res = await fetch(fullPath, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + Token.get() },
+        body: fd,
+      });
+      var data = await res.json().catch(function() { return {}; });
+      if (!res.ok) throw new APIError(res.status, data.detail || data.message || 'Penghapusan gambar gagal');
+      return data.data || data;
+    },
   },
 };
 

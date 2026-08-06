@@ -1,0 +1,51 @@
+# E2E Persistent Todo
+
+- [ ] Owner - /dashboard
+- [ ] Owner - /stok
+- [ ] Owner - /transfer-stok
+- [ ] Owner - /transaksi
+- [ ] Owner - /laporan
+- [ ] Owner - /service
+- [ ] Owner - /approval-repair
+- [ ] Owner - /karyawan
+- [ ] Owner - /cabang
+- [ ] Owner - /log
+- [ ] Owner - /influencer-monitor
+- [ ] Owner - /kurir-monitoring
+- [ ] Owner - /customers
+- [ ] Owner - /settings
+- [ ] Kepala Cabang - /dashboard
+- [ ] Kepala Cabang - /stok
+- [ ] Kepala Cabang - /transfer-stok
+- [ ] Kepala Cabang - /transaksi
+- [ ] Kepala Cabang - /laporan
+- [ ] Kepala Cabang - /service
+- [ ] Kepala Cabang - /approval-repair
+- [ ] Kepala Cabang - /sparepart
+- [ ] Kepala Cabang - /request-sparepart
+- [ ] Kepala Cabang - /karyawan
+- [ ] Kepala Cabang - /log
+- [ ] Kepala Cabang - /kurir-monitoring
+- [ ] Kepala Cabang - /customers
+- [ ] Kepala Cabang - /settings
+- [ ] Kasir - /stok-kasir
+- [ ] Kasir - /input-transaksi
+- [ ] Kasir - /tambah-unit
+- [ ] Kasir - /cod-beli
+- [ ] Kasir - /approval-cod
+- [ ] Kasir - /approval-repair
+- [ ] Kasir - /approval-sparepart
+- [ ] Kasir - /customers
+- [ ] Kasir - /settings
+- [ ] Teknisi - /service-list
+- [ ] Teknisi - /request-sparepart
+- [ ] Teknisi - /teknisi-log
+- [ ] Teknisi - /settings
+- [ ] Kurir - /kurir-dashboard
+- [ ] Kurir - /kurir-log
+- [ ] Kurir - /settings
+- [ ] Influencer - /influencer-dashboard
+- [ ] Influencer - /influencer-catalog
+- [ ] Influencer - /influencer-videos
+- [ ] Influencer - /influencer-log
+- [ ] Influencer - /settings

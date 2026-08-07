@@ -229,3 +229,102 @@ Metodologi: sama seperti sesi Fase 4 (build produksi + Playwright browser nyata)
 
 - Alur: `npm run typecheck` dan `npm run build` dijalankan ulang setelah seluruh perbaikan FIX-002 s.d. FIX-006; regresi navigasi penuh via klik sidebar untuk keenam role (owner, kepala_cabang, kasir, teknisi, kurir, influencer) memakai server produksi (`npm run start`) yang sama dipakai untuk seluruh QA di atas.
 - Hasil aktual: typecheck dan build sukses tanpa error/warning baru. 0 console error dan 0 failed network request pada seluruh halaman yang terdampak perubahan sesi ini, di keenam role. Route guard frontend tetap berfungsi seperti pada QA-102 (tidak diubah pada sesi ini).
+
+## Sesi lanjutan — Legacy Gap Analysis (GAP-001 s.d. GAP-012)
+
+Tanggal pengujian: 2026-08-07
+Branch: `claude/jayaphone-frontend-qa-3lyr4h`
+Konteks: `LEGACY_GAP_ANALYSIS.md` mendokumentasikan 13 gap antara logika legacy (`index.html`/`main.js`/`svg.js`) dan hasil migrasi Next.js. GAP-001 s.d. GAP-012 diimplementasikan satu per satu sesuai urutan permintaan user ("mulai GAP-001 sampai selesai"); GAP-013 murni cross-reference ke NF-007 yang sudah ada, tidak butuh pekerjaan baru. Setiap gap diverifikasi dengan siklus yang sama: `npm run typecheck` → `npm run build` → restart server produksi lokal + backend `phonejaya` lokal (seed data QA, database in-memory) → skrip Playwright browser nyata dengan screenshot → regresi 6-role → commit + push individual.
+
+### GAP-001 — Breakdown margin/profit + spek lengkap di Detail Unit
+
+- Route: `/stok`, `/stok-kasir`
+- Perbaikan: `UnitDetailModal.tsx` baru (dipakai bersama oleh kedua halaman) menambahkan section "Finansial (Owner Only)" (harga modal/harga jual/margin Rp+%, role-gated `owner`), field spek yang sebelumnya hilang (IMEI2, tipe SIM, keamanan, speaker, LCD, battery health), dan section Keluhan. `/stok` sebelumnya tidak punya aksi Detail per baris sama sekali — ditambahkan kolom "Aksi".
+- Retest: login owner, buka Detail salah satu unit — section Finansial tampil dengan margin Rp 550.000 (20.8%) dari harga modal Rp 2.100.000/harga jual Rp 2.650.000 (dikonfirmasi lewat screenshot, karena `.innerText` menormalkan CSS `text-transform:uppercase` sehingga string match case-sensitive di skrip awal sempat false-negative). Login kasir — spek lengkap tampil tapi section Finansial **tidak** dirender (role gate berfungsi).
+- Hasil: 0 console error, regresi 6-role bersih.
+
+### GAP-002 — Filter Cabang di Dashboard + sambungan di Stok
+
+- Route: `/dashboard`, `/stok`
+- Perbaikan: `<CabangFilter>` dipasang di Dashboard (owner-only, disambungkan ke `filterQueryParams`) dan di Stok (menyambungkan state `selectedCabangFilter`/`setSelectedCabangFilter` yang sebelumnya sudah ada di kode tapi tidak reachable dari UI).
+- Retest: filter cabang di kedua halaman mengubah data yang tampil sesuai cabang terpilih, diverifikasi lewat network request parameter `cabang` yang berubah.
+- Hasil: 0 console error, regresi 6-role bersih.
+
+### GAP-003 — Cart sparepart-untuk-repair di Tambah Unit
+
+- Route: `/tambah-unit`
+- Perbaikan: `SparepartRepairCart` component baru + field Keluhan, muncul kondisional saat `kondisi_hp === "Repair"`. Payload submit mengirim `keluhan` dan `sparepart_items` ke `Api.units.create()`, `harga_jual` dipaksa 0 (tidak diminta) untuk kondisi Repair.
+- Retest end-to-end: submit unit dengan `kondisi_hp: "Repair"`, `keluhan: "LCD retak parah, perlu ganti total"`, 1 item sparepart — diverifikasi lewat API bahwa unit tercipta dengan `status: "Service"` dan tiket service (`SVC-101`, `status: "Antrian"`) otomatis terbuat dengan `keluhan`/`sparepart_items` yang sama.
+- Catatan proses: skrip uji pertama sempat mengisi field Catatan (bukan Keluhan) karena locator `textarea` tanpa index memilih elemen pertama di DOM — validasi client `if (isRepair && !form.keluhan.trim())` justru menangkapnya (0 `POST /units` terkirim), bukan bug aplikasi. Diperbaiki dengan `textarea >> nth(1)`.
+- Hasil: 0 console error, regresi 6-role bersih.
+
+### GAP-004 — Indikator umur stok (kadaluarsa badge) di Stok
+
+- Route: `/stok`
+- Perbaikan: `getStockAgeInfo()` baru di `formatters.ts` (port `getKadaluarsaBadge` legacy — hijau <30 hari, kuning 30-60 hari, merah >60 hari), kolom "Umur stok" baru di tabel.
+- Retest: kolom tampil dengan label "N hari" berwarna sesuai tone, diverifikasi lewat screenshot.
+- Hasil: 0 console error, regresi 6-role bersih.
+
+### GAP-005 — Kontak customer + foto serah-terima di Detail Transaksi
+
+- Route: `/transaksi`
+- Perbaikan: tile "Kontak" ditambahkan ke grid info modal detail, section foto serah-terima kondisional ditambahkan setelah catatan — keduanya sudah tersedia di tipe `Transaksi` tapi tidak pernah dirender.
+- Retest: JYP-TRX-001 menampilkan kontak "081234500011" dengan benar (dikonfirmasi lewat query backend + screenshot). Path render `foto_serah_terima` tidak diuji langsung dengan data live (seed tidak ada yang mengisi field ini) tapi review kode mengikuti pola yang identik dan sudah terbukti di `UnitDetailModal`.
+- Hasil: 0 console error, regresi 6-role bersih.
+
+### GAP-006 — Kebijakan redeem poin customer belum Verified — CLOSED as-designed
+
+- Route: `/input-transaksi`
+- Keputusan: dikonfirmasi langsung ke pemilik produk (2026-08-07) — pengetatan block redeem poin untuk customer belum Verified memang kebijakan yang diinginkan (mencegah redeem sebelum verifikasi identitas), bukan efek samping migrasi. **Tidak ada perubahan kode.**
+- Dokumentasi: entri di `LEGACY_GAP_ANALYSIS.md` diperbarui menjadi "CLOSED as-designed" dengan tanggal keputusan.
+
+### GAP-007 — Chart tren harian + filter tanggal independen di modal Statistik Karyawan
+
+- Route: `/karyawan`
+- Perbaikan: preset tab (7 Hari/30 Hari/3 Bulan/1 Tahun) + custom date range di dalam modal (state lokal, independen dari filter halaman), `KaryawanStatsChart.tsx` baru (Bar chart react-chartjs-2) merender `trend_harian` yang sebelumnya sudah dikembalikan backend tapi tidak dipakai UI.
+- Retest: buat transaksi baru sebagai kasir "bayu" (Rp 300.000, profit Rp 120.000) lewat API, verifikasi chart bar tampil dengan tanggal "08-07" dan nilai Rp 300rb pada modal statistik owner; klik preset "7 Hari" dan custom date range keduanya memuat ulang data dengan benar.
+- Hasil: 0 console error, regresi 6-role bersih.
+
+### GAP-008 — Preview live "Poin didapat" di Input Transaksi
+
+- Route: `/input-transaksi`
+- Perbaikan: baris "Estimasi Poin Didapat" di Ringkasan, dihitung live dari `total` (setelah diskon poin), disembunyikan total untuk tipe Guest (mengikuti perilaku legacy `hitungPoin`).
+- Retest: pilih unit Rp 5.300.000 sebagai kasir "bayu" dengan tipe Member — baris menampilkan "53 poin" (5.300.000/100.000) secara live sebelum submit. Beralih ke Guest — baris hilang total.
+- Temuan tambahan (didokumentasikan terpisah, bukan diperbaiki — backend read-only): `app/services/transaksi_service.py:150` membuang `poin_dipakai` ke 0 sebelum logika diskon berjalan, sehingga redeem poin yang sudah benar di frontend tidak pernah benar-benar diterapkan ke transaksi tersimpan. Dicatat di `LEGACY_GAP_ANALYSIS.md` untuk tim pemilik `phonejaya`.
+- Hasil: 0 console error, regresi 6-role bersih.
+
+### GAP-009 — Komponen galeri foto thumbnail-swap
+
+- Route: `/service` (detail modal)
+- Perbaikan: `PhotoGallery.tsx` baru (foto utama besar + strip thumbnail, klik thumbnail ganti foto utama via state lokal, bukan buka tab baru), dipasang terpisah untuk section "Foto Before" dan "Foto After".
+- Cakupan disesuaikan dengan kontrak backend aktual: Unit (`foto_url`) dan Transaksi (`foto_serah_terima`) hanya punya satu foto (string tunggal) di backend saat ini, jadi tidak ada array untuk di-gallery-kan di kedua halaman itu — hanya Service yang benar-benar punya array (`foto_before_urls`/`foto_after_urls`).
+- Retest: isi SVC-001 dengan 2 foto before + 3 foto after via API, verifikasi struktur galeri (2 label, jumlah thumbnail 2+3=5) dan klik thumbnail ke-3 pada "Foto After" berhasil menukar `src` foto utama (dikonfirmasi lewat perbandingan atribut sebelum/sesudah klik). Gambar itu sendiri broken di screenshot karena sandbox QA memblokir domain eksternal (picsum.photos) — bukan bug aplikasi, di produksi foto berasal dari Cloudinary yang sudah terbukti bisa diakses.
+- Hasil: 0 console error, regresi 6-role bersih.
+
+### GAP-010 — Mekanisme cetak struk ke Blob-URL
+
+- Route: `/input-transaksi`, `/transaksi`
+- Perbaikan: `printTransactionReceipt` di `receipt.ts` diganti dari `window.open()+document.write` menjadi Blob-URL + klik `<a target="_blank">` sintetis — port persis dari `printStruk` legacy (index.html:3541-3616), yang menurut komentar aslinya sengaja dipilih untuk menghindari popup blocker Android/Chrome mobile.
+- Retest: klik "Cetak Struk" di Detail Transaksi (TRX-001) sebagai owner — tab baru terbuka dengan URL `blob:...`, konten struk benar (No. Struk, TOTAL BAYAR), tombol cetak berfungsi.
+- Hasil: 0 console error, regresi 6-role bersih.
+
+### GAP-011 — Chart tren Influencer Dashboard ke Chart.js asli
+
+- Route: `/influencer-dashboard`
+- Perbaikan: `InfluencerTrendChart.tsx` baru (Bar chart react-chartjs-2, pola sama dengan `DashboardTrendChart`/`KaryawanStatsChart`) menggantikan chart custom div/flexbox dengan `title` attribute sebagai tooltip.
+- Catatan proses: seed video influencer "firman" awalnya tidak muncul di dashboard karena `influencer_id` di seed pakai username string ("firman"), padahal JWT `sub` claim (yang dipakai query backend) adalah ObjectId karyawan — bug di skrip seed QA scratchpad (`run_local_backend.py`), bukan di aplikasi. Diperbaiki dengan memakai `user_ids["firman"]` yang sudah ada di skrip.
+- Retest: setelah seed diperbaiki, chart bar Chart.js tampil dengan benar (grid, label sumbu format kompak "25rb/20rb/...", label sumbu-x "2026-W30") menggantikan bar div flat.
+- Hasil: 0 console error, regresi 6-role bersih.
+
+### GAP-012 — Setup automated testing (Vitest) untuk lib/utils
+
+- Lingkup: seluruh project (infrastruktur testing baru)
+- Perbaikan: `vitest` + `vitest.config.ts` (environment node, alias `@/`), script `npm test`/`npm run test:watch`. 34 unit test ditulis untuk 3 modul pure di `lib/utils`: `formatters.test.ts` (termasuk `getStockAgeInfo` dari GAP-004), `dateFilter.test.ts`, `profilePhotoUrl.test.ts` (guard SSRF — localhost, private IP range, host lookalike).
+- Retest: `npm run test` → 34/34 lulus. `npm run typecheck` dan `npm run build` tetap sukses setelah penambahan file test (tidak ikut ter-bundle ke output Next.js).
+- Hasil: seluruh test hijau, tidak ada regresi pada build/typecheck.
+
+### Regresi akhir — seluruh 12 gap
+
+- Alur: `npm run typecheck` dan `npm run build` dijalankan ulang di commit terakhir (setelah GAP-012); regresi navigasi 6-role penuh (`final_regression.js`: login UI nyata, kunjungi beberapa halaman per role, cek route guard lintas role, logout, cek proteksi pasca-logout) dijalankan setelah setiap gap dan sekali lagi di akhir.
+- Hasil aktual: 0 console error di keenam role pada setiap titik pengecekan. Route guard dan proteksi pasca-logout tetap berfungsi seperti QA-102/QA-103 (tidak diubah sepanjang sesi ini).
+- Commit: `ea3ee73`..`13d653b` (GAP-001 s.d. GAP-012 + 2 commit dokumentasi), seluruhnya sudah di-push ke `claude/jayaphone-frontend-qa-3lyr4h`.

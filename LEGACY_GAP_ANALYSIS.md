@@ -3,7 +3,9 @@
 Tanggal audit: 2026-08-07
 Metodologi: baca penuh `main.js` (463 baris, API layer) dan `svg.js` (icon library), ekstrak seluruh 189 fungsi top-level dari `index.html` (7299 baris) via grep, lalu bandingkan implementasi tiap fungsi/fitur terhadap halaman Next.js yang jadi penggantinya (`src/app/(app)/**/page.tsx`, `src/components/**`, `src/lib/**`). Dikerjakan dengan 3 sub-agent riset paralel (media/chart, transaksi/customer, management features) plus pengecekan manual langsung.
 
-**Audit ini murni pembacaan kode — tidak ada satupun baris kode yang diubah selama proses ini.** Setiap temuan di bawah sudah diverifikasi dengan file:line di kedua sisi (legacy vs Next.js), bukan dugaan.
+**Audit ini murni pembacaan kode — tidak ada satupun baris kode yang diubah selama proses audit awal.** Setiap temuan di bawah sudah diverifikasi dengan file:line di kedua sisi (legacy vs Next.js), bukan dugaan.
+
+> **Update 2026-08-07 — SEMUA 12 GAP SELESAI.** GAP-001 s.d. GAP-012 sudah diimplementasikan, diverifikasi (typecheck, build, browser QA, regresi 6-role), dan di-push ke `claude/jayaphone-frontend-qa-3lyr4h`. Bukti retest lengkap per gap ada di `fixedlogic.md` (bagian "Sesi lanjutan — Legacy Gap Analysis"). Analisis di bawah ini dipertahankan sebagai catatan historis (apa yang hilang dan kenapa); untuk status implementasi terkini rujuk ke `fixedlogic.md`.
 
 Legenda status:
 - ✅ **Fully ported** — tidak ada gap, tidak perlu tindakan.
@@ -32,7 +34,7 @@ Legenda status:
 
 ## TODO — urutan implementasi (prioritas tinggi → rendah)
 
-### GAP-001 — Detail Unit kehilangan breakdown margin/profit khusus owner
+### GAP-001 ✅ — Selesai (2026-08-07) — Detail Unit kehilangan breakdown margin/profit khusus owner
 - **Prioritas**: High
 - **Halaman**: `/stok`, `/stok-kasir`
 - **Legacy**: `modalDetailUnit` (index.html:2562-2662) — grid ID/Status/Kategori/Kondisi, spek lengkap (merk, tipe, storage, ram, warna, IMEI 1&2, tipe SIM, keamanan, speaker, LCD, battery, **battery health**), section **"Finansial (Owner Only)"** dengan harga modal/harga jual/margin Rp+%, section Keluhan/Catatan, galeri foto multi-gambar.
@@ -40,7 +42,7 @@ Legenda status:
 - **Dampak**: owner kehilangan cara cepat melihat profitabilitas per unit; kasir/teknisi kehilangan detail fisik unit yang lengkap.
 - **Rencana**: tambahkan section finansial (role-gated `owner`) dan sisa field spek yang hilang ke modal detail di kedua halaman; pakai data yang sudah dikembalikan `Api.units.detail()` (field-nya sudah ada di response, cuma belum dirender).
 
-### GAP-002 — Filter Cabang hilang di Dashboard, mati (dead state) di Stok
+### GAP-002 ✅ — Selesai (2026-08-07) — Filter Cabang hilang di Dashboard, mati (dead state) di Stok
 - **Prioritas**: High
 - **Halaman**: `/dashboard`, `/stok`
 - **Legacy**: `renderCabangFilter`/`populateCabangFilter` (index.html:1086-1113) dipasang di 6 halaman termasuk dashboard (1155, 1243) dan stok (1364, 1386).
@@ -48,7 +50,7 @@ Legenda status:
 - **Dampak**: owner tidak bisa mempersempit data dashboard/stok per cabang — dua halaman paling sering dipakai.
 - **Rencana**: pasang komponen `<CabangFilter>` (sudah ada di `src/components/ui/CabangFilter.tsx`, dipakai di Laporan & Monitor Kurir) ke Dashboard (role owner) dan ke Stok (sambungkan ke state yang sudah ada).
 
-### GAP-003 — Tambah Unit kehilangan cart sparepart-untuk-repair
+### GAP-003 ✅ — Selesai (2026-08-07) — Tambah Unit kehilangan cart sparepart-untuk-repair
 - **Prioritas**: High
 - **Halaman**: `/tambah-unit`
 - **Legacy**: `toggleKeluhanField`, `loadSpRepairList`, `toggleSpRepair`, `renderSpRepairKeranjang`, `ubahJmlSpRepair` (index.html:1594-1688) — saat Kondisi HP = "Repair" dipilih, muncul field "Keluhan" + daftar sparepart yang bisa dicentang (dengan qty +/-) sebagai bahan perbaikan; saat disimpan, stok sparepart ikut berkurang.
@@ -56,7 +58,7 @@ Legenda status:
 - **Dampak**: alur "unit masuk rusak → langsung catat sparepart yang dipakai" hilang total; tim harus mencatat pemakaian sparepart secara manual/terpisah, plus stok sparepart jadi tidak akurat.
 - **Rencana**: tambahkan conditional section (mirip pola `toggleKeluhanField`) yang muncul saat `kondisi_hp === "Repair"`, isi field Keluhan + cart sparepart (list dari `Api.sparepart.list()`, checkbox+qty), kirim sebagai `sparepart_items` di payload `Api.units.create()`.
 
-### GAP-004 — Indikator umur stok (kadaluarsa badge) hilang
+### GAP-004 ✅ — Selesai (2026-08-07) — Indikator umur stok (kadaluarsa badge) hilang
 - **Prioritas**: High
 - **Halaman**: `/stok`
 - **Legacy**: `getKadaluarsaBadge` (index.html:1474-1503) — badge hijau (<30 hari), kuning (30-60 hari), merah (>60 hari) berdasarkan `created_at` unit, buat deteksi cepat stok yang lama nganggur (dead stock).
@@ -64,7 +66,7 @@ Legenda status:
 - **Dampak**: owner/kepala cabang kehilangan sinyal visual cepat untuk stok yang perlu didiskon/diprioritaskan jual.
 - **Rencana**: port fungsi `getKadaluarsaBadge` sebagai util (`lib/utils/formatters.ts` atau file baru), tambahkan sebagai kolom/badge di tabel/card Stok.
 
-### GAP-005 — Detail Transaksi kehilangan kontak customer & foto serah-terima
+### GAP-005 ✅ — Selesai (2026-08-07) — Detail Transaksi kehilangan kontak customer & foto serah-terima
 - **Prioritas**: High
 - **Halaman**: `/transaksi`
 - **Legacy**: `modalDetailTransaksi` (index.html:3422-3514) — grid Tipe/Nama/**Kontak**/Poin Dipakai + galeri **foto_serah_terima**.
@@ -80,7 +82,7 @@ Legenda status:
 - **Keputusan produk (2026-08-07)**: dikonfirmasi ke pemilik produk — pengetatan ini memang **kebijakan yang diinginkan** (mencegah redeem poin sebelum identitas customer terverifikasi), bukan efek samping migrasi. **Tidak ada perubahan kode** — behavior saat ini dipertahankan apa adanya.
 - **Rencana**: tidak ada tindakan lanjutan. Item ditutup sebagai as-designed.
 
-### GAP-007 — Modal Statistik Karyawan kehilangan chart tren harian + filter tanggal independen
+### GAP-007 ✅ — Selesai (2026-08-07) — Modal Statistik Karyawan kehilangan chart tren harian + filter tanggal independen
 - **Prioritas**: Medium-High
 - **Halaman**: `/karyawan`
 - **Legacy**: `modalKaryawanStats`/`_loadKarStats` (index.html:2254-2405) + `_setKarFilter`/`_showKarCustomDate`/`_applyKarCustomDate` (2407-2435) — tab preset 7 Hari/30 Hari/3 Bulan/1 Tahun/Custom **khusus di dalam modal**, independen dari filter halaman, plus bar chart tren harian (Chart.js, index.html:2363,2372).
@@ -88,7 +90,7 @@ Legenda status:
 - **Dampak**: owner/kepala cabang kehilangan kemampuan lihat performa karyawan per hari (tren) dan tidak bisa ganti rentang waktu tanpa reload halaman.
 - **Rencana**: tambahkan preset tab + custom-date di dalam modal (state lokal, terpisah dari filter halaman), tambahkan chart tren harian pakai `react-chartjs-2` (sudah ada dependency-nya, dipakai di Dashboard).
 
-### GAP-008 — Preview "Poin didapat" hilang dari Input Transaksi
+### GAP-008 ✅ — Selesai (2026-08-07) — Preview "Poin didapat" hilang dari Input Transaksi
 - **Prioritas**: Medium
 - **Halaman**: `/input-transaksi`
 - **Legacy**: `hitungPoin` (index.html:2836-2905) tampilkan estimasi poin yang akan didapat **sebelum** submit.
@@ -96,7 +98,7 @@ Legenda status:
 - **Dampak**: kasir tidak bisa kasih tahu customer "kamu bakal dapat berapa poin" sebelum transaksi difinalisasi.
 - **Rencana**: tambahkan kalkulasi live (`Math.floor(hargaFinal/100000)` sesuai formula legacy) yang update setiap kali harga/diskon berubah, tampilkan di ringkasan sebelum tombol submit.
 
-### GAP-009 — Galeri foto thumbnail-swap hilang total
+### GAP-009 ✅ — Selesai (2026-08-07) — Galeri foto thumbnail-swap hilang total
 - **Prioritas**: Medium
 - **Halaman**: semua halaman yang menampilkan >1 foto (Data Service before/after, Detail Unit, Detail Transaksi)
 - **Legacy**: `imageGalleryHTML`/`iuSetMain` (main.js:173-191) — foto utama besar + strip thumbnail di bawah, klik thumbnail ganti foto utama tanpa pindah halaman/tab. Dipakai di index.html:1988-2044 (service), 2570 (unit), 3433-3434 (transaksi).
@@ -104,7 +106,7 @@ Legenda status:
 - **Dampak**: user harus buka banyak tab buat bandingkan foto before/after, bukan lihat langsung di halaman yang sama.
 - **Rencana**: buat komponen `<PhotoGallery>` baru (foto utama + thumbnail strip, klik = ganti foto utama via state lokal, bukan navigasi), pasang di 3 titik yang disebut di atas.
 
-### GAP-010 — Mekanisme cetak struk berisiko kena popup-blocker mobile
+### GAP-010 ✅ — Selesai (2026-08-07) — Mekanisme cetak struk berisiko kena popup-blocker mobile
 - **Prioritas**: Medium
 - **Halaman**: `/input-transaksi`, `/transaksi`
 - **Legacy**: `printStruk` (index.html:3541-3616) sengaja pakai teknik Blob-URL + klik `<a>` sintetis — komentar di kode legacy eksplisit bilang ini dipilih untuk **menghindari popup blocker Android/Chrome mobile**.
@@ -112,7 +114,7 @@ Legenda status:
 - **Dampak**: kasir yang pakai HP Android/Chrome mobile berpotensi lihat toast blokir alih-alih struk, padahal di app lama ini jalan mulus.
 - **Rencana**: ganti mekanisme `printTransactionReceipt` ke pendekatan Blob-URL + `<a>` klik sintetis, samakan dengan legacy.
 
-### GAP-011 — Chart tren Influencer Dashboard bukan Chart.js sungguhan
+### GAP-011 ✅ — Selesai (2026-08-07) — Chart tren Influencer Dashboard bukan Chart.js sungguhan
 - **Prioritas**: Low-Medium
 - **Halaman**: `/influencer-dashboard`
 - **Legacy**: bar chart Chart.js asli dengan tooltip/axis label (index.html:5622,5655).
@@ -120,7 +122,7 @@ Legenda status:
 - **Dampak**: kosmetik/UX kecil — data tetap benar, cuma kurang polish (tanpa animasi/tooltip hover Chart.js).
 - **Rencana**: ganti ke `react-chartjs-2` `<Bar>`, samakan pola dengan `DashboardTrendChart.tsx`.
 
-### GAP-012 — Belum ada automated test sama sekali
+### GAP-012 ✅ — Selesai (2026-08-07) — Belum ada automated test sama sekali
 - **Prioritas**: Low (struktural, bukan bug user-facing)
 - **Lingkup**: seluruh project
 - **Legacy**: tidak ada test juga (bukan regresi), tapi ini adalah TODO lama dari `MIGRATION_NOTES.md` poin 6 yang belum pernah dikerjakan.

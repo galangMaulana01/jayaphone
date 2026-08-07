@@ -72,13 +72,13 @@ Legenda status:
 - **Dampak**: owner/kepala cabang yang meninjau transaksi (mis. untuk dispute) kehilangan nomor kontak customer dan bukti foto serah-terima barang.
 - **Rencana**: tambahkan 2 field yang hilang ke modal detail — data sudah tersedia di response API, tinggal dirender.
 
-### GAP-006 🔄 — Redeem poin diblokir total untuk customer belum "Verified" (behavior berubah, bukan cuma hilang)
-- **Prioritas**: High (butuh keputusan produk, bukan asal "kembalikan")
+### GAP-006 ✅ — Redeem poin diblokir total untuk customer belum "Verified" — CLOSED as-designed (2026-08-07)
+- **Prioritas**: ~~High~~ Selesai — dikonfirmasi ke product owner.
 - **Halaman**: `/input-transaksi`
 - **Legacy**: kasir tetap bisa pakai poin customer meski status masih Pending, cuma dapat warning (index.html:2820-2831,2856).
-- **Sekarang**: `input-transaksi/page.tsx:28` — `customerPointBalance` dipaksa 0 kecuali `selectedCustomer.status === "Verified"`. Ini pengetatan aturan bisnis yang tidak ada di legacy.
-- **Dampak**: ini BUKAN sekadar bug regresi — ini kemungkinan perubahan kebijakan yang disengaja di suatu titik migrasi (menutup celah poin dipakai sebelum verifikasi identitas selesai). **Perlu dikonfirmasi dulu ke pemilik produk** apakah ini memang kebijakan baru yang diinginkan atau cuma efek samping migrasi yang tidak disengaja, sebelum diubah.
-- **Rencana**: tanya dulu, jangan langsung "fix" — kalau owner bilang ini memang aturan baru yang benar, tutup item ini sebagai "as-designed", bukan bug.
+- **Sekarang**: `input-transaksi/page.tsx:28` — `customerPointBalance` dipaksa 0 kecuali `selectedCustomer.status === "Verified"`.
+- **Keputusan produk (2026-08-07)**: dikonfirmasi ke pemilik produk — pengetatan ini memang **kebijakan yang diinginkan** (mencegah redeem poin sebelum identitas customer terverifikasi), bukan efek samping migrasi. **Tidak ada perubahan kode** — behavior saat ini dipertahankan apa adanya.
+- **Rencana**: tidak ada tindakan lanjutan. Item ditutup sebagai as-designed.
 
 ### GAP-007 — Modal Statistik Karyawan kehilangan chart tren harian + filter tanggal independen
 - **Prioritas**: Medium-High

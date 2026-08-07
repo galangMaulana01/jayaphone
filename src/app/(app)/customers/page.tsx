@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Api, ApiError } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { Api } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -9,15 +9,19 @@ import { Modal } from "@/components/ui/Modal";
 import { LabelledInput, LabelledTextarea } from "@/components/ui/InputField";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { useApiList } from "@/hooks/useApiList";
 import type { Customer } from "@/lib/types";
 
 export default function CustomersPage(): JSX.Element {
   const { user } = useAuth(); const { showToast } = useToast();
-  const [items, setItems] = useState<Customer[]>([]); const [query, setQuery] = useState(""); const [status, setStatus] = useState("");
-  const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [addOpen, setAddOpen] = useState(false); const [rejecting, setRejecting] = useState<Customer | null>(null);
+  const [query, setQuery] = useState(""); const [status, setStatus] = useState("");
+  const [addOpen, setAddOpen] = useState(false); const [rejecting, setRejecting] = useState<Customer | null>(null);
   const [name, setName] = useState(""); const [contact, setContact] = useState(""); const [reason, setReason] = useState("");
-  const load = useCallback(async () => { setLoading(true); setError(""); try { setItems((await Api.customer.list({ status: status || undefined })).data ?? []); } catch (e) { setError(e instanceof ApiError ? e.message : "Gagal memuat customer"); } finally { setLoading(false); } }, [status]);
-  useEffect(() => { void load(); }, [load]);
+  const { items, loading, error, reload: load } = useApiList<Customer>(
+    () => Api.customer.list({ status: status || undefined }).then((r) => r.data ?? []),
+    [status],
+    "Gagal memuat customer",
+  );
   const filtered = useMemo(() => items.filter((c) => `${c.nama} ${c.kontak} ${c.cabang}`.toLowerCase().includes(query.toLowerCase())), [items, query]);
   const isApprover = user?.role === "owner" || user?.role === "kepala_cabang";
   const create = async () => { if (!name.trim() || !contact.trim()) { showToast("Nama dan kontak wajib diisi", "error"); return; } try { await Api.customer.create({ nama: name.trim(), kontak: contact.trim(), cabang: user?.cabang || "JYP" }); showToast("Customer berhasil ditambahkan"); setName(""); setContact(""); setAddOpen(false); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Gagal menambah customer", "error"); } };

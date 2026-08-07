@@ -1,7 +1,8 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
-import { Api, ApiError } from "@/lib/api";
+import { useState } from "react";
+import { Api } from "@/lib/api";
 import type { CODRequest, Unit } from "@/lib/types";
+import { useApiList } from "@/hooks/useApiList";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -20,8 +21,8 @@ type UnitDraft = Partial<Unit> & { imei: string; merk: string; tipe: string; kat
 const EMPTY_DRAFT: UnitDraft = { imei: "", merk: "", tipe: "", storage: "-", ram: "-", warna: "-", kondisi_hp: "Mulus", battery: 100, garansi_toko: 7, catatan: "", kat_kode: "", kondisi_kode: "" };
 const money = (value?: number): string => value ? `Rp ${value.toLocaleString("id-ID")}` : "-";
 export default function ApprovalCodPage(): JSX.Element {
-  const { showToast } = useToast(); const [items, setItems] = useState<CODRequest[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [selected, setSelected] = useState<CODRequest | null>(null); const [rejecting, setRejecting] = useState<CODRequest | null>(null); const [reason, setReason] = useState(""); const [draft, setDraft] = useState<UnitDraft>(EMPTY_DRAFT); const [hargaJual, setHargaJual] = useState(""); const [foto, setFoto] = useState<string[]>([]);
-  const load = useCallback(async () => { setLoading(true); setError(""); try { setItems((await Api.cod.list({ type: "beli", status: "menunggu_approval_kasir" })).data ?? []); } catch (e) { setError(e instanceof ApiError ? e.message : "Gagal memuat approval COD"); } finally { setLoading(false); } }, []); useEffect(() => { void load(); }, [load]);
+  const { showToast } = useToast(); const [selected, setSelected] = useState<CODRequest | null>(null); const [rejecting, setRejecting] = useState<CODRequest | null>(null); const [reason, setReason] = useState(""); const [draft, setDraft] = useState<UnitDraft>(EMPTY_DRAFT); const [hargaJual, setHargaJual] = useState(""); const [foto, setFoto] = useState<string[]>([]);
+  const { items, loading, error, reload: load } = useApiList<CODRequest>(() => Api.cod.list({ type: "beli", status: "menunggu_approval_kasir" }).then((r) => r.data ?? []), [], "Gagal memuat approval COD");
   // Kategori/kondisi selalu diminta ulang di sini — jangan bawa nilai dari
   // approval sebelumnya, dan jangan mengisi default apa pun (NF-001).
   const openApprove = (item: CODRequest): void => { const unit = (item as CODRequest & { unit_data?: Partial<Unit> }).unit_data ?? {}; setSelected(item); setDraft({ ...EMPTY_DRAFT, ...unit, imei: String(unit.imei ?? ""), merk: String(unit.merk ?? ""), tipe: String(unit.tipe ?? ""), kat_kode: "", kondisi_kode: "" }); setHargaJual(""); setFoto([]); };

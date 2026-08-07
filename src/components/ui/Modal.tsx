@@ -2,9 +2,18 @@
 
 // Modal primitive — replaces the legacy openModal/closeModal pair.
 // Consumers own the isOpen state; we only render the shell.
+//
+// UX audit 2026-08-07: previously this unmounted instantly on close with no
+// transition at all (isOpen=false -> return null, no exit animation). Now
+// the backdrop fades and the dialog fades+scales in on both open AND close —
+// `shouldRender` keeps the DOM mounted for one transition duration after
+// `isOpen` flips false so the exit actually gets to play out.
 
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+// DESIGN.md §9 — motion durations sit in the 120–220ms range app-wide.
+const TRANSITION_MS = 180;
 
 interface ModalProps {
   isOpen: boolean;
@@ -24,21 +33,39 @@ export function Modal({
   maxWidthClassName = "max-w-lg",
   children,
 }: ModalProps): JSX.Element | null {
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      // Mount first with the "hidden" state, then flip to visible on the next
+      // frame so the browser actually has something to transition from.
+      const raf = requestAnimationFrame(() => setIsVisible(true));
+      return () => cancelAnimationFrame(raf);
+    }
+    setIsVisible(false);
+    const timeout = setTimeout(() => setShouldRender(false), TRANSITION_MS);
+    return () => clearTimeout(timeout);
+  }, [isOpen]);
+
   // Close on Escape.
   useEffect(() => {
-    if (!isOpen) return;
+    if (!shouldRender) return;
     const handleEscape = (keyboardEvent: KeyboardEvent) => {
       if (keyboardEvent.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [isOpen, onClose]);
+  }, [shouldRender, onClose]);
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+      className={`fixed inset-0 z-[80] flex items-end justify-center bg-black/50 p-0 transition-opacity duration-[180ms] ease-out motion-reduce:transition-none sm:items-center sm:p-4 ${
+        isVisible ? "opacity-100" : "opacity-0"
+      }`}
       onClick={(clickEvent) => {
         // Close when clicking the backdrop, not the inner card.
         if (clickEvent.target === clickEvent.currentTarget) onClose();
@@ -47,7 +74,9 @@ export function Modal({
       <div
         role="dialog"
         aria-modal="true"
-        className={`w-full ${maxWidthClassName} max-h-[92vh] overflow-y-auto rounded-t-2xl border border-jp-border bg-jp-surface p-5 shadow-2xl sm:rounded-2xl dark:border-jp-border-dark dark:bg-jp-surface-dark`}
+        className={`w-full ${maxWidthClassName} max-h-[92vh] overflow-y-auto rounded-t-2xl border border-jp-border bg-jp-surface p-5 shadow-2xl transition-[opacity,transform] duration-[180ms] ease-out motion-reduce:transition-none sm:rounded-2xl dark:border-jp-border-dark dark:bg-jp-surface-dark ${
+          isVisible ? "translate-y-0 scale-100 opacity-100" : "translate-y-3 scale-[0.98] opacity-0 sm:translate-y-0"
+        }`}
       >
         {(title || subtitle) && (
           <div className="mb-5 flex items-start justify-between">

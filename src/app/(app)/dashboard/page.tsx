@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { HeroCard } from "@/components/ui/HeroCard";
 import { DateFilterBar } from "@/components/ui/DateFilterBar";
 import { createDefaultDateFilter, toApiQueryParams } from "@/lib/utils/dateFilter";
-import { formatDateTimeShort, formatRupiah } from "@/lib/utils/formatters";
+import { formatDateTimeShort, formatRupiah, formatRupiahCompact } from "@/lib/utils/formatters";
 import type { DashboardStats, DashboardTrend, DashboardTrendPoint } from "@/lib/types";
 
 const DashboardTrendChart = dynamic(
@@ -120,8 +120,8 @@ export default function DashboardPage(): JSX.Element {
             <div className="lg:col-span-2">
               <HeroCard
                 label="Total Omzet"
-                value={formatRupiah(totalOmzet)}
-                description="Omzet transaksi pada periode yang dipilih"
+                value={formatRupiahCompact(totalOmzet)}
+                description={`${formatRupiah(totalOmzet)} pada periode yang dipilih`}
                 mono
                 footer={
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -135,7 +135,7 @@ export default function DashboardPage(): JSX.Element {
                     </div>
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.14em] text-jp-muted dark:text-jp-muted-dark">Gross Profit</p>
-                      <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-jp-text dark:text-jp-text-dark">{formatRupiah(dashboardStats.keuangan.total_profit)}</p>
+                      <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-jp-text dark:text-jp-text-dark" title={formatRupiah(dashboardStats.keuangan.total_profit)}>{formatRupiahCompact(dashboardStats.keuangan.total_profit)}</p>
                     </div>
                   </div>
                 }

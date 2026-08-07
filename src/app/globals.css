@@ -212,4 +212,17 @@
   * {
     -webkit-tap-highlight-color: transparent;
   }
+
+  /*
+   * UX audit 2026-08-07 — `.font-mono` and `.tabular-nums` mark exactly the
+   * atomic values (ID/kode, tanggal, nominal) that must read as one token.
+   * Table cells default to width:100% + wrap; on narrow viewports that
+   * squeezes these into unreadable vertical letter-stacks (e.g. "JYP-AI-
+   * BN-001" wrapping to one character per line) instead of the intended
+   * horizontal scroll on `.table-wrap`/`overflow-x-auto`. Forcing nowrap
+   * here fixes every table at once instead of patching each page.
+   */
+  .font-mono, .tabular-nums {
+    white-space: nowrap;
+  }
 }

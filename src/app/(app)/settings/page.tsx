@@ -15,6 +15,7 @@ import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LabelledInput } from "@/components/ui/InputField";
 import { ImageUploader } from "@/components/ui/ImageUploader";
+import { NOT_SET } from "@/lib/utils/formatters";
 import type { AuthenticatedUser, UploadedImage } from "@/lib/types";
 
 export default function SettingsPage(): JSX.Element {
@@ -75,7 +76,7 @@ export default function SettingsPage(): JSX.Element {
           <div>
             <p className="label">Cabang</p>
             <div className="rounded-jp-sm bg-jp-surface-subtle px-3 py-2 text-sm font-medium dark:bg-jp-surface-subtle-dark">
-              {profileFromServer.cabang || "-"}
+              {profileFromServer.cabang || NOT_SET}
             </div>
           </div>
           <LabelledInput label="Username" value={profileFromServer.username} readOnly />

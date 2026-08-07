@@ -3,6 +3,9 @@
 // Rules for this file: no React imports, no browser APIs, no state — every
 // function here is pure and unit-testable in isolation.
 
+/** Shared "no value" label — use instead of a bare "-"/"—" wherever a field is genuinely unset. */
+export const NOT_SET = "Tidak ada data";
+
 /** Formats a number as an Indonesian rupiah value (e.g. `Rp 1.500.000`). */
 export function formatRupiah(amount: number | null | undefined): string {
   const safeAmount = Number(amount ?? 0);

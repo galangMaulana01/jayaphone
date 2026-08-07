@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { navigationByRole } from "@/lib/config/nav";
 import { useAuth } from "@/contexts/AuthContext";
 import { Icon } from "@/lib/icons";
+import { NOT_SET } from "@/lib/utils/formatters";
 import { UserAvatar } from "./UserAvatar";
 
 interface SidebarProps {
@@ -30,7 +31,7 @@ export function Sidebar({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarPr
         <div className="flex min-w-0 items-center gap-3">
           <div className="min-w-0">
             <p className="text-[11px] font-medium text-jp-muted dark:text-jp-muted-dark">Cabang aktif</p>
-            <p className="truncate text-sm font-semibold tracking-[-0.01em]">{currentUser.cabang || "-"}</p>
+            <p className="truncate text-sm font-semibold tracking-[-0.01em]">{currentUser.cabang || NOT_SET}</p>
           </div>
         </div>
         {onCloseMobileDrawer ? (

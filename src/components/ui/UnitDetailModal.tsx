@@ -11,15 +11,13 @@ import type { ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Modal } from "@/components/ui/Modal";
 import { UnitStatusBadge } from "@/components/ui/Badge";
-import { formatRupiah } from "@/lib/utils/formatters";
+import { formatRupiah, NOT_SET } from "@/lib/utils/formatters";
 import type { Unit } from "@/lib/types";
 
 interface UnitDetailModalProps {
   unit: Unit | null;
   onClose: () => void;
 }
-
-const NOT_SET = "Tidak ada data";
 
 /** Backend leaves optional spec fields as a literal "-" sentinel when not filled in — show a real label instead of a bare dash. */
 function displayOrEmpty(value?: string | null): string {
@@ -79,7 +77,7 @@ export function UnitDetailModal({ unit, onClose }: UnitDetailModalProps): JSX.El
               <InfoTile label="Speaker" value={displayOrEmpty(unit.speaker)} />
               <InfoTile label="LCD" value={displayOrEmpty(unit.lcd)} />
               <InfoTile label="Battery" value={`${unit.battery}%`} />
-              <InfoTile label="Battery Health" value={unit.battery_health ? `${unit.battery_health}%` : "—"} />
+              <InfoTile label="Battery Health" value={unit.battery_health ? `${unit.battery_health}%` : NOT_SET} />
             </div>
           </div>
 

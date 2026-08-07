@@ -30,6 +30,7 @@ export function KaryawanStatsChart({ trend, isKasir }: KaryawanStatsChartProps):
       backgroundColor: accentColor,
       borderWidth: 0,
       borderRadius: 4,
+      maxBarThickness: 40,
     }],
   }), [accentColor, isKasir, trend]);
 

@@ -29,6 +29,7 @@ export function InfluencerTrendChart({ points }: InfluencerTrendChartProps): JSX
       data: points.map((point) => point.views),
       backgroundColor: currentTheme === "dark" ? "#5FC9BE" : "#0B6F68",
       borderRadius: 4,
+      maxBarThickness: 48,
     }],
   }), [currentTheme, points]);
 

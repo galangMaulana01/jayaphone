@@ -24,13 +24,10 @@ export function Sidebar({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarPr
       <div className="flex h-[72px] items-center justify-between border-b border-jp-border px-4 dark:border-jp-border-dark">
         {/*
          * Ini web pribadi — user sudah tahu app-nya apa, jadi kita drop
-         * label "Jayaphone" dari header sidebar. Sisakan hanya ikon +
+         * label "Jayaphone" dari header sidebar. Sisakan hanya
          * identitas cabang yang benar-benar informatif per session.
          */}
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center text-jp-teal dark:text-jp-teal-dark">
-            <Icon name="smartphoneSvg" className="h-[18px] w-[18px]" />
-          </div>
           <div className="min-w-0">
             <p className="text-[11px] font-medium text-jp-muted dark:text-jp-muted-dark">Cabang aktif</p>
             <p className="truncate text-sm font-semibold tracking-[-0.01em]">{currentUser.cabang || "-"}</p>

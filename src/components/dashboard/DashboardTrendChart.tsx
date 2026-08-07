@@ -76,7 +76,13 @@ export function DashboardTrendChart({ points }: DashboardTrendChartProps): JSX.E
     };
   }, [currentTheme]);
 
-  if (points.length === 0) {
+  // UX-002 (UX_REVIEW_2026-08-07.md) — when every point is 0 (a branch/period
+  // with no sales), Chart.js's beginAtZero auto-scale picks a 0-1 range and
+  // the y-axis ticks come out as fractional Rupiah ("Rp 0,1", "Rp 0,2"...).
+  // Treat all-zero the same as no-data: same empty state the rest of the
+  // dashboard already uses for a quiet period, instead of a broken-looking axis.
+  const hasSales = points.some((point) => point.omzet > 0);
+  if (points.length === 0 || !hasSales) {
     return <EmptyState message="Belum ada transaksi pada periode ini" iconName="chartSvg" />;
   }
 

@@ -72,7 +72,7 @@ export function UnitDetailModal({ unit, onClose }: UnitDetailModalProps): JSX.El
               <InfoTile label="Speaker" value={unit.speaker || "-"} />
               <InfoTile label="LCD" value={unit.lcd || "-"} />
               <InfoTile label="Battery" value={`${unit.battery}%`} />
-              <InfoTile label="Battery Health" value={`${unit.battery_health || 0}%`} />
+              <InfoTile label="Battery Health" value={unit.battery_health ? `${unit.battery_health}%` : "—"} />
             </div>
           </div>
 

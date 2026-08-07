@@ -136,7 +136,7 @@ export default function KaryawanPage(): JSX.Element {
                 <p className="flex justify-between"><span className="text-jp-muted dark:text-jp-muted-dark">Gaji</span><span>Rp {(k.gaji || 0).toLocaleString("id-ID")}</span></p>
               </div>
               {(k.jabatan === "Kasir" || k.jabatan === "Teknisi") && <button className="btn-ghost mt-4 w-full" type="button" onClick={() => openStats(k)}>Detail Statistik</button>}
-              {user?.role === "owner" && k.aktif && (
+              {user?.role === "owner" && k.aktif && k.username !== user.username && (
                 <div className="mt-4 flex gap-2">
                   <button className="btn-ghost flex-1" type="button" onClick={() => { setSelected(k); setPassword(""); }}>Reset PW</button>
                   <button className="btn-error flex-1" type="button" onClick={() => void fire(k)}>Pecat</button>

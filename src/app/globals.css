@@ -126,6 +126,22 @@
            dark:border-jp-border-dark dark:hover:bg-jp-surface-subtle-dark/60;
   }
 
+  /*
+   * UX-001 (UX_REVIEW_2026-08-07.md) — the rightmost column of every data
+   * table is its primary action (Detail/Approve/Accept/...). On narrow
+   * viewports the table scrolls horizontally but nothing signals that, so
+   * the one button a user actually needs is the hardest thing to reach.
+   * Pinning that column to the right edge (with its own opaque background,
+   * since `position: sticky` needs one to occlude scrolled-past cells) plus
+   * a left-edge shadow keeps the action reachable and hints "more → here".
+   */
+  .tbl-action-col {
+    @apply relative sticky right-0 z-10 bg-jp-surface dark:bg-jp-surface-dark
+           before:pointer-events-none before:absolute before:inset-y-0 before:-left-4 before:w-4
+           before:bg-gradient-to-r before:from-transparent before:to-jp-surface before:content-['']
+           dark:before:to-jp-surface-dark;
+  }
+
   .svc-card {
     @apply rounded-2xl border border-jp-border bg-jp-surface p-4
            dark:border-jp-border-dark dark:bg-jp-surface-dark;

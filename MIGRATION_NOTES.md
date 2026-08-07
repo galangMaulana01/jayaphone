@@ -2,6 +2,57 @@
 
 Generated: 2026-08-02 (migration commit)
 
+> **Update 2026-08-07 — structure refactor to Next.js App Router conventions.**
+> Everything below "Directory layout" through "Stubbed pages" describes the
+> *original scaffold*, from the day the migration started — every page listed
+> as "stubbed" is long since fully built out (see `LEGACY_GAP_ANALYSIS.md` and
+> `fixedlogic.md` for what happened since). Kept here as history, not as the
+> current map. For the folder-structure convention actually in force today,
+> read this section instead.
+>
+> **Current directory layout:**
+> ```
+> src/
+> ├── app/
+> │   ├── (app)/<route>/page.tsx        one page per route (App Router)
+> │   └── (app)/<route>/_components/    components used by ONLY that route
+> │                                     (Next.js private-folder convention —
+> │                                      the underscore prefix opts a folder
+> │                                      out of routing). e.g. dashboard's
+> │                                      DashboardTrendChart lives at
+> │                                      app/(app)/dashboard/_components/.
+> ├── components/ui/                    genuinely reusable primitives — used
+> │                                     by 2+ routes, OR designed to be
+> │                                     (HeroCard, PhotoGallery), even if only
+> │                                     one call site exists today.
+> ├── components/layout/                Sidebar, AppHeader, UserAvatar, etc.
+> ├── hooks/                            shared React hooks. useApiList.ts
+> │                                     collapses the items/loading/error +
+> │                                     fetch-on-mount boilerplate that used
+> │                                     to be hand-written on every list page:
+> │                                       const { items, loading, error, reload } =
+> │                                         useApiList(() => Api.x.list(params).then(r => r.data ?? []),
+> │                                                    [params], "Gagal memuat x");
+> │                                     Pass an optional 4th arg (onError) if
+> │                                     the page also needs to toast the error,
+> │                                     not just render <ErrorState>.
+> ├── contexts/                        AuthContext, ThemeContext, ToastContext
+> └── lib/                             api client, config, icons, types, utils
+> ```
+> **Rule of thumb for new components:** does it belong to exactly one route,
+> and is it not meant to be reused? → colocate in that route's `_components/`.
+> Otherwise → `components/ui/`. Don't create a `components/<domain>/` folder
+> for a single-page component; that pattern was removed in the 2026-08-07
+> structure pass (see git history for `DashboardTrendChart`, `KaryawanStatsChart`,
+> `InfluencerTrendChart`).
+>
+> **Rule of thumb for new list pages:** if your page fetches ONE array and
+> renders items/loading/error, use `useApiList`. If it combines multiple
+> parallel fetches (`Promise.all`/`allSettled`) into one loading state, or
+> fetches a single stats object rather than a list, `useApiList` doesn't fit
+> — `dashboard`, `laporan`, `influencer-dashboard`, and `influencer-monitor`
+> are the intentional exceptions; don't force them into the hook.
+
 ## TL;DR
 
 The old `index.html` + `main.js` + `svg.js` frontend is now scaffolded as a

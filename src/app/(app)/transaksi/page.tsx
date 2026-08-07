@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Api, ApiError } from "@/lib/api";
+import { useEffect, useMemo, useState } from "react";
+import { Api } from "@/lib/api";
 import { DateFilterBar } from "@/components/ui/DateFilterBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -9,6 +9,7 @@ import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { useApiList } from "@/hooks/useApiList";
 import { createDefaultDateFilter, toApiQueryParams } from "@/lib/utils/dateFilter";
 import { formatDateTimeShort, formatRupiah } from "@/lib/utils/formatters";
 import { printTransactionReceipt } from "@/lib/utils/receipt";
@@ -20,20 +21,15 @@ export default function TransaksiPage(): JSX.Element {
   const [filter, setFilter] = useState(createDefaultDateFilter);
   const [branch, setBranch] = useState("");
   const [branches, setBranches] = useState<Cabang[]>([]);
-  const [items, setItems] = useState<Transaksi[]>([]);
   const [selected, setSelected] = useState<Transaksi | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const params = useMemo(() => ({ ...toApiQueryParams(filter), ...(branch ? { cabang: branch } : {}) }), [filter, branch]);
 
-  const load = useCallback(async () => {
-    setLoading(true); setError("");
-    try { setItems((await Api.transaksi.list(params)).data ?? []); }
-    catch (reason) { setError(reason instanceof ApiError ? reason.message : "Gagal memuat transaksi"); }
-    finally { setLoading(false); }
-  }, [params]);
+  const { items, loading, error, reload: load } = useApiList<Transaksi>(
+    () => Api.transaksi.list(params).then((r) => r.data ?? []),
+    [params],
+    "Gagal memuat transaksi",
+  );
 
-  useEffect(() => { void load(); }, [load]);
   useEffect(() => { if (user?.role === "owner") void Api.cabang.list().then((r) => setBranches(r.data ?? [])).catch(() => undefined); }, [user?.role]);
 
   const totalProfit = items.reduce((sum, item) => sum + (item.profit || 0), 0);

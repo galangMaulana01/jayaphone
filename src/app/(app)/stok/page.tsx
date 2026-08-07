@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Api, ApiError } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { Api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -11,6 +11,7 @@ import { UnitStatusBadge } from "@/components/ui/Badge";
 import { UnitDetailModal } from "@/components/ui/UnitDetailModal";
 import { CabangFilter } from "@/components/ui/CabangFilter";
 import { useToast } from "@/contexts/ToastContext";
+import { useApiList } from "@/hooks/useApiList";
 import { formatRupiah, getStockAgeInfo, type StockAgeTone } from "@/lib/utils/formatters";
 import type { Unit } from "@/lib/types";
 
@@ -35,31 +36,24 @@ export default function StokPage(): JSX.Element {
   const [selectedCabangFilter, setSelectedCabangFilter] = useState("");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
   const [searchInputValue, setSearchInputValue] = useState("");
-  const [unitList, setUnitList] = useState<Unit[]>([]);
-  const [isFetching, setIsFetching] = useState(true);
-  const [fetchErrorMessage, setFetchErrorMessage] = useState("");
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
 
   const isOwner = currentUser?.role === "owner";
   const isKepalaCabang = currentUser?.role === "kepala_cabang";
 
-  const loadUnits = useCallback(async (): Promise<void> => {
-    setIsFetching(true);
-    setFetchErrorMessage("");
-    try {
-      const response = await Api.units.list({
-        cabang: isOwner && selectedCabangFilter ? selectedCabangFilter : undefined,
-        status: selectedStatusFilter || undefined,
-      });
-      setUnitList(response.data);
-    } catch (loadError) {
-      setFetchErrorMessage(loadError instanceof ApiError ? loadError.message : "Gagal memuat daftar unit");
-    } finally {
-      setIsFetching(false);
-    }
-  }, [isOwner, selectedCabangFilter, selectedStatusFilter]);
-
-  useEffect(() => { void loadUnits(); }, [loadUnits]);
+  const {
+    items: unitList,
+    loading: isFetching,
+    error: fetchErrorMessage,
+    reload: loadUnits,
+  } = useApiList<Unit>(
+    () => Api.units.list({
+      cabang: isOwner && selectedCabangFilter ? selectedCabangFilter : undefined,
+      status: selectedStatusFilter || undefined,
+    }).then((response) => response.data),
+    [isOwner, selectedCabangFilter, selectedStatusFilter],
+    "Gagal memuat daftar unit",
+  );
 
   const displayedUnits = useMemo(() => {
     const query = searchInputValue.trim().toLowerCase();

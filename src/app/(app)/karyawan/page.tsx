@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Api, ApiError } from "@/lib/api";
+import { useState } from "react";
+import { Api } from "@/lib/api";
 import type { Karyawan, KaryawanStats } from "@/lib/types";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -11,6 +11,7 @@ import { LabelledInput, LabelledSelect } from "@/components/ui/InputField";
 import { KaryawanStatsChart } from "./_components/KaryawanStatsChart";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { useApiList } from "@/hooks/useApiList";
 
 type StatsPreset = "7d" | "30d" | "90d" | "1y" | "custom";
 interface StatsFilter { preset: StatsPreset; start: string | null; end: string | null; }
@@ -27,7 +28,6 @@ const DEFAULT_STATS_FILTER: StatsFilter = { preset: "30d", start: null, end: nul
 export default function KaryawanPage(): JSX.Element {
   const { user } = useAuth();
   const { showToast } = useToast();
-  const [items, setItems] = useState<Karyawan[]>([]);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Karyawan | null>(null);
   const [statsEmployee, setStatsEmployee] = useState<Karyawan | null>(null);
@@ -39,16 +39,12 @@ export default function KaryawanPage(): JSX.Element {
   const [customTo, setCustomTo] = useState("");
   const [password, setPassword] = useState("");
   const [form, setForm] = useState({ nama: "", username: "", jabatan: "Kasir", cabang: user?.cabang || "", gaji: "", password: "" });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try { setItems((await Api.karyawan.list(user?.role === "owner" ? {} : { cabang: user?.cabang })).data || []); }
-    catch (e) { setError(e instanceof ApiError ? e.message : "Gagal memuat karyawan"); }
-    finally { setLoading(false); }
-  }, [user]);
-  useEffect(() => { void load(); }, [load]);
+  const { items, loading, error, reload: load } = useApiList<Karyawan>(
+    () => Api.karyawan.list(user?.role === "owner" ? {} : { cabang: user?.cabang }).then((r) => r.data || []),
+    [user],
+    "Gagal memuat karyawan",
+  );
 
   const create = async () => {
     if (!form.nama || !form.username || !form.password) { showToast("Nama, username, dan password wajib diisi", "error"); return; }

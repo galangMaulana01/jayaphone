@@ -9,6 +9,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { UnitStatusBadge } from "@/components/ui/Badge";
 import { UnitDetailModal } from "@/components/ui/UnitDetailModal";
+import { CabangFilter } from "@/components/ui/CabangFilter";
 import { useToast } from "@/contexts/ToastContext";
 import { formatRupiah } from "@/lib/utils/formatters";
 import type { Unit } from "@/lib/types";
@@ -85,6 +86,7 @@ export default function StokPage(): JSX.Element {
         <select value={selectedStatusFilter} onChange={(event) => setSelectedStatusFilter(event.target.value)} className="min-h-11 rounded-xl border border-jp-border bg-jp-surface-subtle px-3 text-sm text-jp-text outline-none focus:border-jp-teal dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark">
           {STATUS_FILTER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
+        {isOwner ? <CabangFilter value={selectedCabangFilter} onChange={setSelectedCabangFilter} label="" className="min-w-[180px]" /> : null}
       </section>
 
       {isFetching ? <LoadingSkeleton numberOfRows={5} /> : fetchErrorMessage ? <ErrorState message={fetchErrorMessage} onRetry={loadUnits} /> : displayedUnits.length === 0 ? <EmptyState message="Belum ada unit sesuai filter" iconName="packageSvg" /> : (

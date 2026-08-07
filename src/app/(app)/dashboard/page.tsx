@@ -8,6 +8,7 @@ import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HeroCard } from "@/components/ui/HeroCard";
+import { CabangFilter } from "@/components/ui/CabangFilter";
 import { DateFilterBar } from "@/components/ui/DateFilterBar";
 import { createDefaultDateFilter, toApiQueryParams } from "@/lib/utils/dateFilter";
 import { formatDateTimeShort, formatRupiah, formatRupiahCompact } from "@/lib/utils/formatters";
@@ -59,8 +60,13 @@ export default function DashboardPage(): JSX.Element {
   const [dashboardTrend, setDashboardTrend] = useState<DashboardTrendPoint[] | null>(null);
   const [isFetching, setIsFetching] = useState<boolean>(true);
   const [fetchErrorMessage, setFetchErrorMessage] = useState<string>("");
+  const [selectedCabangFilter, setSelectedCabangFilter] = useState<string>("");
 
-  const filterQueryParams = useMemo(() => toApiQueryParams(dateFilterState), [dateFilterState]);
+  const isOwner = currentUser?.role === "owner";
+  const filterQueryParams = useMemo(
+    () => ({ ...toApiQueryParams(dateFilterState), cabang: isOwner && selectedCabangFilter ? selectedCabangFilter : undefined }),
+    [dateFilterState, isOwner, selectedCabangFilter],
+  );
 
   const loadDashboardData = useCallback(async (): Promise<void> => {
     setIsFetching(true);
@@ -100,8 +106,9 @@ export default function DashboardPage(): JSX.Element {
           <h1 className="text-3xl font-semibold tracking-[-0.03em] text-jp-text dark:text-jp-text-dark">Dashboard</h1>
           <p className="mt-2 text-sm text-jp-muted dark:text-jp-muted-dark">Kondisi operasional Jayaphone pada periode yang dipilih{cabangSuffix}.</p>
         </div>
-        <div className="self-start lg:self-auto">
+        <div className="flex flex-col gap-2 self-start sm:flex-row sm:items-start lg:self-auto">
           <DateFilterBar currentFilterState={dateFilterState} onFilterStateChange={setDateFilterState} />
+          {isOwner ? <CabangFilter value={selectedCabangFilter} onChange={setSelectedCabangFilter} label="" className="min-w-[180px]" /> : null}
         </div>
       </header>
 

@@ -135,6 +135,15 @@ Legenda status:
 
 ---
 
+## ⚠️ Temuan tambahan (bukan gap frontend, ditemukan saat implementasi GAP-008)
+
+**Backend `create_transaksi` membuang `poin_dipakai` — redeem poin tidak pernah benar-benar diterapkan.**
+- **File**: `app/services/transaksi_service.py:150` (dan cabang guest di baris 206).
+- **Bukti**: fungsi menerima parameter `poin_dipakai: int = 0` dari route (`app/routes/transaksi.py:37` benar mengoper `body.poin_dipakai`), tapi baris 150 langsung menimpanya dengan `poin_dipakai = 0` sebelum dipakai di logic diskon (baris 176 dst). Akibatnya `diskon_poin` tidak pernah dihitung, `harga_jual_final` selalu sama dengan `harga_jual_base`, dan poin customer tidak pernah didebit walau kasir mengisi field "Pakai Poin" dan submit berhasil.
+- **Dampak**: fitur redeem poin yang sudah lengkap di frontend (validasi Verified, batas maksimum, breakdown diskon di Ringkasan) **tidak berpengaruh ke transaksi yang benar-benar tersimpan** — customer tidak kehilangan poin, tapi mereka juga tidak mendapat potongan harga sungguhan meski UI menampilkan seolah-olah dapat.
+- **Bukan bagian dari GAP-001..012** karena ini murni bug backend (`/home/user/phonejaya` bersifat read-only reference untuk sesi ini, tidak boleh diubah) — dicatat di sini supaya tidak hilang, dan preview "Estimasi Poin Didapat" (GAP-008) sengaja dibuat mengikuti rumus yang SEHARUSNYA berjalan (total setelah diskon), bukan meniru bug ini, karena tetap harus konsisten dengan breakdown "Diskon Poin"/"Total" yang sudah ada di Ringkasan sebelum sesi ini.
+- **Rencana**: perlu di-fix di repo backend (`phonejaya`) oleh tim yang berwenang — bukan tugas sesi QA frontend ini.
+
 ## Catatan implementasi
 
 - Semua item di atas HARUS diverifikasi ulang terhadap kontrak backend sebelum dikerjakan (jangan asumsikan field API tersedia hanya karena ada di legacy — beberapa kemungkinan sudah berubah di backend selama migrasi).

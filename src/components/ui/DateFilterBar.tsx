@@ -38,18 +38,18 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
 
   return (
     <>
-      <div className="flex flex-wrap gap-1 rounded-xl border border-jp-border bg-jp-surface-subtle p-1.5 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark">
+      <div className="segmented-control">
         {presetOptions.map((option) => {
           const isActive = currentFilterState.preset === option.key;
           const buttonClassName = isActive
-            ? "bg-jp-surface text-jp-text dark:bg-jp-surface-dark dark:text-jp-text-dark"
+            ? "bg-jp-text text-white dark:bg-jp-text-dark dark:text-jp-text"
             : "text-jp-muted hover:text-jp-text dark:text-jp-muted-dark dark:hover:text-jp-text-dark";
           return (
             <button
               key={option.key}
               type="button"
               onClick={() => handlePresetClick(option.key)}
-              className={"min-h-9 rounded-lg px-3 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-jp-teal/50 " + buttonClassName}
+              className={"min-h-9 rounded-full px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal " + buttonClassName}
             >
               {option.label}
             </button>
@@ -58,9 +58,9 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
         <button
           type="button"
           onClick={() => setIsCustomModalOpen(true)}
-          className={"min-h-9 rounded-lg px-3 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-jp-teal/50 " + (
+          className={"min-h-9 rounded-full px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal " + (
             currentFilterState.preset === "custom"
-              ? "bg-jp-surface text-jp-text dark:bg-jp-surface-dark dark:text-jp-text-dark"
+              ? "bg-jp-text text-white dark:bg-jp-text-dark dark:text-jp-text"
               : "text-jp-muted hover:text-jp-text dark:text-jp-muted-dark dark:hover:text-jp-text-dark"
           )}
         >
@@ -77,7 +77,7 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
               type="date"
               value={draftStartDate}
               onChange={(inputEvent) => setDraftStartDate(inputEvent.target.value)}
-              className="w-full rounded-xl border border-jp-border bg-jp-surface-subtle p-2.5 text-jp-text outline-none focus:border-jp-teal focus:ring-2 focus:ring-jp-teal/20 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark"
+              className="field-control"
             />
           </div>
           <div>
@@ -87,12 +87,12 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
               type="date"
               value={draftEndDate}
               onChange={(inputEvent) => setDraftEndDate(inputEvent.target.value)}
-              className="w-full rounded-xl border border-jp-border bg-jp-surface-subtle p-2.5 text-jp-text outline-none focus:border-jp-teal focus:ring-2 focus:ring-jp-teal/20 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark"
+              className="field-control"
             />
           </div>
         </div>
         {draftStartDate && draftEndDate && draftStartDate > draftEndDate ? <p className="text-xs text-jp-danger">Tanggal mulai harus sebelum tanggal akhir.</p> : null}
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
           <button type="button" onClick={() => setIsCustomModalOpen(false)} className="btn-ghost flex-1">Batal</button>
           <button type="button" onClick={handleApplyCustom} className="btn-primary flex-1" disabled={!draftStartDate || !draftEndDate || draftStartDate > draftEndDate}>Terapkan Filter</button>
         </div>

@@ -63,7 +63,7 @@ export function Modal({
 
   return (
     <div
-      className={`fixed inset-0 z-[80] flex items-end justify-center bg-black/50 p-0 transition-opacity duration-[180ms] ease-out motion-reduce:transition-none sm:items-center sm:p-4 ${
+      className={`fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-0 transition-opacity duration-[180ms] ease-out motion-reduce:transition-none sm:items-center sm:p-4 ${
         isVisible ? "opacity-100" : "opacity-0"
       }`}
       onClick={(clickEvent) => {
@@ -74,7 +74,7 @@ export function Modal({
       <div
         role="dialog"
         aria-modal="true"
-        className={`w-full ${maxWidthClassName} max-h-[92vh] overflow-y-auto rounded-t-2xl border border-jp-border bg-jp-surface p-5 shadow-2xl transition-[opacity,transform] duration-[180ms] ease-out motion-reduce:transition-none sm:rounded-2xl dark:border-jp-border-dark dark:bg-jp-surface-dark ${
+        className={`w-full ${maxWidthClassName} max-h-[92vh] overflow-y-auto rounded-t-jp-lg border border-jp-border bg-jp-surface p-5 shadow-jp-modal transition-[opacity,transform] duration-[180ms] ease-out motion-reduce:transition-none sm:rounded-jp-lg sm:p-6 dark:border-jp-border-dark dark:bg-jp-surface-dark ${
           isVisible ? "translate-y-0 scale-100 opacity-100" : "translate-y-3 scale-[0.98] opacity-0 sm:translate-y-0"
         }`}
       >
@@ -82,7 +82,7 @@ export function Modal({
           <div className="mb-5 flex items-start justify-between">
             <div>
               {title && (
-                <h3 className="text-sm font-semibold tracking-tight text-jp-text dark:text-jp-text-dark">
+                <h3 className="text-lg font-semibold tracking-[-0.015em] text-jp-text dark:text-jp-text-dark">
                   {title}
                 </h3>
               )}
@@ -93,7 +93,7 @@ export function Modal({
             <button
               type="button"
               onClick={onClose}
-              className="-mr-1 -mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-jp-muted transition-colors hover:bg-jp-surface-subtle dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
+              className="-mr-1 -mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-jp-sm text-jp-muted transition-colors hover:bg-jp-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
               aria-label="Tutup modal"
             >
               <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

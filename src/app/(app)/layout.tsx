@@ -31,7 +31,7 @@ export default function AuthenticatedAppLayout({ children }: { children: ReactNo
 
   if (authStatus === "restoring" || !currentUser) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-jp-app p-8 dark:bg-jp-app-dark">
+      <div className="flex min-h-screen items-center justify-center bg-jp-app p-6 dark:bg-jp-app-dark">
         <div className="w-full max-w-md">
           <LoadingSkeleton numberOfRows={6} />
         </div>
@@ -44,7 +44,7 @@ export default function AuthenticatedAppLayout({ children }: { children: ReactNo
 
   return (
     <div className="flex min-h-screen bg-jp-app dark:bg-jp-app-dark">
-      <aside className="sticky top-0 hidden h-screen w-[260px] shrink-0 border-r border-jp-border md:flex md:flex-col dark:border-jp-border-dark">
+      <aside className="sticky top-0 hidden h-screen w-[232px] shrink-0 border-r border-jp-border md:flex md:flex-col dark:border-jp-border-dark">
         <Sidebar />
       </aside>
 
@@ -52,11 +52,11 @@ export default function AuthenticatedAppLayout({ children }: { children: ReactNo
         <>
           <button
             type="button"
-            className="fixed inset-0 z-40 bg-black/20 md:hidden"
+            className="fixed inset-0 z-40 bg-black/40 md:hidden"
             onClick={() => setIsMobileSidebarOpen(false)}
             aria-label="Tutup menu"
           />
-          <aside id="mobile-navigation" role="dialog" aria-modal="true" aria-label="Navigasi mobile" className="fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col border-r border-jp-border bg-jp-surface md:hidden dark:border-jp-border-dark dark:bg-jp-surface-dark">
+          <aside id="mobile-navigation" role="dialog" aria-modal="true" aria-label="Navigasi mobile" className="fixed inset-y-0 left-0 z-50 flex w-[min(86vw,320px)] flex-col border-r border-jp-border bg-jp-surface shadow-jp-overlay md:hidden dark:border-jp-border-dark dark:bg-jp-surface-dark">
             <Sidebar
               onNavigateFromMobile={() => setIsMobileSidebarOpen(false)}
               onCloseMobileDrawer={() => setIsMobileSidebarOpen(false)}
@@ -70,7 +70,7 @@ export default function AuthenticatedAppLayout({ children }: { children: ReactNo
           onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
           isMobileSidebarOpen={isMobileSidebarOpen}
         />
-        <main className="flex-1 animate-fade-up p-4 sm:p-6 md:p-8">
+        <main className="mx-auto w-full max-w-[1440px] flex-1 animate-fade-up p-4 sm:p-6 md:px-8 md:py-10">
           {isCurrentPageAllowed ? (
             children
           ) : (

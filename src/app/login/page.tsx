@@ -65,20 +65,20 @@ export default function LoginPage(): JSX.Element {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-jp-app p-4 dark:bg-jp-app-dark">
-      {/* v2 §1.1 — kesan pertama: shell netral, satu hero card gradient, kontennya panel flat di atasnya. */}
+    <div className="flex min-h-screen items-center justify-center bg-jp-app p-4 sm:p-6 dark:bg-jp-app-dark">
+      {/* Satu blok solid memberi fokus; form tetap tenang dan terang. */}
       <div className="relative w-full max-w-sm">
         <div className="hero-card mb-4 text-center">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-jp-text text-jp-surface shadow-sm dark:bg-jp-text-dark dark:text-jp-surface-dark">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-jp-sm bg-white text-jp-text dark:bg-jp-text-dark dark:text-jp-text">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               <rect x="6" y="3" width="12" height="18" rx="2" />
               <line x1="12" y1="17" x2="12" y2="17" />
             </svg>
           </div>
-          <h1 className="mt-3 text-lg font-semibold tracking-tight text-jp-text dark:text-jp-text-dark">Jayaphone</h1>
-          <p className="mt-1 text-xs text-jp-muted dark:text-jp-muted-dark">Masuk untuk melanjutkan</p>
+          <h1 className="mt-3 text-xl font-semibold tracking-[-0.02em] text-white dark:text-jp-text-dark">Jayaphone</h1>
+          <p className="mt-1 text-xs text-white/60 dark:text-jp-muted-dark">Masuk untuk melanjutkan</p>
         </div>
-        <div className="rounded-2xl border border-jp-border bg-jp-surface p-6 shadow-sm dark:border-jp-border-dark dark:bg-jp-surface-dark">
+        <div className="rounded-jp-md border border-jp-border bg-jp-surface p-6 shadow-none dark:border-jp-border-dark dark:bg-jp-surface-dark">
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <LabelledInput

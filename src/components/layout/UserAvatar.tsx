@@ -19,7 +19,7 @@ export function UserAvatar({ fotoProfileUrl, altText, sizeClassName = "h-10 w-10
 
   if (isRemotePhotoSafe) {
     return (
-      <div className={`${sizeClassName} overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700`}>
+      <div className={`${sizeClassName} overflow-hidden rounded-jp-sm border border-jp-border bg-jp-surface-subtle dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark`}>
         <Image
           src={fotoProfileUrl as string}
           alt={altText}

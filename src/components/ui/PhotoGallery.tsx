@@ -21,7 +21,7 @@ export function PhotoGallery({ images, label }: PhotoGalleryProps): JSX.Element 
     <div className="space-y-2">
       {label && <p className="font-semibold">{label}</p>}
       <a href={activeUrl} target="_blank" rel="noreferrer">
-        <img src={activeUrl} alt={label ? `${label} — foto utama` : "Foto"} className="h-56 w-full rounded-xl object-cover" />
+        <img src={activeUrl} alt={label ? `${label} — foto utama` : "Foto"} className="h-56 w-full rounded-jp-sm bg-jp-surface-subtle object-cover dark:bg-jp-surface-subtle-dark" />
       </a>
       {images.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -30,7 +30,7 @@ export function PhotoGallery({ images, label }: PhotoGalleryProps): JSX.Element 
               key={url}
               type="button"
               onClick={() => setActiveIndex(index)}
-              className={`h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${index === activeIndex ? "border-jp-teal" : "border-transparent opacity-70 hover:opacity-100"}`}
+              className={`h-14 w-14 shrink-0 overflow-hidden rounded-jp-xs border transition-colors ${index === activeIndex ? "border-jp-teal" : "border-jp-border opacity-65 hover:opacity-100 dark:border-jp-border-dark"}`}
             >
               <img src={url} alt={`${label ? `${label} ` : ""}thumbnail ${index + 1}`} className="h-full w-full object-cover" />
             </button>

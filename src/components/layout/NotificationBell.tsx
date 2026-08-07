@@ -177,13 +177,13 @@ export function NotificationBell(): JSX.Element | null {
         type="button"
         aria-label={`Notifikasi (${unreadCount} belum dibaca)`}
         onClick={isPanelOpen ? () => setIsPanelOpen(false) : handlePanelOpen}
-        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        className="relative flex h-10 w-10 items-center justify-center rounded-jp-sm text-jp-muted transition-colors hover:bg-jp-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
       >
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute right-0.5 top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold text-white">
+          <span className="absolute right-0 top-0 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-jp-danger px-1 text-[9px] font-semibold text-white">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -191,7 +191,7 @@ export function NotificationBell(): JSX.Element | null {
 
       {isPanelOpen && (
         <div
-          className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+          className="absolute right-0 top-full z-50 mt-2 w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-jp-md border border-jp-border bg-jp-surface shadow-jp-overlay dark:border-jp-border-dark dark:bg-jp-surface-dark"
           onMouseLeave={() => setIsPanelOpen(false)}
         >
           <div className="flex items-center justify-between border-b border-divider px-4 py-2">
@@ -199,14 +199,14 @@ export function NotificationBell(): JSX.Element | null {
             <button
               type="button"
               onClick={clearAll}
-              className="text-[11px] text-zinc-400 hover:text-red-500"
+              className="text-[11px] font-medium text-jp-muted hover:text-jp-danger dark:text-jp-muted-dark dark:hover:text-jp-danger-dark"
             >
               Bersihkan
             </button>
           </div>
           <div className="max-h-80 overflow-y-auto">
             {notificationEntries.length === 0 ? (
-              <div className="px-4 py-6 text-center text-xs text-zinc-400 dark:text-zinc-600">
+              <div className="px-4 py-8 text-center text-xs text-jp-muted dark:text-jp-muted-dark">
                 Tidak ada notifikasi
               </div>
             ) : (
@@ -215,17 +215,18 @@ export function NotificationBell(): JSX.Element | null {
                   key={entry.id}
                   type="button"
                   onClick={() => handleNotificationClick(entry.targetPageKey)}
-                  className={`w-full cursor-pointer px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/60 ${
-                    entry.isRead ? "" : "bg-teal-50/60 dark:bg-teal-500/5"
+                  className={`relative w-full cursor-pointer border-t border-jp-border px-4 py-3.5 text-left transition-colors first:border-t-0 hover:bg-jp-surface-subtle dark:border-jp-border-dark dark:hover:bg-jp-surface-subtle-dark/60 ${
+                    entry.isRead ? "" : "bg-jp-teal-soft dark:bg-jp-teal-soft-dark/50"
                   }`}
                 >
-                  <p className="text-xs font-medium leading-tight text-zinc-700 dark:text-zinc-200">
+                  {!entry.isRead ? <span className="absolute inset-y-3 left-0 w-0.5 rounded-full bg-jp-teal" aria-hidden="true" /> : null}
+                  <p className="text-xs font-medium leading-snug text-jp-text dark:text-jp-text-dark">
                     {entry.title}
                   </p>
-                  <p className="mt-0.5 text-[11px] leading-tight text-zinc-400 dark:text-zinc-500">
+                  <p className="mt-1 text-[11px] leading-relaxed text-jp-muted dark:text-jp-muted-dark">
                     {entry.body}
                   </p>
-                  <p className="mt-1 text-[10px] text-zinc-300 dark:text-zinc-600">
+                  <p className="mt-1.5 text-[10px] text-jp-faint dark:text-jp-muted-dark">
                     {formatTimeSince(entry.emittedAtMillis)}
                   </p>
                 </button>

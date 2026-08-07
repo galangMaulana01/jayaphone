@@ -164,10 +164,10 @@ export function ImageUploader({
   return (
     <div id={id} className="space-y-2">
       <label className="label" htmlFor={`${id}-gallery`}>
-        {label} {required && <span className="text-red-400">*</span>}
+        {label} {required && <span className="text-jp-danger dark:text-jp-danger-dark">*</span>}
       </label>
       <div
-        className={`rounded-xl border border-dashed p-3 transition-colors ${isDragging ? "border-jp-text bg-jp-surface-subtle dark:border-jp-text-dark dark:bg-jp-surface-subtle-dark" : "border-jp-border dark:border-jp-border-dark"}`}
+        className={`rounded-jp-sm border border-dashed p-3 transition-colors ${isDragging ? "border-jp-teal bg-jp-teal-soft dark:border-jp-teal-dark dark:bg-jp-teal-soft-dark" : "border-jp-border bg-jp-surface-subtle dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark/40"}`}
         onDragOver={(event) => { event.preventDefault(); if (!disabled) setIsDragging(true); }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={(event) => { event.preventDefault(); setIsDragging(false); if (!disabled) void uploadFiles(event.dataTransfer.files); }}
@@ -181,22 +181,22 @@ export function ImageUploader({
             Ambil Foto dengan Kamera
           </button>
         </div>
-        <p className="mt-2 text-center text-[11px] text-zinc-400">atau seret dan lepas gambar di sini</p>
+        <p className="mt-2 text-center text-[11px] text-jp-muted dark:text-jp-muted-dark">atau seret dan lepas gambar di sini</p>
       </div>
 
-      {helper && <p className="text-[11px] text-zinc-400 dark:text-zinc-500">{helper}</p>}
+      {helper && <p className="text-[11px] text-jp-muted dark:text-jp-muted-dark">{helper}</p>}
       {isUploading && <div className="progress-track" aria-label={`Upload ${progress}%`}><div className="progress-fill bg-jp-text dark:bg-jp-text-dark" style={{ width: `${Math.max(progress, 10)}%` }} /></div>}
-      {error && <p role="alert" className="text-xs text-red-500">{error}</p>}
-      {camera.error && <p role="alert" className="text-xs text-red-500">{camera.error}</p>}
+      {error && <p role="alert" className="text-xs text-jp-danger dark:text-jp-danger-dark">{error}</p>}
+      {camera.error && <p role="alert" className="text-xs text-jp-danger dark:text-jp-danger-dark">{camera.error}</p>}
 
       {images.length > 0 && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {images.map((image, index) => (
-            <div key={`${image.secure_url}-${index}`} className="group relative overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
+            <div key={`${image.secure_url}-${index}`} className="group relative overflow-hidden rounded-jp-xs border border-jp-border dark:border-jp-border-dark">
               <a href={image.secure_url} target="_blank" rel="noreferrer">
                 <img src={image.secure_url} alt={`${label} ${index + 1}`} className="h-20 w-full object-cover" />
               </a>
-              <button type="button" aria-label={`Hapus foto ${index + 1}`} className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-sm text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100" onClick={() => void removeImage(index)}>
+              <button type="button" aria-label={`Hapus foto ${index + 1}`} className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-jp-xs bg-jp-danger text-sm text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100" onClick={() => void removeImage(index)}>
                 ×
               </button>
             </div>
@@ -209,7 +209,7 @@ export function ImageUploader({
           <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
             <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
           </div>
-          <div className="flex justify-center gap-3 bg-zinc-950 p-4">
+          <div className="flex justify-center gap-3 bg-jp-text p-4 dark:bg-black">
             <button type="button" className="btn-ghost text-white" onClick={stopCamera}>Batal</button>
             <button type="button" className="btn-primary px-6" onClick={capturePhoto}>Ambil Foto</button>
           </div>

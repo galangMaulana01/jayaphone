@@ -39,8 +39,8 @@ export function CabangFilter({ value, onChange, label = "Filter Cabang", classNa
   }, []);
 
   return (
-    <div className={className ?? "max-w-xs"}>
-      <LabelledSelect label={label} value={value} onChange={(e) => onChange(e.target.value)}>
+    <div className={className ?? "w-full sm:max-w-[260px]"}>
+      <LabelledSelect label={label} aria-label={typeof label === "string" && label ? label : "Filter cabang"} value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">Semua Cabang</option>
         {branches.map((cabang) => (
           <option key={cabang.kode} value={cabang.kode}>

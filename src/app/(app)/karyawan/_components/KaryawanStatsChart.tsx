@@ -20,17 +20,16 @@ interface KaryawanStatsChartProps {
  * selesai per day for Teknisi. */
 export function KaryawanStatsChart({ trend, isKasir }: KaryawanStatsChartProps): JSX.Element {
   const { currentTheme } = useTheme();
-  const accentColor = isKasir ? "#4FD1C5" : "#34D399";
+  const accentColor = currentTheme === "dark" ? "#5FC9BE" : "#0B6F68";
 
   const chartData = useMemo<ChartData<"bar">>(() => ({
     labels: trend.map((point) => point.tanggal.slice(5)),
     datasets: [{
       label: isKasir ? "Omzet" : "Service selesai",
       data: trend.map((point) => (isKasir ? point.omzet ?? 0 : point.selesai ?? 0)),
-      backgroundColor: `${accentColor}33`,
-      borderColor: accentColor,
-      borderWidth: 2,
-      borderRadius: 6,
+      backgroundColor: accentColor,
+      borderWidth: 0,
+      borderRadius: 4,
     }],
   }), [accentColor, isKasir, trend]);
 
@@ -48,6 +47,7 @@ export function KaryawanStatsChart({ trend, isKasir }: KaryawanStatsChartProps):
           backgroundColor: tooltipBackground,
           displayColors: false,
           padding: 10,
+          cornerRadius: 10,
           callbacks: { label: (context) => (isKasir ? formatRupiahCompact(Number(context.parsed.y ?? 0)) : String(context.parsed.y ?? 0)) },
         },
       },
@@ -58,7 +58,8 @@ export function KaryawanStatsChart({ trend, isKasir }: KaryawanStatsChartProps):
         },
         y: {
           beginAtZero: true,
-          grid: { color: gridColor },
+          border: { display: false },
+          grid: { color: gridColor, borderDash: [4, 4], drawTicks: false },
           ticks: { color: mutedColor, font: { size: 10 }, callback: (value) => (isKasir ? formatRupiahCompact(Number(value)) : String(value)) },
         },
       },

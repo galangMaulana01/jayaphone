@@ -27,7 +27,7 @@ export function InfluencerTrendChart({ points }: InfluencerTrendChartProps): JSX
     datasets: [{
       label: "Views",
       data: points.map((point) => point.views),
-      backgroundColor: currentTheme === "dark" ? "rgba(250, 250, 250, 0.75)" : "rgba(23, 23, 23, 0.8)",
+      backgroundColor: currentTheme === "dark" ? "#5FC9BE" : "#0B6F68",
       borderRadius: 4,
     }],
   }), [currentTheme, points]);
@@ -46,6 +46,7 @@ export function InfluencerTrendChart({ points }: InfluencerTrendChartProps): JSX
           backgroundColor: tooltipBackground,
           displayColors: false,
           padding: 10,
+          cornerRadius: 10,
           callbacks: { label: (context) => `${formatCompactNumber(Number(context.parsed.y ?? 0))} views` },
         },
       },
@@ -56,7 +57,8 @@ export function InfluencerTrendChart({ points }: InfluencerTrendChartProps): JSX
         },
         y: {
           beginAtZero: true,
-          grid: { color: gridColor },
+          border: { display: false },
+          grid: { color: gridColor, borderDash: [4, 4], drawTicks: false },
           ticks: { color: mutedColor, font: { size: 10 }, callback: (value) => formatCompactNumber(Number(value)) },
         },
       },

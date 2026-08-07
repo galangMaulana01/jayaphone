@@ -9,11 +9,11 @@ interface EmptyStateProps {
 
 export function EmptyState({ message, iconName = "emptyInboxSvg" }: EmptyStateProps): JSX.Element {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100 text-zinc-400 dark:bg-zinc-800/50 dark:text-zinc-500">
+    <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+      <div className="mb-4 flex h-10 w-10 items-center justify-center text-jp-faint dark:text-jp-muted-dark">
         <Icon name={iconName} className="h-6 w-6" />
       </div>
-      <p className="text-sm font-medium text-zinc-400 dark:text-zinc-500">{message}</p>
+      <p className="max-w-sm text-sm font-medium text-jp-muted dark:text-jp-muted-dark">{message}</p>
     </div>
   );
 }

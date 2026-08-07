@@ -3,8 +3,7 @@
 
 import type { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes, ReactNode } from "react";
 
-const sharedFieldClassName =
-  "min-h-11 w-full rounded-xl border border-jp-border bg-jp-surface-subtle px-3 py-2 text-sm text-jp-text outline-none placeholder:text-jp-muted focus:border-jp-teal focus:ring-2 focus:ring-jp-teal/20 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark dark:placeholder:text-jp-muted-dark";
+const sharedFieldClassName = "field-control";
 
 interface LabelledInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: ReactNode;

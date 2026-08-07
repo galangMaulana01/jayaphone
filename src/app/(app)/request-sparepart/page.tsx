@@ -1,6 +1,6 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
-import { Api, ApiError } from "@/lib/api";
+import { useState } from "react";
+import { Api } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -8,10 +8,11 @@ import { Modal } from "@/components/ui/Modal";
 import { LabelledInput, LabelledSelect, LabelledTextarea } from "@/components/ui/InputField";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { useApiList } from "@/hooks/useApiList";
 import type { RequestSparepart } from "@/lib/types";
 export default function RequestSparepartPage(): JSX.Element {
-  const { user } = useAuth(); const { showToast } = useToast(); const [items, setItems] = useState<RequestSparepart[]>([]); const [status, setStatus] = useState(""); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [formOpen, setFormOpen] = useState(false); const [selected, setSelected] = useState<RequestSparepart | null>(null); const [type, setType] = useState("SPAREPART"); const [name, setName] = useState(""); const [quantity, setQuantity] = useState("1"); const [serviceId, setServiceId] = useState(""); const [spId, setSpId] = useState(""); const [productLink, setProductLink] = useState(""); const [note, setNote] = useState(""); const [estimate, setEstimate] = useState("");
-  const load = useCallback(async () => { setLoading(true); setError(""); try { setItems((await Api.requestSparepart.list({ status: status || undefined })).data ?? []); } catch (e) { setError(e instanceof ApiError ? e.message : "Gagal memuat request sparepart"); } finally { setLoading(false); } }, [status]); useEffect(() => { void load(); }, [load]);
+  const { user } = useAuth(); const { showToast } = useToast(); const [status, setStatus] = useState(""); const [formOpen, setFormOpen] = useState(false); const [selected, setSelected] = useState<RequestSparepart | null>(null); const [type, setType] = useState("SPAREPART"); const [name, setName] = useState(""); const [quantity, setQuantity] = useState("1"); const [serviceId, setServiceId] = useState(""); const [spId, setSpId] = useState(""); const [productLink, setProductLink] = useState(""); const [note, setNote] = useState(""); const [estimate, setEstimate] = useState("");
+  const { items, loading, error, reload: load } = useApiList<RequestSparepart>(() => Api.requestSparepart.list({ status: status || undefined }).then((r) => r.data ?? []), [status], "Gagal memuat request sparepart");
   // Backend (app/services/request_sparepart_service.py create_request) always
   // requires service_id — it must reference a service ticket this teknisi is
   // currently handling (status Proses/Selesai, teknisi == actor) — and, when

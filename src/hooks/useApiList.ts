@@ -27,6 +27,8 @@ export function useApiList<T>(
   fetcher: () => Promise<T[]>,
   deps: DependencyList,
   fallbackErrorMessage = "Gagal memuat data",
+  /** Optional side-effect for the error message — a few pages also toast it, not just render <ErrorState>. */
+  onError?: (message: string) => void,
 ): UseApiListResult<T> {
   const [items, setItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,9 @@ export function useApiList<T>(
     try {
       setItems(await fetcher());
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : fallbackErrorMessage);
+      const message = caught instanceof ApiError ? caught.message : fallbackErrorMessage;
+      setError(message);
+      onError?.(message);
     } finally {
       setLoading(false);
     }

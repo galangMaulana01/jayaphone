@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Api, ApiError, type ServiceUpdatePayload } from "@/lib/api";
+import { useState } from "react";
+import { Api, type ServiceUpdatePayload } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -12,12 +12,12 @@ import { formatDateTimeShort } from "@/lib/utils/formatters";
 import { ServiceStatusBadge } from "@/components/ui/Badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { useApiList } from "@/hooks/useApiList";
 import type { ServiceStatus, ServiceTicket, UploadedImage } from "@/lib/types";
 
 export default function ServiceListPage(): JSX.Element {
-  const { user } = useAuth(); const { showToast } = useToast(); const [items, setItems] = useState<ServiceTicket[]>([]); const [filter, setFilter] = useState(""); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [editing, setEditing] = useState<ServiceTicket | null>(null); const [status, setStatus] = useState<ServiceStatus>("Antrian"); const [note, setNote] = useState(""); const [technician, setTechnician] = useState(""); const [estimate, setEstimate] = useState(""); const [before, setBefore] = useState<UploadedImage[]>([]); const [after, setAfter] = useState<UploadedImage[]>([]); const [saving, setSaving] = useState(false);
-  const load = useCallback(async () => { setLoading(true); setError(""); try { setItems((await Api.service.list({ limit: 50 })).data ?? []); } catch (e) { setError(e instanceof ApiError ? e.message : "Gagal memuat service"); } finally { setLoading(false); } }, []);
-  useEffect(() => { void load(); }, [load]);
+  const { user } = useAuth(); const { showToast } = useToast(); const [filter, setFilter] = useState(""); const [editing, setEditing] = useState<ServiceTicket | null>(null); const [status, setStatus] = useState<ServiceStatus>("Antrian"); const [note, setNote] = useState(""); const [technician, setTechnician] = useState(""); const [estimate, setEstimate] = useState(""); const [before, setBefore] = useState<UploadedImage[]>([]); const [after, setAfter] = useState<UploadedImage[]>([]); const [saving, setSaving] = useState(false);
+  const { items, loading, error, reload: load } = useApiList<ServiceTicket>(() => Api.service.list({ limit: 50 }).then((r) => r.data ?? []), [], "Gagal memuat service");
   const openEdit = async (id: string) => { try { const service = (await Api.service.get(id)).data; setEditing(service); setStatus(service.status); setNote(service.catatan_kerusakan || ""); setTechnician(service.teknisi || user?.name || ""); setEstimate(service.estimasi_selesai ? service.estimasi_selesai.replace(" ", "T").slice(0,16) : ""); setBefore((service.foto_before_urls || []).map((secure_url) => ({ secure_url }))); setAfter((service.foto_after_urls || []).map((secure_url) => ({ secure_url }))); } catch (e) { showToast(e instanceof Error ? e.message : "Detail service gagal", "error"); } };
   const save = async () => { if (!editing || saving) return; if (editing.status === "Antrian" && status === "Proses" && !before.length) { showToast("Foto BEFORE wajib diupload", "error"); return; } if (editing.status === "Proses" && status === "Selesai" && !after.length) { showToast("Foto AFTER wajib diupload", "error"); return; } setSaving(true); const payload: ServiceUpdatePayload = { status, catatan_kerusakan: note || undefined, teknisi: technician || undefined, estimasi_selesai: estimate || undefined, foto_before_urls: before.map((i) => i.secure_url), foto_after_urls: after.map((i) => i.secure_url) }; try { await Api.service.update(editing.service_id, payload); showToast("Service berhasil diupdate"); setEditing(null); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Update service gagal", "error"); } finally { setSaving(false); } };
   const visible = filter ? items.filter((item) => item.status === filter) : items; const options: ServiceStatus[] = user?.role === "teknisi" ? (editing?.status === "Antrian" ? ["Antrian","Proses","Ditolak"] : editing?.status === "Proses" ? ["Proses","Selesai","Ditolak"] : editing ? [editing.status] : ["Antrian","Proses","Selesai","Ditolak"]) : ["Antrian","Proses","Selesai","Approved","Ditolak"];

@@ -173,11 +173,11 @@ export function ImageUploader({
         onDrop={(event) => { event.preventDefault(); setIsDragging(false); if (!disabled) void uploadFiles(event.dataTransfer.files); }}
       >
         <div className="flex flex-col gap-2 sm:flex-row">
-          <button type="button" className="btn-ghost flex-1" disabled={disabled || isUploading || images.length >= maxFiles} onClick={() => inputRef.current?.click()}>
+          <button type="button" className="btn-secondary flex-1" disabled={disabled || isUploading || images.length >= maxFiles} onClick={() => inputRef.current?.click()}>
             Pilih dari Galeri
           </button>
           <input ref={inputRef} id={`${id}-gallery`} type="file" accept="image/*" multiple={maxFiles > 1} className="hidden" disabled={disabled} onChange={(event) => { if (event.target.files) void uploadFiles(event.target.files); }} />
-          <button type="button" className="btn-ghost flex-1" disabled={disabled || isUploading || images.length >= maxFiles} onClick={() => void openCamera()}>
+          <button type="button" className="btn-secondary flex-1" disabled={disabled || isUploading || images.length >= maxFiles} onClick={() => void openCamera()}>
             Ambil Foto dengan Kamera
           </button>
         </div>

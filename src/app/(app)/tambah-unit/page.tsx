@@ -7,14 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import type { Sparepart, UploadedImage } from "@/lib/types";
 import { formatRupiah } from "@/lib/utils/formatters";
-import { KATEGORI_OPTIONS, KONDISI_OPTIONS, IMEI_PATTERN } from "@/lib/config/unitCodes";
-// Value sets mirror the backend's documented options exactly (app/schemas/unit.py
-// comments for tipe_sim/keamanan/speaker/lcd) — these are free-text fields with no
-// backend validation, so the dropdown is what keeps the data consistent.
-const TIPE_SIM_OPTIONS = ["Single SIM", "Dual SIM", "eSIM", "WiFi Only"];
-const KEAMANAN_OPTIONS = ["Face ID", "Fingerprint", "Touch ID", "Tidak Ada"];
-const SPEAKER_OPTIONS = ["Normal", "Tidak Normal"];
-const LCD_OPTIONS = ["Original", "Tidak Original"];
+import { KATEGORI_OPTIONS, KONDISI_OPTIONS, IMEI_PATTERN, TIPE_SIM_OPTIONS, KEAMANAN_OPTIONS, SPEAKER_OPTIONS, LCD_OPTIONS } from "@/lib/config/unitCodes";
 const EMPTY_FORM = { kat_kode: "", kondisi_kode: "", merk: "", tipe: "", storage: "", ram: "", warna: "", imei: "", imei2: "", tipe_sim: "Single SIM", keamanan: "Tidak Ada", speaker: "Normal", lcd: "Original", kondisi_hp: "Mulus", battery: "100", harga_modal: "", harga_jual: "", garansi_toko: "7", catatan: "", keluhan: "" };
 
 interface RepairCartItem { sp_id: string; nama: string; harga_beli: number; jumlah: number }

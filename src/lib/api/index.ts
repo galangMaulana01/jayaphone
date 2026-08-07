@@ -314,8 +314,8 @@ const cod = {
    */
   kurirRejectBeli: (codId: string, reason: string) =>
     requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/reject-beli`, { reason }),
-  kurirUpdateStatus: (codId: string, status: CODStatus, note?: string) =>
-    requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/status`, { status, note }),
+  kurirUpdateStatus: (codId: string, status: CODStatus, note?: string, foto_urls?: string[]) =>
+    requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/status`, { status, note, foto_urls }),
   kurirInputStok: (body: Partial<Unit> & { imei: string; merk: string; tipe: string }) =>
     requestJson<ApiEnvelope<{ unit_id: string }>>("POST", "/cod/kurir/input-stok", body),
   kurirSubmitBeli: (codId: string, body: { deal_price: number; unit_data: Partial<Unit> }) =>

@@ -28,6 +28,15 @@ export const KONDISI_OPTIONS: UnitCodeOption[] = [
 /** Same rule the backend enforces for `imei`/`imei2` (app/schemas/unit.py): 14-16 digits, or the "-" sentinel for "no IMEI". */
 export const IMEI_PATTERN = /^\d{14,16}$/;
 
+// Physical-inspection fields are free text on the backend (no validation), but
+// app/schemas/unit.py documents the intended value sets in comments — dropdowns
+// here keep the data consistent across every flow that captures unit specs
+// (Tambah Unit, and the kurir's COD-beli on-site inspection form).
+export const TIPE_SIM_OPTIONS = ["Single SIM", "Dual SIM", "eSIM", "WiFi Only"];
+export const KEAMANAN_OPTIONS = ["Face ID", "Fingerprint", "Touch ID", "Tidak Ada"];
+export const SPEAKER_OPTIONS = ["Normal", "Tidak Normal"];
+export const LCD_OPTIONS = ["Original", "Tidak Original"];
+
 export function labelForKatKode(code: string): string {
   return KATEGORI_OPTIONS.find((option) => option.code === code)?.label ?? "";
 }

@@ -1,6 +1,6 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Api, ApiError } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { Api } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -8,11 +8,12 @@ import { Modal } from "@/components/ui/Modal";
 import { LabelledInput, LabelledSelect, LabelledTextarea } from "@/components/ui/InputField";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { useApiList } from "@/hooks/useApiList";
 import { formatDateTimeShort } from "@/lib/utils/formatters";
 import type { TransferStok, Unit } from "@/lib/types";
 export default function TransferStokPage(): JSX.Element {
-  const { user } = useAuth(); const { showToast } = useToast(); const [items, setItems] = useState<TransferStok[]>([]); const [filter, setFilter] = useState(""); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [createOpen, setCreateOpen] = useState(false); const [responding, setResponding] = useState<TransferStok | null>(null); const [branches, setBranches] = useState<{ kode: string; nama: string }[]>([]); const [units, setUnits] = useState<Unit[]>([]); const [target, setTarget] = useState(""); const [selectedUnits, setSelectedUnits] = useState<string[]>([]); const [note, setNote] = useState(""); const [decisionNote, setDecisionNote] = useState(""); const [decision, setDecision] = useState<"Diterima" | "Ditolak">("Diterima"); const [search, setSearch] = useState("");
-  const load = useCallback(async () => { setLoading(true); setError(""); try { setItems((await Api.transferStok.list({ status: filter || undefined })).data ?? []); } catch (e) { setError(e instanceof ApiError ? e.message : "Gagal memuat transfer stok"); } finally { setLoading(false); } }, [filter]); useEffect(() => { void load(); }, [load]);
+  const { user } = useAuth(); const { showToast } = useToast(); const [filter, setFilter] = useState(""); const [createOpen, setCreateOpen] = useState(false); const [responding, setResponding] = useState<TransferStok | null>(null); const [branches, setBranches] = useState<{ kode: string; nama: string }[]>([]); const [units, setUnits] = useState<Unit[]>([]); const [target, setTarget] = useState(""); const [selectedUnits, setSelectedUnits] = useState<string[]>([]); const [note, setNote] = useState(""); const [decisionNote, setDecisionNote] = useState(""); const [decision, setDecision] = useState<"Diterima" | "Ditolak">("Diterima"); const [search, setSearch] = useState("");
+  const { items, loading, error, reload: load } = useApiList<TransferStok>(() => Api.transferStok.list({ status: filter || undefined }).then((r) => r.data ?? []), [filter], "Gagal memuat transfer stok");
   const openCreate = async () => { try { const [b,u] = await Promise.all([Api.transferStok.cabangList(), Api.units.list({ status: "Tersedia", cabang: user?.cabang, limit: 200 })]); setBranches((b.data ?? []).filter((branch) => branch.kode !== user?.cabang)); setUnits(u.data ?? []); setSelectedUnits([]); setTarget(""); setNote(""); setCreateOpen(true); } catch (e) { showToast(e instanceof Error ? e.message : "Gagal memuat data transfer", "error"); } };
   const create = async () => { if (!target || !selectedUnits.length) { showToast("Pilih cabang tujuan dan minimal satu unit", "error"); return; } try { await Api.transferStok.create({ cabang_tujuan: target, unit_ids: selectedUnits.map((unit_id) => ({ unit_id })), catatan: note || undefined }); showToast("Transfer berhasil diajukan"); setCreateOpen(false); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Gagal membuat transfer", "error"); } };
   const respond = async () => { if (!responding || (decision === "Ditolak" && !decisionNote.trim())) { showToast("Catatan wajib diisi jika transfer ditolak", "error"); return; } try { await Api.transferStok.respond(responding.transfer_id, { status: decision, catatan: decisionNote || undefined }); showToast(`Transfer ${decision.toLowerCase()}`); setResponding(null); setDecisionNote(""); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Gagal memproses transfer", "error"); } };

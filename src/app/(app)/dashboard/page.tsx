@@ -15,7 +15,7 @@ import { formatDateTimeShort, formatRupiah, formatRupiahCompact } from "@/lib/ut
 import type { DashboardStats, DashboardTrend, DashboardTrendPoint } from "@/lib/types";
 
 const DashboardTrendChart = dynamic(
-  () => import("@/components/dashboard/DashboardTrendChart").then((module) => module.DashboardTrendChart),
+  () => import("./_components/DashboardTrendChart").then((module) => module.DashboardTrendChart),
   {
     ssr: false,
     loading: () => <div className="h-64 animate-pulse rounded-xl bg-jp-surface-subtle dark:bg-jp-surface-subtle-dark md:h-72" />,

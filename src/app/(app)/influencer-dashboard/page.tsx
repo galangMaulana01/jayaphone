@@ -6,7 +6,7 @@ import { DateFilterBar } from "@/components/ui/DateFilterBar";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { InfluencerTrendChart } from "@/components/influencer/InfluencerTrendChart";
+import { InfluencerTrendChart } from "./_components/InfluencerTrendChart";
 import { createDefaultDateFilter, type DateFilterState } from "@/lib/utils/dateFilter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";

@@ -8,7 +8,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { Modal } from "@/components/ui/Modal";
 import { LabelledInput, LabelledSelect } from "@/components/ui/InputField";
-import { KaryawanStatsChart } from "@/components/karyawan/KaryawanStatsChart";
+import { KaryawanStatsChart } from "./_components/KaryawanStatsChart";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 

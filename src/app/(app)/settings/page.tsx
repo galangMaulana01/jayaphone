@@ -48,21 +48,21 @@ export default function SettingsPage(): JSX.Element {
   if (!profileFromServer) return <></>;
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <h2 className="text-xl font-semibold tracking-tight">Pengaturan Profil</h2>
+    <div className="jp-page max-w-3xl">
+      <header><h1 className="jp-page-title">Pengaturan Profil</h1><p className="mt-2 text-sm text-jp-muted dark:text-jp-muted-dark">Kelola identitas akun dan keamanan akses.</p></header>
 
-      <section className="space-y-5 rounded-2xl border border-jp-border bg-jp-surface p-5 dark:border-jp-border-dark dark:bg-jp-surface-dark">
-        <h3 className="text-sm font-medium text-jp-muted dark:text-jp-muted-dark dark:text-jp-muted dark:text-jp-muted-dark">Informasi Akun</h3>
+      <section className="form-section">
+        <h3 className="text-sm font-medium text-jp-muted dark:text-jp-muted-dark">Informasi Akun</h3>
         <div className="space-y-3">
           <div>
             <p className="label">Role</p>
-            <div className="rounded-xl bg-jp-surface-subtle px-3 py-2 text-sm font-medium dark:bg-jp-surface-subtle-dark">
+            <div className="rounded-jp-sm bg-jp-surface-subtle px-3 py-2 text-sm font-medium dark:bg-jp-surface-subtle-dark">
               {profileFromServer.role}
             </div>
           </div>
           <div>
             <p className="label">Cabang</p>
-            <div className="rounded-xl bg-jp-surface-subtle px-3 py-2 text-sm font-medium dark:bg-jp-surface-subtle-dark">
+            <div className="rounded-jp-sm bg-jp-surface-subtle px-3 py-2 text-sm font-medium dark:bg-jp-surface-subtle-dark">
               {profileFromServer.cabang || "-"}
             </div>
           </div>
@@ -76,7 +76,7 @@ export default function SettingsPage(): JSX.Element {
                 altText={profileFromServer.name ?? "Foto profil"}
                 sizeClassName="h-16 w-16"
               />
-              <p className="text-xs text-jp-muted dark:text-jp-muted-dark dark:text-jp-muted dark:text-jp-muted-dark">
+              <p className="text-xs text-jp-muted dark:text-jp-muted-dark">
                 Untuk mengganti foto profil, gunakan komponen ImageUploader — masih dalam
                 antrian porting. Sementara ini update via endpoint /auth/me/profile secara
                 langsung.
@@ -151,9 +151,9 @@ function ChangePasswordCard({ onPasswordChanged }: ChangePasswordCardProps): JSX
   };
 
   return (
-    <section className="space-y-5 rounded-2xl border border-jp-border bg-jp-surface p-5 dark:border-jp-border-dark dark:bg-jp-surface-dark">
-      <h3 className="text-sm font-medium text-jp-muted dark:text-jp-muted-dark dark:text-jp-muted dark:text-jp-muted-dark">Ganti Password</h3>
-      <p className="text-xs text-jp-muted dark:text-jp-muted-dark dark:text-jp-muted dark:text-jp-muted-dark">
+    <section className="form-section">
+      <h3 className="text-sm font-medium text-jp-muted dark:text-jp-muted-dark">Ganti Password</h3>
+      <p className="text-xs text-jp-muted dark:text-jp-muted-dark">
         Masukkan password lama dan password baru (minimal 6 karakter).
       </p>
       <form onSubmit={handleSubmit} className="space-y-3">

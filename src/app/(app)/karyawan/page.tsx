@@ -109,10 +109,10 @@ export default function KaryawanPage(): JSX.Element {
   const trend = stats ? (isKasir ? stats.kasir.trend_harian : stats.teknisi.trend_harian) : [];
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="jp-page">
+      <div className="jp-page-header">
         <div>
-          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-jp-text dark:text-jp-text-dark">Karyawan</h1>
+          <h1 className="jp-page-title">Karyawan</h1>
           <p className="text-sm text-jp-muted dark:text-jp-muted-dark">{items.length} karyawan</p>
         </div>
         {user?.role === "kepala_cabang" && <button className="btn-primary" type="button" onClick={() => setOpen(true)}>+ Tambah Karyawan</button>}
@@ -121,10 +121,10 @@ export default function KaryawanPage(): JSX.Element {
       {loading ? <LoadingSkeleton numberOfRows={5} /> : error ? <ErrorState message={error} onRetry={load} /> : items.length ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((k) => (
-            <div className="rounded-2xl border border-jp-border bg-jp-surface p-5 dark:border-jp-border-dark dark:bg-jp-surface-dark" key={k.id}>
+            <div className="list-card" key={k.id}>
               <div className="flex items-start justify-between gap-2">
                 <div><p className="font-semibold">{k.nama}</p><span className="badge">{k.jabatan}</span></div>
-                <span className={k.aktif ? "text-emerald-400" : "text-red-400"}>{k.aktif ? "Aktif" : "Nonaktif"}</span>
+                <span className={k.aktif ? "text-jp-success dark:text-jp-success-dark" : "text-jp-danger dark:text-jp-danger-dark"}>{k.aktif ? "Aktif" : "Nonaktif"}</span>
               </div>
               <div className="mt-4 space-y-2 text-xs">
                 <p className="flex justify-between"><span className="text-jp-muted dark:text-jp-muted-dark">Username</span><span>{k.username}</span></p>
@@ -169,10 +169,10 @@ export default function KaryawanPage(): JSX.Element {
       <Modal isOpen={statsEmployee !== null} onClose={closeStats} title={statsEmployee ? "Statistik " + statsEmployee.nama : "Statistik Karyawan"} maxWidthClassName="max-w-2xl">
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex flex-wrap rounded-xl bg-jp-surface-subtle p-1 text-xs font-medium dark:bg-jp-surface-subtle-dark">
+            <div className="segmented-control">
               {STATS_PRESET_TABS.map((tab) => (
                 <button key={tab.key} type="button" onClick={() => selectPreset(tab.key)}
-                  className={`rounded-lg px-3 py-1.5 transition-colors ${statsFilter.preset === tab.key ? "bg-jp-surface font-semibold text-jp-text shadow-sm dark:bg-jp-surface-dark dark:text-jp-text-dark" : "text-jp-muted dark:text-jp-muted-dark"}`}>
+                  className={statsFilter.preset === tab.key ? "filter-tab filter-tab-active" : "filter-tab"}>
                   {tab.label}
                 </button>
               ))}
@@ -184,7 +184,7 @@ export default function KaryawanPage(): JSX.Element {
           </div>
 
           {showCustomDate && (
-            <div className="flex flex-wrap items-end gap-3 rounded-xl bg-jp-surface-subtle p-4 dark:bg-jp-surface-subtle-dark/60">
+            <div className="flex flex-wrap items-end gap-3 rounded-jp-sm bg-jp-surface-subtle p-4 dark:bg-jp-surface-subtle-dark/60">
               <LabelledInput label="Dari" type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="min-w-0" />
               <LabelledInput label="Sampai" type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="min-w-0" />
               <button type="button" className="btn-primary" onClick={applyCustomDate}>Terapkan</button>
@@ -195,32 +195,32 @@ export default function KaryawanPage(): JSX.Element {
             <>
               {isKasir ? (
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="rounded-2xl border border-jp-border bg-jp-surface p-4 dark:border-jp-border-dark dark:bg-jp-surface-dark">
+                  <div className="metric-card p-4">
                     <p className="label">Transaksi</p>
                     <p className="text-xl font-bold">{stats.kasir.jumlah_transaksi}</p>
                     <p className="mt-0.5 text-[10px] text-jp-muted dark:text-jp-muted-dark">≈ {stats.kasir.rata_per_hari}/hari</p>
                   </div>
-                  <div className="rounded-2xl border border-jp-border bg-jp-surface p-4 dark:border-jp-border-dark dark:bg-jp-surface-dark">
+                  <div className="metric-card p-4">
                     <p className="label">Omzet</p>
                     <p className="text-xl font-bold font-mono text-jp-teal dark:text-jp-teal">Rp {stats.kasir.total_omzet.toLocaleString("id-ID")}</p>
                   </div>
-                  <div className="rounded-2xl border border-jp-border bg-jp-surface p-4 dark:border-jp-border-dark dark:bg-jp-surface-dark">
+                  <div className="metric-card p-4">
                     <p className="label">Profit</p>
                     <p className="text-xl font-bold font-mono text-jp-success dark:text-jp-success-dark">Rp {stats.kasir.total_profit.toLocaleString("id-ID")}</p>
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="rounded-2xl border border-jp-border bg-jp-surface p-4 dark:border-jp-border-dark dark:bg-jp-surface-dark">
+                  <div className="metric-card p-4">
                     <p className="label">Total Service</p>
                     <p className="text-xl font-bold">{stats.teknisi.total_service}</p>
                   </div>
-                  <div className="rounded-2xl border border-jp-border bg-jp-surface p-4 dark:border-jp-border-dark dark:bg-jp-surface-dark">
+                  <div className="metric-card p-4">
                     <p className="label">Selesai</p>
                     <p className="text-xl font-bold text-jp-success dark:text-jp-success-dark">{stats.teknisi.jumlah_selesai}</p>
                     <p className="mt-0.5 text-[10px] text-jp-muted dark:text-jp-muted-dark">≈ {stats.teknisi.rata_selesai_per_hari}/hari</p>
                   </div>
-                  <div className="rounded-2xl border border-jp-border bg-jp-surface p-4 dark:border-jp-border-dark dark:bg-jp-surface-dark">
+                  <div className="metric-card p-4">
                     <p className="label mb-1">Status</p>
                     {Object.entries(stats.teknisi.status_breakdown).map(([status, count]) => (
                       <div key={status} className="flex justify-between text-[11px]">
@@ -232,7 +232,7 @@ export default function KaryawanPage(): JSX.Element {
                 </div>
               )}
 
-              <div className="rounded-2xl bg-jp-surface-subtle p-4 dark:bg-jp-surface-subtle-dark/60">
+              <div className="rounded-jp-md bg-jp-surface-subtle p-4 dark:bg-jp-surface-subtle-dark/60">
                 <p className="mb-3 text-xs font-medium text-jp-muted dark:text-jp-muted-dark">{isKasir ? "Omzet" : "Service Selesai"} — Trend Harian</p>
                 <KaryawanStatsChart trend={trend} isKasir={Boolean(isKasir)} />
               </div>

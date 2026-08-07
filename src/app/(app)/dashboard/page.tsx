@@ -18,7 +18,7 @@ const DashboardTrendChart = dynamic(
   () => import("./_components/DashboardTrendChart").then((module) => module.DashboardTrendChart),
   {
     ssr: false,
-    loading: () => <div className="h-64 animate-pulse rounded-xl bg-jp-surface-subtle dark:bg-jp-surface-subtle-dark md:h-72" />,
+    loading: () => <div className="h-64 animate-pulse rounded-jp-sm bg-jp-surface-subtle dark:bg-jp-surface-subtle-dark md:h-72" />,
   },
 );
 
@@ -31,7 +31,7 @@ interface DashboardMetricCardProps {
 
 function DashboardMetricCard({ label, value, description, mono = false }: DashboardMetricCardProps): JSX.Element {
   return (
-    <section className="rounded-2xl border border-jp-border bg-jp-surface p-5 dark:border-jp-border-dark dark:bg-jp-surface-dark">
+    <section className="metric-card">
       <p className="text-[11px] font-medium text-jp-muted dark:text-jp-muted-dark">{label}</p>
       <p className={"mt-3 text-2xl font-semibold tracking-tight text-jp-text dark:text-jp-text-dark " + (mono ? "font-mono text-xl tabular-nums" : "tabular-nums")}>{value}</p>
       <p className="mt-2 text-[11px] text-jp-muted dark:text-jp-muted-dark">{description}</p>
@@ -100,10 +100,10 @@ export default function DashboardPage(): JSX.Element {
   const recentTransaksi = dashboardStats?.recent_transaksi ?? [];
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+    <div className="jp-page">
+      <header className="jp-page-header">
         <div>
-          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-jp-text dark:text-jp-text-dark">Dashboard</h1>
+          <h1 className="jp-page-title">Dashboard</h1>
           <p className="mt-2 text-sm text-jp-muted dark:text-jp-muted-dark">Kondisi operasional Jayaphone pada periode yang dipilih{cabangSuffix}.</p>
         </div>
         <div className="flex flex-col gap-2 self-start sm:flex-row sm:items-start lg:self-auto">
@@ -118,13 +118,9 @@ export default function DashboardPage(): JSX.Element {
         <ErrorState message={fetchErrorMessage} onRetry={loadDashboardData} />
       ) : dashboardStats ? (
         <>
-          {/*
-           * v2 §7 — Omzet dipromosikan jadi hero card (satu-satunya gradient
-           * card di halaman); tiga metrik lain tetap flat neutral. Jangan
-           * menambah hero kedua di halaman ini.
-           */}
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+          {/* Omzet adalah satu-satunya hero solid di layar ini. */}
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.618fr)_minmax(260px,1fr)]">
+            <div>
               <HeroCard
                 label="Total Omzet"
                 value={formatRupiahCompact(totalOmzet)}
@@ -133,16 +129,16 @@ export default function DashboardPage(): JSX.Element {
                 footer={
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.14em] text-jp-muted dark:text-jp-muted-dark">Transaksi</p>
-                      <p className="mt-1 text-lg font-semibold tabular-nums text-jp-text dark:text-jp-text-dark">{dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")}</p>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-white/55">Transaksi</p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums text-white">{dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.14em] text-jp-muted dark:text-jp-muted-dark">Unit Terjual</p>
-                      <p className="mt-1 text-lg font-semibold tabular-nums text-jp-text dark:text-jp-text-dark">{totalTerjual.toLocaleString("id-ID")}</p>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-white/55">Unit Terjual</p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums text-white">{totalTerjual.toLocaleString("id-ID")}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.14em] text-jp-muted dark:text-jp-muted-dark">Gross Profit</p>
-                      <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-jp-text dark:text-jp-text-dark" title={formatRupiah(dashboardStats.keuangan.total_profit)}>{formatRupiahCompact(dashboardStats.keuangan.total_profit)}</p>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-white/55">Gross Profit</p>
+                      <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-white" title={formatRupiah(dashboardStats.keuangan.total_profit)}>{formatRupiahCompact(dashboardStats.keuangan.total_profit)}</p>
                     </div>
                   </div>
                 }
@@ -151,7 +147,7 @@ export default function DashboardPage(): JSX.Element {
             <DashboardMetricCard label="Stok Tersedia" value={dashboardStats.unit.tersedia.toLocaleString("id-ID")} description="Siap untuk transaksi" />
           </div>
 
-          <section className="rounded-2xl border border-jp-border bg-jp-surface p-5 dark:border-jp-border-dark dark:bg-jp-surface-dark sm:p-6">
+          <section className="section-panel p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight text-jp-text dark:text-jp-text-dark">Penjualan harian</h2>
@@ -164,7 +160,7 @@ export default function DashboardPage(): JSX.Element {
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-2xl border border-jp-border bg-jp-surface dark:border-jp-border-dark dark:bg-jp-surface-dark">
+          <section className="table-wrap overflow-hidden">
             <div className="flex items-start justify-between gap-4 px-5 py-5 sm:px-6">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight text-jp-text dark:text-jp-text-dark">Transaksi terbaru</h2>

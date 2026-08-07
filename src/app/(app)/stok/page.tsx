@@ -71,9 +71,9 @@ export default function StokPage(): JSX.Element {
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+      <header className="jp-page-header">
         <div>
-          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-jp-text dark:text-jp-text-dark">Manajemen stok</h1>
+          <h1 className="jp-page-title">Manajemen stok</h1>
           <p className="mt-2 text-sm text-jp-muted dark:text-jp-muted-dark">Unit tersedia, terjual, dan dalam proses operasional{isOwner ? "." : " untuk cabang " + currentUser?.cabang + "."}</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -82,16 +82,16 @@ export default function StokPage(): JSX.Element {
         </div>
       </header>
 
-      <section className="flex flex-wrap gap-3 rounded-2xl border border-jp-border bg-jp-surface p-4 dark:border-jp-border-dark dark:bg-jp-surface-dark">
-        <input value={searchInputValue} onChange={(event) => setSearchInputValue(event.target.value)} placeholder="Cari merk, tipe, atau IMEI..." className="min-h-11 min-w-[220px] flex-1 rounded-xl border border-jp-border bg-jp-surface-subtle px-3 text-sm text-jp-text outline-none focus:border-jp-teal focus:ring-2 focus:ring-jp-teal/20 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark" />
-        <select value={selectedStatusFilter} onChange={(event) => setSelectedStatusFilter(event.target.value)} className="min-h-11 rounded-xl border border-jp-border bg-jp-surface-subtle px-3 text-sm text-jp-text outline-none focus:border-jp-teal dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark">
+      <section className="jp-toolbar">
+        <input value={searchInputValue} onChange={(event) => setSearchInputValue(event.target.value)} placeholder="Cari merk, tipe, atau IMEI..." className="field-control min-w-[220px] flex-1" />
+        <select value={selectedStatusFilter} onChange={(event) => setSelectedStatusFilter(event.target.value)} className="field-control w-full sm:w-auto">
           {STATUS_FILTER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
         {isOwner ? <CabangFilter value={selectedCabangFilter} onChange={setSelectedCabangFilter} label="" className="min-w-[180px]" /> : null}
       </section>
 
       {isFetching ? <LoadingSkeleton numberOfRows={5} /> : fetchErrorMessage ? <ErrorState message={fetchErrorMessage} onRetry={loadUnits} /> : displayedUnits.length === 0 ? <EmptyState message="Belum ada unit sesuai filter" iconName="packageSvg" /> : (
-        <section className="overflow-hidden rounded-2xl border border-jp-border bg-jp-surface dark:border-jp-border-dark dark:bg-jp-surface-dark">
+        <section className="list-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-[13px]">
               <thead className="border-b border-jp-border text-left text-[11px] font-medium text-jp-muted dark:border-jp-border-dark dark:text-jp-muted-dark"><tr><th className="px-6 py-3.5">Kode unit</th><th className="px-5 py-3.5">Perangkat</th><th className="px-5 py-3.5">IMEI</th><th className="px-5 py-3.5">Kondisi</th><th className="px-5 py-3.5 text-right">Harga jual</th><th className="px-5 py-3.5 text-right">Status</th><th className="px-5 py-3.5 text-center">Umur stok</th><th className="tbl-action-col px-6 py-3.5 text-right">Aksi</th></tr></thead>

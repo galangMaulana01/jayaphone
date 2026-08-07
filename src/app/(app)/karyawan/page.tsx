@@ -121,7 +121,7 @@ export default function KaryawanPage(): JSX.Element {
       {loading ? <LoadingSkeleton numberOfRows={5} /> : error ? <ErrorState message={error} onRetry={load} /> : items.length ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((k) => (
-            <div className="list-card" key={k.id}>
+            <div className="svc-card" key={k.id}>
               <div className="flex items-start justify-between gap-2">
                 <div><p className="font-semibold">{k.nama}</p><span className="badge">{k.jabatan}</span></div>
                 <span className={k.aktif ? "text-jp-success dark:text-jp-success-dark" : "text-jp-danger dark:text-jp-danger-dark"}>{k.aktif ? "Aktif" : "Nonaktif"}</span>

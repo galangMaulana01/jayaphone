@@ -22,6 +22,8 @@ interface ModalProps {
   subtitle?: string;
   /** Optional max width class, e.g. "max-w-2xl". Default is "max-w-lg". */
   maxWidthClassName?: string;
+  /** Hide the "×" corner button — use when the body already has an explicit close action (e.g. "Tutup" alongside another button), so there's only one way to close, not two. */
+  hideCloseButton?: boolean;
   children: ReactNode;
 }
 
@@ -31,6 +33,7 @@ export function Modal({
   title,
   subtitle,
   maxWidthClassName = "max-w-lg",
+  hideCloseButton = false,
   children,
 }: ModalProps): JSX.Element | null {
   const [shouldRender, setShouldRender] = useState(isOpen);
@@ -90,16 +93,18 @@ export function Modal({
                 <p className="mt-0.5 text-xs text-jp-muted dark:text-jp-muted-dark">{subtitle}</p>
               )}
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="-mr-1 -mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-jp-sm text-jp-muted transition-colors hover:bg-jp-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
-              aria-label="Tutup modal"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            {!hideCloseButton && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="-mr-1 -mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-jp-sm text-jp-muted transition-colors hover:bg-jp-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
+                aria-label="Tutup modal"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
         )}
         {children}

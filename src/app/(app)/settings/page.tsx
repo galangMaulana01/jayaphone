@@ -14,8 +14,8 @@ import { useToast } from "@/contexts/ToastContext";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LabelledInput } from "@/components/ui/InputField";
-import { UserAvatar } from "@/components/layout/UserAvatar";
-import type { AuthenticatedUser } from "@/lib/types";
+import { ImageUploader } from "@/components/ui/ImageUploader";
+import type { AuthenticatedUser, UploadedImage } from "@/lib/types";
 
 export default function SettingsPage(): JSX.Element {
   const { refreshCurrentUser } = useAuth();
@@ -43,6 +43,18 @@ export default function SettingsPage(): JSX.Element {
     void loadProfile();
   }, [loadProfile]);
 
+  const handlePhotoChange = async (images: UploadedImage[]): Promise<void> => {
+    try {
+      const response = await Api.auth.updateProfile({ foto_profil_url: images[0]?.secure_url ?? null });
+      setProfileFromServer(response.data);
+      await refreshCurrentUser();
+      showToast(images.length ? "Foto profil berhasil diperbarui" : "Foto profil dihapus", "success");
+    } catch (updateError) {
+      const message = updateError instanceof ApiError ? updateError.message : "Gagal memperbarui foto profil";
+      showToast(message, "error");
+    }
+  };
+
   if (isFetching) return <LoadingSkeleton numberOfRows={4} />;
   if (fetchErrorMessage) return <ErrorState message={fetchErrorMessage} onRetry={loadProfile} />;
   if (!profileFromServer) return <></>;
@@ -68,21 +80,15 @@ export default function SettingsPage(): JSX.Element {
           </div>
           <LabelledInput label="Username" value={profileFromServer.username} readOnly />
           <LabelledInput label="Nama Tampil" value={profileFromServer.name ?? ""} readOnly />
-          <div>
-            <p className="label">Foto Profil</p>
-            <div className="flex items-center gap-4">
-              <UserAvatar
-                fotoProfileUrl={profileFromServer.foto_profil_url}
-                altText={profileFromServer.name ?? "Foto profil"}
-                sizeClassName="h-16 w-16"
-              />
-              <p className="text-xs text-jp-muted dark:text-jp-muted-dark">
-                Untuk mengganti foto profil, gunakan komponen ImageUploader — masih dalam
-                antrian porting. Sementara ini update via endpoint /auth/me/profile secara
-                langsung.
-              </p>
-            </div>
-          </div>
+          <ImageUploader
+            id="settings-foto-profil"
+            label="Foto Profil"
+            maxFiles={1}
+            folder="jayaphone/profile"
+            deleteRemoteOnRemove
+            initialImages={profileFromServer.foto_profil_url ? [{ secure_url: profileFromServer.foto_profil_url }] : []}
+            onChange={(images) => void handlePhotoChange(images)}
+          />
         </div>
       </section>
 

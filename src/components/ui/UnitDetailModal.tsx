@@ -19,6 +19,13 @@ interface UnitDetailModalProps {
   onClose: () => void;
 }
 
+const NOT_SET = "Tidak ada data";
+
+/** Backend leaves optional spec fields as a literal "-" sentinel when not filled in — show a real label instead of a bare dash. */
+function displayOrEmpty(value?: string | null): string {
+  return !value || value === "-" ? NOT_SET : value;
+}
+
 function InfoTile({ label, value }: { label: string; value: ReactNode }): JSX.Element {
   return (
     <div className="rounded-jp-sm bg-jp-surface-subtle p-3 dark:bg-jp-surface-subtle-dark/60">
@@ -52,8 +59,8 @@ export function UnitDetailModal({ unit, onClose }: UnitDetailModalProps): JSX.El
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <InfoTile label="ID Unit" value={<span className="font-mono">{unit.unit_id}</span>} />
             <InfoTile label="Status" value={<UnitStatusBadge status={unit.status} />} />
-            <InfoTile label="Kategori" value={unit.kategori || "-"} />
-            <InfoTile label="Kondisi" value={unit.kondisi || "-"} />
+            <InfoTile label="Kategori" value={displayOrEmpty(unit.kategori)} />
+            <InfoTile label="Kondisi" value={displayOrEmpty(unit.kondisi)} />
           </div>
 
           <div className="border-t border-jp-border pt-3 dark:border-jp-border-dark">
@@ -61,16 +68,16 @@ export function UnitDetailModal({ unit, onClose }: UnitDetailModalProps): JSX.El
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <InfoTile label="Merk" value={unit.merk} />
               <InfoTile label="Tipe" value={unit.tipe} />
-              <InfoTile label="Storage" value={unit.storage} />
-              <InfoTile label="RAM" value={unit.ram} />
-              <InfoTile label="Warna" value={unit.warna} />
+              <InfoTile label="Storage" value={displayOrEmpty(unit.storage)} />
+              <InfoTile label="RAM" value={displayOrEmpty(unit.ram)} />
+              <InfoTile label="Warna" value={displayOrEmpty(unit.warna)} />
               <InfoTile label="Kondisi HP" value={unit.kondisi_hp} />
               <InfoTile label="IMEI 1" value={<span className="font-mono">{unit.imei}</span>} />
-              <InfoTile label="IMEI 2" value={<span className="font-mono">{unit.imei2 || "-"}</span>} />
-              <InfoTile label="Tipe SIM" value={unit.tipe_sim || "-"} />
-              <InfoTile label="Keamanan" value={unit.keamanan || "-"} />
-              <InfoTile label="Speaker" value={unit.speaker || "-"} />
-              <InfoTile label="LCD" value={unit.lcd || "-"} />
+              <InfoTile label="IMEI 2" value={<span className="font-mono">{displayOrEmpty(unit.imei2)}</span>} />
+              <InfoTile label="Tipe SIM" value={displayOrEmpty(unit.tipe_sim)} />
+              <InfoTile label="Keamanan" value={displayOrEmpty(unit.keamanan)} />
+              <InfoTile label="Speaker" value={displayOrEmpty(unit.speaker)} />
+              <InfoTile label="LCD" value={displayOrEmpty(unit.lcd)} />
               <InfoTile label="Battery" value={`${unit.battery}%`} />
               <InfoTile label="Battery Health" value={unit.battery_health ? `${unit.battery_health}%` : "—"} />
             </div>
@@ -102,10 +109,6 @@ export function UnitDetailModal({ unit, onClose }: UnitDetailModalProps): JSX.El
               <p className="rounded-jp-xs bg-jp-surface-subtle p-3 leading-relaxed text-jp-text dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark">{unit.keluhan}</p>
             </div>
           ) : null}
-
-          <button type="button" className="btn-ghost mt-1 w-full" onClick={onClose}>
-            Tutup
-          </button>
         </div>
       )}
     </Modal>

@@ -68,3 +68,28 @@ export function formatRupiahCompact(amount: number | null | undefined): string {
   if (Math.abs(safeAmount) < 1_000) return formatRupiah(safeAmount);
   return `Rp ${formatCompactDigits(safeAmount)}`;
 }
+
+export type StockAgeTone = "success" | "warning" | "danger" | "neutral";
+export interface StockAgeInfo {
+  label: string;
+  tone: StockAgeTone;
+}
+
+/**
+ * GAP-004 (LEGACY_GAP_ANALYSIS.md) — ports legacy `getKadaluarsaBadge`
+ * (index.html:1474-1503): classifies how many days a unit has sat in stock
+ * for the Manajemen Stok "Umur Stok" aging indicator, so slow-moving/dead
+ * stock stands out. <30 hari: success, 30-60 hari: warning, >60 hari: danger.
+ * `dateStr` is the backend's `tgl_masuk` field ("YYYY-MM-DD HH:MM", a space
+ * rather than "T" — same parsing trick as legacy: replace before Date()).
+ */
+export function getStockAgeInfo(dateStr: string | null | undefined): StockAgeInfo {
+  if (!dateStr) return { label: "—", tone: "neutral" };
+  const created = new Date(dateStr.replace(" ", "T"));
+  if (Number.isNaN(created.getTime())) return { label: "—", tone: "neutral" };
+  const diffDays = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return { label: "Baru", tone: "neutral" };
+  if (diffDays < 30) return { label: `${diffDays} hari`, tone: "success" };
+  if (diffDays <= 60) return { label: `${diffDays} hari`, tone: "warning" };
+  return { label: `${diffDays} hari`, tone: "danger" };
+}

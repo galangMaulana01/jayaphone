@@ -98,6 +98,7 @@ export interface Unit {
   lcd: string;
   harga_modal?: number;
   harga_jual: number;
+  kategori: string;
   kondisi: string;
   kondisi_hp: UnitKondisi;
   battery: number;
@@ -109,6 +110,8 @@ export interface Unit {
   garansi_toko: number;
   foto_url?: string | null;
   created_at?: string;
+  /** Pre-formatted "masuk stok" date string from the backend (`fmt_waktu(created_at)`) — used for the stock-aging indicator. */
+  tgl_masuk?: string;
   tgl_terjual?: string | null;
 }
 

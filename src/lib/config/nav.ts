@@ -76,6 +76,7 @@ const kasirNavigation: NavigationEntry[] = [
   { pageKey: "cod-beli",            label: "COD Beli",           iconName: "moneySvg" },
   { pageKey: "approval-cod",        label: "Approval COD",       iconName: "settingSvg" },
   { pageKey: "approval-repair",     label: "Approval Repair",    iconName: "settingSvg" },
+  { pageKey: "sparepart",           label: "Sparepart",          iconName: "stokSvg2" },
   { pageKey: "approval-sparepart",  label: "Approval Sparepart", iconName: "settingSvg" },
   { pageKey: "customers",           label: "Data Customer",      iconName: "clientSvg" },
   { pageKey: "settings",            label: "Pengaturan",         iconName: "settingSvg" },

@@ -48,9 +48,15 @@ interface LabelledSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 export function LabelledSelect({ label, className, children, ...restProps }: LabelledSelectProps): JSX.Element {
   return (
-    <div>
+    <div className="min-w-0">
       {label && <label className="label">{label}</label>}
-      <select {...restProps} className={`${sharedFieldClassName} ${className ?? ""}`}>
+      {/* min-w-0 + truncate: an unusually long option (e.g. a long cabang/karyawan
+          nama) sets this <select>'s intrinsic content width, which a flex
+          ancestor's default min-width:auto lets win over any max-width —
+          without this, one long option can push the whole page into
+          horizontal overflow. Only affects the select's closed-state box;
+          the native open dropdown is unaffected. */}
+      <select {...restProps} className={`${sharedFieldClassName} min-w-0 truncate ${className ?? ""}`}>
         {children}
       </select>
     </div>

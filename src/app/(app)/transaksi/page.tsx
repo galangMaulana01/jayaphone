@@ -37,7 +37,7 @@ export default function TransaksiPage(): JSX.Element {
     <div className="jp-page-header">
       <div><h1 className="jp-page-title">Daftar Transaksi</h1><p className="text-sm text-jp-muted dark:text-jp-muted-dark">{items.length} transaksi pada periode terpilih</p></div>
       <div className="flex flex-wrap items-center gap-2"><DateFilterBar currentFilterState={filter} onFilterStateChange={setFilter} />
-        {user?.role === "owner" && <select aria-label="Filter cabang" value={branch} onChange={(e) => setBranch(e.target.value)} className="rounded-jp-sm bg-jp-surface-subtle px-3 py-2 text-xs dark:bg-jp-surface-subtle-dark"><option value="">Semua Cabang</option>{branches.map((b) => <option key={b.kode} value={b.kode}>{b.nama}</option>)}</select>}
+        {user?.role === "owner" && <select aria-label="Filter cabang" value={branch} onChange={(e) => setBranch(e.target.value)} className="min-w-0 max-w-[200px] truncate rounded-jp-sm bg-jp-surface-subtle px-3 py-2 text-xs dark:bg-jp-surface-subtle-dark"><option value="">Semua Cabang</option>{branches.map((b) => <option key={b.kode} value={b.kode}>{b.nama}</option>)}</select>}
       </div>
     </div>
     {loading ? <LoadingSkeleton numberOfRows={6} /> : error ? <ErrorState message={error} onRetry={load} /> : <div className="table-wrap overflow-hidden rounded-jp-md">

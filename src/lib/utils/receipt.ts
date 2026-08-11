@@ -1,4 +1,5 @@
 import type { Transaksi } from "@/lib/types";
+import { DEFAULT_TIMEZONE, formatDateTimeShort } from "@/lib/utils/formatters";
 
 function escapeHtml(value: string | number | null | undefined): string {
   return String(value ?? "-")
@@ -21,12 +22,12 @@ function rupiah(value: number | null | undefined): string {
  * tripping the popup blocker, since it isn't a script-initiated
  * `window.open()` call.
  */
-export function printTransactionReceipt(transaction: Transaksi): boolean {
+export function printTransactionReceipt(transaction: Transaksi, timeZone: string = DEFAULT_TIMEZONE): boolean {
   if (typeof window === "undefined") return false;
   const pointDiscount = (transaction.poin_dipakai || 0) * 1_000;
   const total = (transaction.harga_jual || 0) + (transaction.biaya_garansi || 0) - pointDiscount;
   const item = transaction.unit_label || transaction.sp_items?.map((part) => part.nama).join(", ") || "Item transaksi";
-  const timestamp = transaction.waktu || new Date().toLocaleString("id-ID");
+  const timestamp = formatDateTimeShort(transaction.waktu, timeZone) || formatDateTimeShort(new Date(), timeZone);
 
   const html = `<!doctype html><html lang="id"><head><meta charset="utf-8"/><title>Struk ${escapeHtml(transaction.trx_id)}</title><style>
     *{box-sizing:border-box} body{width:80mm;margin:0 auto;padding:4mm;background:#fff;color:#000;font:12px 'Courier New',monospace}.center{text-align:center}.bold{font-weight:700}.lg{font-size:15px}.sm{font-size:10px;color:#555}.dash{border-top:1px dashed #000;margin:6px 0}.row,.total{display:flex;justify-content:space-between;gap:10px;margin:2px 0}.row span:last-child{text-align:right;max-width:55%;word-break:break-word}.total{font-size:14px;font-weight:700;margin:3px 0}.footer{text-align:center;margin-top:8px;font-size:10px}.print-btn{display:block;width:100%;margin-top:16px;padding:12px;border:0;border-radius:8px;background:#000;color:#fff;font:700 14px sans-serif;cursor:pointer}@media print{body{width:80mm}.print-btn{display:none}@page{size:80mm auto;margin:0}}

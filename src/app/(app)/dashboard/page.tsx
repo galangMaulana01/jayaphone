@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Api, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCabangTimezones, resolveCabangTimezone } from "@/contexts/CabangTzContext";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -55,6 +56,7 @@ function normaliseTrendPoints(trendResponse: DashboardTrend): DashboardTrendPoin
 
 export default function DashboardPage(): JSX.Element {
   const { user: currentUser } = useAuth();
+  const cabangTz = useCabangTimezones();
   const [dateFilterState, setDateFilterState] = useState(createDefaultDateFilter);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [dashboardTrend, setDashboardTrend] = useState<DashboardTrendPoint[] | null>(null);
@@ -190,7 +192,7 @@ export default function DashboardPage(): JSX.Element {
                         <td className="whitespace-nowrap px-5 text-jp-text dark:text-jp-text-dark">{transaksiEntry.kasir}</td>
                         <td className="max-w-[240px] truncate px-5 text-jp-text dark:text-jp-text-dark">{transaksiEntry.unit_label}</td>
                         <td className="whitespace-nowrap px-5 text-right font-mono text-[12px] font-medium tabular-nums text-jp-text dark:text-jp-text-dark">{formatRupiah(transaksiEntry.harga_jual)}</td>
-                        <td className="whitespace-nowrap px-5 text-right text-[12px] text-jp-muted dark:text-jp-muted-dark">{formatDateTimeShort(transaksiEntry.waktu)}</td>
+                        <td className="whitespace-nowrap px-5 text-right text-[12px] text-jp-muted dark:text-jp-muted-dark">{formatDateTimeShort(transaksiEntry.waktu, resolveCabangTimezone(cabangTz, transaksiEntry.cabang))}</td>
                         <td className="whitespace-nowrap px-5 text-right sm:px-6"><span className="inline-flex rounded-full border border-jp-success/25 bg-jp-success/10 px-2 py-0.5 text-[10px] font-medium text-jp-success dark:text-jp-success-dark">Tercatat</span></td>
                       </tr>
                     ))}

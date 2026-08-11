@@ -151,7 +151,7 @@ export interface Transaksi {
   foto_serah_terima?: string | null;
 }
 /** Slim variant used in the dashboard's recent-transactions list. */
-export type TransaksiSummary = Pick<Transaksi, "trx_id" | "unit_label" | "harga_jual" | "waktu" | "kasir">;
+export type TransaksiSummary = Pick<Transaksi, "trx_id" | "unit_label" | "harga_jual" | "waktu" | "kasir" | "cabang">;
 
 // ─── Service ─────────────────────────────────────────────────────────────
 export type ServiceStatus = "Antrian" | "Proses" | "Selesai" | "Approved" | "Ditolak";
@@ -214,7 +214,15 @@ export interface Cabang {
   alamat?: string;
   telp?: string;
   aktif: boolean;
+  /** IANA timezone of this branch (e.g. "Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"). */
+  timezone?: string;
   kepala_username?: string;
+}
+
+/** kode->timezone lookup entry, from GET /cabang/timezones (open to every role). */
+export interface CabangTimezoneEntry {
+  kode: string;
+  timezone: string;
 }
 
 // ─── Karyawan ────────────────────────────────────────────────────────────

@@ -12,8 +12,20 @@ export function formatRupiah(amount: number | null | undefined): string {
   return `Rp ${safeAmount.toLocaleString("id-ID")}`;
 }
 
-/** Format an ISO/Date value as `dd MMM yyyy HH:mm` in Asia/Jakarta locale. */
-export function formatDateTimeShort(dateInput: string | Date | null | undefined): string {
+/** Default branch timezone — used whenever a record's own branch timezone is unknown/unresolved yet. */
+export const DEFAULT_TIMEZONE = "Asia/Jakarta";
+
+/**
+ * Format an ISO/Date value as `dd MMM yyyy HH:mm` in the given IANA timezone
+ * (defaults to Asia/Jakarta/WIB for backward compatibility). Pass the
+ * timestamp's own branch timezone — e.g. via `useCabangTimezones()` — so a
+ * Papua transaction reads in WIT and a Java transaction reads in WIB,
+ * regardless of who's viewing it.
+ */
+export function formatDateTimeShort(
+  dateInput: string | Date | null | undefined,
+  timeZone: string = DEFAULT_TIMEZONE,
+): string {
   if (!dateInput) return "";
   const dateObject = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
   if (Number.isNaN(dateObject.getTime())) return "";
@@ -23,7 +35,7 @@ export function formatDateTimeShort(dateInput: string | Date | null | undefined)
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "Asia/Jakarta",
+    timeZone,
   });
 }
 

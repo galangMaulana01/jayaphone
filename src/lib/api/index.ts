@@ -15,6 +15,7 @@ import type {
   ActivityLog,
   AuthenticatedUser,
   Cabang,
+  CabangTimezoneEntry,
   CODRequest,
   CODStatus,
   Customer,
@@ -226,7 +227,9 @@ const sparepart = {
 // ─── Cabang ──────────────────────────────────────────────────────────────
 const cabang = {
   list: () => requestJson<ApiEnvelope<Cabang[]>>("GET", "/cabang"),
-  create: (body: { nama: string; kode: string; alamat?: string; telp?: string }) =>
+  /** kode->timezone lookup, open to every role — used to render each record's timestamp in its branch's local time. */
+  timezones: () => requestJson<ApiEnvelope<CabangTimezoneEntry[]>>("GET", "/cabang/timezones"),
+  create: (body: { nama: string; kode: string; alamat?: string; telp?: string; timezone?: string }) =>
     requestJson<ApiEnvelope<Cabang>>("POST", "/cabang", body),
   update: (kode: string, body: Partial<Cabang>) =>
     requestJson<ApiEnvelope<Cabang>>("PATCH", `/cabang/${kode}`, body),

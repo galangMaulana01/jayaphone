@@ -154,7 +154,7 @@ export interface Transaksi {
 export type TransaksiSummary = Pick<Transaksi, "trx_id" | "unit_label" | "harga_jual" | "waktu" | "kasir" | "cabang">;
 
 // ─── Service ─────────────────────────────────────────────────────────────
-export type ServiceStatus = "Antrian" | "Proses" | "Selesai" | "Approved" | "Ditolak";
+export type ServiceStatus = "Antrian" | "Proses" | "Menunggu_Sparepart" | "Selesai" | "Approved" | "Ditolak";
 export interface ServiceTicket {
   id: string;
   service_id: string;

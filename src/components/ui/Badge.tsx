@@ -16,9 +16,19 @@ const unitStatusClass: Record<UnitStatus, string> = {
 const serviceStatusClass: Record<ServiceStatus, string> = {
   "Antrian": "badge-masuk",
   "Proses": "badge-proses",
+  "Menunggu_Sparepart": "badge-booking",
   "Selesai": "badge-selesai",
   "Approved": "badge-diambil",
   "Ditolak": "badge-sold",
+};
+
+const serviceStatusLabel: Record<ServiceStatus, string> = {
+  "Antrian": "Antrian",
+  "Proses": "Proses",
+  "Menunggu_Sparepart": "Menunggu Sparepart",
+  "Selesai": "Selesai",
+  "Approved": "Approved",
+  "Ditolak": "Ditolak",
 };
 
 export function UnitStatusBadge({ status }: { status: UnitStatus }): JSX.Element {
@@ -26,5 +36,5 @@ export function UnitStatusBadge({ status }: { status: UnitStatus }): JSX.Element
 }
 
 export function ServiceStatusBadge({ status }: { status: ServiceStatus }): JSX.Element {
-  return <span className={`badge ${serviceStatusClass[status] ?? "badge-masuk"}`}>{status}</span>;
+  return <span className={`badge ${serviceStatusClass[status] ?? "badge-masuk"}`}>{serviceStatusLabel[status] ?? status}</span>;
 }

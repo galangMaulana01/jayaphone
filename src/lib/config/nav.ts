@@ -43,6 +43,7 @@ const ownerNavigation: NavigationEntry[] = [
   { pageKey: "laporan",             label: "Laporan",            iconName: "laporanSvg" },
   { pageKey: "service",             label: "Data Service",       iconName: "settingSvg" },
   { pageKey: "approval-repair",     label: "Approval Repair",    iconName: "settingSvg" },
+  { pageKey: "sparepart",           label: "Sparepart",          iconName: "stokSvg2" },
   { pageKey: "karyawan",            label: "Karyawan",           iconName: "karyawanSvg" },
   { pageKey: "cabang",              label: "Manajemen Cabang",   iconName: "stokSvg2" },
   { pageKey: "log",                 label: "Log Aktivitas",      iconName: "logSvg" },
@@ -84,6 +85,7 @@ const kasirNavigation: NavigationEntry[] = [
 
 const teknisiNavigation: NavigationEntry[] = [
   { pageKey: "service-list",        label: "Data Service",       iconName: "settingSvg" },
+  { pageKey: "sparepart",           label: "Sparepart",          iconName: "stokSvg2" },
   { pageKey: "request-sparepart",   label: "Request Sparepart",  iconName: "stokSvg2" },
   { pageKey: "teknisi-log",         label: "Log Aktivitas",      iconName: "logSvg" },
   { pageKey: "settings",            label: "Pengaturan",         iconName: "settingSvg" },

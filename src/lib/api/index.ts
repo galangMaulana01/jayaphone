@@ -33,6 +33,8 @@ import type {
   Platform,
   ServiceTicket,
   Sparepart,
+  SparepartJenis,
+  SparepartInUseItem,
   RequestSparepart,
   Transaksi,
   TransferStok,
@@ -216,8 +218,10 @@ const customer = {
 
 // ─── Sparepart ───────────────────────────────────────────────────────────
 const sparepart = {
-  list: (params?: { cabang?: string; kategori?: string }) =>
+  list: (params?: { cabang?: string; kategori?: string; jenis?: SparepartJenis }) =>
     requestJson<ApiEnvelope<Sparepart[]>>("GET", `/sparepart${buildQueryString(params)}`),
+  inUse: (params?: { cabang?: string }) =>
+    requestJson<ApiEnvelope<SparepartInUseItem[]>>("GET", `/sparepart/sedang-dipakai${buildQueryString(params)}`),
   create: (body: Partial<Sparepart> & { nama: string; harga_jual: number; harga_beli: number; stok: number }) =>
     requestJson<ApiEnvelope<Sparepart>>("POST", "/sparepart", body),
   updateStok: (sparepartId: string, body: { delta: number; catatan?: string }) =>

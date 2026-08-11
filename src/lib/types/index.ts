@@ -173,7 +173,7 @@ export interface ServiceTicket {
   estimasi_selesai?: string | null;
   created_at: string;
   updated_at?: string;
-  sparepart_items?: { sp_id: string; nama: string; jumlah: number; harga_jual: number }[];
+  sparepart_items?: { sp_id: string; nama: string; jumlah: number; harga_modal: number; mulai_pakai?: string }[];
 }
 
 // ─── Customer ────────────────────────────────────────────────────────────
@@ -192,11 +192,13 @@ export interface Customer {
 }
 
 // ─── Sparepart ───────────────────────────────────────────────────────────
+export type SparepartJenis = "repair" | "dijual" | "equipment";
 export interface Sparepart {
   id: string;
   sp_id: string;
   nama: string;
   kategori: string;
+  jenis: SparepartJenis;
   satuan: string;
   stok: number;
   harga_beli: number;
@@ -205,6 +207,21 @@ export interface Sparepart {
   cabang: string;
   catatan?: string;
   product_link?: string;
+}
+
+/** One "Sedang Dipakai" row — a sparepart_items entry from an open (Proses) service ticket. */
+export interface SparepartInUseItem {
+  sp_id: string;
+  nama: string;
+  kategori: string;
+  harga_modal: number;
+  jumlah: number;
+  service_id: string;
+  unit_label: string;
+  imei: string;
+  teknisi: string;
+  mulai_pakai?: string | null;
+  cabang: string;
 }
 
 // ─── Cabang ──────────────────────────────────────────────────────────────

@@ -278,31 +278,53 @@ export interface KaryawanStats {
 }
 
 // ─── Sparepart requests ────────────────────────────────────────────────
-export type RequestSparepartStatus = "Pending" | "Menunggu_Kasir" | "Disetujui" | "Ditolak" | "Selesai" | string;
+// Alur (diagram "ALUR TEKNISI – REQUEST SPAREPART & PEMAKAIAN"):
+// Pending -> [KC approve harga, terkunci di harga_disetujui] -> Menunggu_Pembelian
+// -> [Kasir catat pembelian] -> Menunggu_Barang (atau langsung Diterima kalau barang_di_tangan)
+// -> [Kasir konfirmasi barang sampai] -> Diterima -> auto-reserved ke tiket -> Digunakan
+// Ditolak bisa terjadi di titik KC review.
+export type RequestSparepartStatus =
+  | "Pending" | "Disetujui" | "Menunggu_Pembelian" | "Dibeli"
+  | "Menunggu_Barang" | "Diterima" | "Digunakan" | "Ditolak" | string;
+export type RequestSparepartJenis = "repair" | "equipment";
 export interface RequestSparepart {
   id: string;
   /** The human-readable business ID (e.g. "JYP-REQ-002") — every PATCH
    * /request-sparepart/{req_id}/... route matches on THIS field, not `id`
-   * (the Mongo _id). Always use req_id, not id, when calling respond()/approve(). */
+   * (the Mongo _id). Always use req_id, not id, when calling respond()/beli()/terima(). */
   req_id: string;
   tipe: string;
+  jenis?: RequestSparepartJenis;
   service_id?: string | null;
   sp_id?: string | null;
   nama_sp: string;
   jumlah: number;
+  harga_diajukan?: number | null;
+  alasan?: string | null;
   keterangan?: string | null;
-  kebutuhan?: string | null;
   cabang: string;
   status: RequestSparepartStatus;
-  harga?: number | null;
-  harga_jual?: number | null;
+  harga_disetujui?: number | null;
+  supplier?: string | null;
+  harga_beli_aktual?: number | null;
+  bukti_url?: string | null;
+  catatan_beli?: string | null;
+  dibeli_oleh?: string | null;
+  dibeli_at?: string | null;
+  tanggal_terima?: string | null;
+  diterima_oleh?: string | null;
+  diterima_at?: string | null;
   estimasi_tiba?: string | null;
   catatan?: string | null;
   catatan_kc?: string | null;
+  disetujui_oleh_kc?: string | null;
+  disetujui_at_kc?: string | null;
   dibuat_oleh?: string | null;
   created_at?: string;
   updated_at?: string;
   product_link?: string | null;
+  /** Legacy (flow lama) — dipertahankan untuk data historis. */
+  harga_jual?: number | null;
 }
 
 // ─── Courier monitoring ────────────────────────────────────────────────

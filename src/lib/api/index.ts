@@ -36,6 +36,7 @@ import type {
   SparepartJenis,
   SparepartInUseItem,
   RequestSparepart,
+  RequestSparepartJenis,
   Transaksi,
   TransferStok,
   Unit,
@@ -251,18 +252,23 @@ const requestSparepart = {
     requestJson<ApiEnvelope<RequestSparepart[]>>("GET", `/request-sparepart${buildQueryString(params)}`),
   create: (body: {
     tipe: string;
+    jenis?: RequestSparepartJenis;
     service_id?: string;
     sp_id?: string;
     nama_sp: string;
     jumlah: number;
+    harga_diajukan: number;
+    alasan: string;
     keterangan?: string;
     cabang: string;
     product_link?: string;
   }) => requestJson<ApiEnvelope<RequestSparepart>>("POST", "/request-sparepart", body),
-  respond: (reqId: string, body: { status: string; estimasi_tiba?: string; catatan?: string }) =>
+  respond: (reqId: string, body: { status: string; harga_disetujui?: number; estimasi_tiba?: string; catatan?: string }) =>
     requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/respond`, body),
-  approve: (reqId: string, body: { harga_jual: number; status: string; catatan?: string }) =>
-    requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/approve`, body),
+  beli: (reqId: string, body: { supplier: string; harga_beli_aktual: number; bukti_url?: string; catatan?: string; barang_di_tangan?: boolean; tanggal_terima?: string }) =>
+    requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/beli`, body),
+  terima: (reqId: string, body: { tanggal_terima?: string; catatan?: string }) =>
+    requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/terima`, body),
 };
 
 // ─── Transfer Stok ───────────────────────────────────────────────────────

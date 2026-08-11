@@ -44,6 +44,7 @@ const ownerNavigation: NavigationEntry[] = [
   { pageKey: "service",             label: "Data Service",       iconName: "settingSvg" },
   { pageKey: "approval-repair",     label: "Approval Repair",    iconName: "settingSvg" },
   { pageKey: "sparepart",           label: "Sparepart",          iconName: "stokSvg2" },
+  { pageKey: "request-sparepart",   label: "Request Sparepart",  iconName: "stokSvg2" },
   { pageKey: "karyawan",            label: "Karyawan",           iconName: "karyawanSvg" },
   { pageKey: "cabang",              label: "Manajemen Cabang",   iconName: "stokSvg2" },
   { pageKey: "log",                 label: "Log Aktivitas",      iconName: "logSvg" },

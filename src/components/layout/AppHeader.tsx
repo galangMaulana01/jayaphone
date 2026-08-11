@@ -4,7 +4,7 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { pageMetadataByKey } from "@/lib/config/nav";
+import { isPageAllowedForRole, pageMetadataByKey } from "@/lib/config/nav";
 import { UserAvatar } from "./UserAvatar";
 import { NotificationBell } from "./NotificationBell";
 
@@ -21,7 +21,11 @@ export function AppHeader({ onOpenMobileSidebar, isMobileSidebarOpen }: AppHeade
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState<boolean>(false);
 
   const currentPageKey = currentPathname.replace(/^\//, "").split("/")[0] || "";
-  const pageTitle = pageMetadataByKey[currentPageKey]?.title ?? "";
+  // Don't show the real page title's chrome when the role guard below is
+  // about to render an access-denied body for this path — otherwise the
+  // header confidently names a page the user is being told they can't see.
+  const isPageAllowed = currentPageKey === "" || !currentUser || isPageAllowedForRole(currentUser.role, currentPageKey);
+  const pageTitle = isPageAllowed ? pageMetadataByKey[currentPageKey]?.title ?? "" : "";
 
   const handleLogout = (): void => {
     logOut();

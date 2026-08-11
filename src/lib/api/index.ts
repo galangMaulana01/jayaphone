@@ -93,7 +93,7 @@ const units = {
   approveRepair: (unitId: string, body: { harga_jual: number }) =>
     requestJson<ApiEnvelope<Unit>>("POST", `/units/${unitId}/approve-repair`, body),
   detail: (unitId: string) => requestJson<ApiEnvelope<Unit>>("GET", `/units/${unitId}/detail`),
-  update: (unitId: string, body: { harga_jual?: number; harga_modal?: number }) =>
+  update: (unitId: string, body: { harga_jual?: number }) =>
     requestJson<ApiEnvelope<Unit>>("PATCH", `/units/${unitId}`, body),
   remove: (unitId: string) =>
     requestJson<ApiEnvelope<null>>("DELETE", `/units/${unitId}`),

@@ -41,7 +41,6 @@ export default function StokPage(): JSX.Element {
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [editHargaJual, setEditHargaJual] = useState("");
-  const [editHargaModal, setEditHargaModal] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
   const isOwner = currentUser?.role === "owner";
@@ -80,12 +79,16 @@ export default function StokPage(): JSX.Element {
     }
   };
 
-  const openEditPrice = (unit: Unit): void => { setEditingUnit(unit); setEditHargaJual(String(unit.harga_jual)); setEditHargaModal(String(unit.harga_modal)); };
+  const openEditPrice = (unit: Unit): void => { setEditingUnit(unit); setEditHargaJual(String(unit.harga_jual)); };
   const saveEditPrice = async (): Promise<void> => {
     if (!editingUnit || savingEdit) return;
     setSavingEdit(true);
     try {
-      await Api.units.update(editingUnit.unit_id, { harga_jual: Number(editHargaJual) || 0, harga_modal: Number(editHargaModal) || 0 });
+      // harga_modal is intentionally NOT editable here — it only changes
+      // through tracked paths (initial input, sparepart cost additions
+      // during repair), never a manual correction, so there's no way to
+      // quietly polish profit by nudging cost after the fact.
+      await Api.units.update(editingUnit.unit_id, { harga_jual: Number(editHargaJual) || 0 });
       showToast("Harga unit diperbarui");
       setEditingUnit(null);
       await loadUnits();
@@ -143,7 +146,10 @@ export default function StokPage(): JSX.Element {
         <div className="space-y-3">
           <p className="text-sm text-jp-muted dark:text-jp-muted-dark">{editingUnit?.merk} {editingUnit?.tipe}</p>
           <LabelledInput label="Harga Jual" type="number" min={0} value={editHargaJual} onChange={(event) => setEditHargaJual(event.target.value)} />
-          <LabelledInput label="Harga Modal" type="number" min={0} value={editHargaModal} onChange={(event) => setEditHargaModal(event.target.value)} />
+          <div>
+            <p className="label">Harga Modal</p>
+            <p className="rounded-jp-sm bg-jp-surface-subtle px-3 py-2 text-sm text-jp-muted dark:bg-jp-surface-subtle-dark/60 dark:text-jp-muted-dark">{formatRupiah(editingUnit?.harga_modal)}</p>
+          </div>
           <button type="button" className="btn-primary w-full" disabled={savingEdit} onClick={() => void saveEditPrice()}>{savingEdit ? "Menyimpan..." : "Simpan"}</button>
         </div>
       </Modal>

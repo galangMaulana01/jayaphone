@@ -137,7 +137,12 @@ export default function SparepartPage(): JSX.Element {
         tersediaLoading ? <LoadingSkeleton numberOfRows={5} /> : tersediaError ? <ErrorState message={tersediaError} onRetry={reloadTersedia} /> : (
           <div className="table-wrap overflow-x-auto rounded-jp-md">
             <table className="w-full text-xs">
-              <thead className="tbl-head border-b"><tr>{["Kode", "Nama Sparepart", "Kategori", "Cabang", "Stok Tersedia", ...(canManage ? ["Harga Modal"] : []), "Harga Jual", "Aksi"].map((h) => <th key={h} className={`px-5 py-3.5 text-left font-medium ${h === "Aksi" ? "tbl-action-col" : ""}`}>{h}</th>)}</tr></thead>
+              {/* Repair-jenis sparepart selalu punya harga_jual=0 (tidak dijual
+                  ke customer) — kolom harga di tab ini SELALU tampilkan
+                  Harga Modal ke SEMUA role (termasuk teknisi), bukan Harga
+                  Jual, sesuai desain: biaya repair dihitung dari modal part,
+                  bukan harga retail yang tidak relevan di sini. */}
+              <thead className="tbl-head border-b"><tr>{["Kode", "Nama Sparepart", "Kategori", "Cabang", "Stok Tersedia", "Harga Modal", "Aksi"].map((h) => <th key={h} className={`px-5 py-3.5 text-left font-medium ${h === "Aksi" ? "tbl-action-col" : ""}`}>{h}</th>)}</tr></thead>
               <tbody>
                 {visibleTersedia.length ? visibleTersedia.map((s) => (
                   <tr key={s.sp_id} className="tbl-row">
@@ -146,8 +151,7 @@ export default function SparepartPage(): JSX.Element {
                     <td className="px-5 py-4 text-jp-muted dark:text-jp-muted-dark">{s.kategori}</td>
                     <td className="px-5 py-4 text-jp-muted dark:text-jp-muted-dark">{s.cabang}</td>
                     <td className={`px-5 py-4 font-semibold ${s.stok <= 0 ? "text-jp-danger dark:text-jp-danger-dark" : "font-mono text-jp-text dark:text-jp-text-dark"}`}>{s.stok} {s.satuan}</td>
-                    {canManage && <td className="px-5 py-4">{formatRupiah(s.harga_beli)}</td>}
-                    <td className="px-5 py-4">{formatRupiah(s.harga_jual)}</td>
+                    <td className="px-5 py-4">{formatRupiah(s.harga_beli)}</td>
                     <td className="tbl-action-col px-5 py-4">
                       <div className="flex flex-wrap justify-end gap-1.5">
                         {isTeknisi && <button type="button" className="btn-success" disabled={s.stok <= 0} onClick={() => openUse(s)}>Gunakan Sparepart</button>}
@@ -155,7 +159,7 @@ export default function SparepartPage(): JSX.Element {
                       </div>
                     </td>
                   </tr>
-                )) : <tr><td colSpan={canManage ? 8 : 7}><EmptyState message="Belum ada sparepart tersedia" iconName="wrenchSvg" /></td></tr>}
+                )) : <tr><td colSpan={7}><EmptyState message="Belum ada sparepart tersedia" iconName="wrenchSvg" /></td></tr>}
               </tbody>
             </table>
           </div>

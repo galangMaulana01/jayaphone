@@ -30,13 +30,19 @@ export function LabelledInput({ label, required, helper, errorMessage, className
 
 interface LabelledTextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: ReactNode;
+  required?: boolean;
   helper?: ReactNode;
 }
-export function LabelledTextarea({ label, helper, className, ...restProps }: LabelledTextareaProps): JSX.Element {
+export function LabelledTextarea({ label, required, helper, className, ...restProps }: LabelledTextareaProps): JSX.Element {
   return (
     <div>
-      {label && <label className="label">{label}</label>}
-      <textarea {...restProps} className={`${sharedFieldClassName} resize-none ${className ?? ""}`} />
+      {label && (
+        <label className="label">
+          {label}
+          {required && <span className="text-jp-danger dark:text-jp-danger-dark">*</span>}
+        </label>
+      )}
+      <textarea {...restProps} required={required} className={`${sharedFieldClassName} resize-none ${className ?? ""}`} />
       {helper && <p className="mt-1.5 text-[11px] text-jp-muted dark:text-jp-muted-dark">{helper}</p>}
     </div>
   );

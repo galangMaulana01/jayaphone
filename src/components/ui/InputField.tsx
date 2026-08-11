@@ -42,6 +42,45 @@ export function LabelledTextarea({ label, helper, className, ...restProps }: Lab
   );
 }
 
+interface LabelledCheckboxGroupProps {
+  label: ReactNode;
+  options: string[];
+  /** Comma-separated selected values (kept as a plain string so the backend
+   * field type doesn't need to change from str to a list). */
+  value: string;
+  onChange: (value: string) => void;
+  /** A value like "Tidak Ada" that's mutually exclusive with every other option. */
+  exclusiveOption?: string;
+}
+
+/** A device can genuinely have more than one security method at once (e.g.
+ * Fingerprint AND Face ID) — a single-choice dropdown couldn't express that. */
+export function LabelledCheckboxGroup({ label, options, value, onChange, exclusiveOption }: LabelledCheckboxGroupProps): JSX.Element {
+  const selected = value ? value.split(",").map((v) => v.trim()).filter(Boolean) : [];
+  const toggle = (option: string) => {
+    if (exclusiveOption && option === exclusiveOption) {
+      onChange(selected.includes(option) ? "" : option);
+      return;
+    }
+    const withoutExclusive = selected.filter((s) => s !== exclusiveOption);
+    const next = withoutExclusive.includes(option) ? withoutExclusive.filter((s) => s !== option) : [...withoutExclusive, option];
+    onChange(next.join(", "));
+  };
+  return (
+    <div>
+      <label className="label">{label}</label>
+      <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-jp-sm border border-jp-border bg-jp-surface-subtle px-3.5 py-2.5 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark">
+        {options.map((option) => (
+          <label key={option} className="flex items-center gap-1.5 text-sm text-jp-text dark:text-jp-text-dark">
+            <input type="checkbox" className="h-3.5 w-3.5 accent-jp-teal" checked={selected.includes(option)} onChange={() => toggle(option)} />
+            {option}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface LabelledSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: ReactNode;
   children: ReactNode;

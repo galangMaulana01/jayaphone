@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
+import { Modal } from "@/components/ui/Modal";
+import { LabelledInput } from "@/components/ui/InputField";
 import { UnitStatusBadge } from "@/components/ui/Badge";
 import { UnitDetailModal } from "@/components/ui/UnitDetailModal";
 import { CabangFilter } from "@/components/ui/CabangFilter";
@@ -37,9 +39,18 @@ export default function StokPage(): JSX.Element {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
   const [searchInputValue, setSearchInputValue] = useState("");
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
+  const [editHargaJual, setEditHargaJual] = useState("");
+  const [editHargaModal, setEditHargaModal] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const isOwner = currentUser?.role === "owner";
   const isKepalaCabang = currentUser?.role === "kepala_cabang";
+  // Kepala cabang/owner can correct a mis-entered price, or remove a unit
+  // entered by mistake entirely — only while it's still Tersedia, so a sold
+  // unit's history (and any transaction that already references it) can
+  // never be edited or deleted out from under it.
+  const canManage = isOwner || isKepalaCabang;
 
   const {
     items: unitList,
@@ -69,6 +80,32 @@ export default function StokPage(): JSX.Element {
     }
   };
 
+  const openEditPrice = (unit: Unit): void => { setEditingUnit(unit); setEditHargaJual(String(unit.harga_jual)); setEditHargaModal(String(unit.harga_modal)); };
+  const saveEditPrice = async (): Promise<void> => {
+    if (!editingUnit || savingEdit) return;
+    setSavingEdit(true);
+    try {
+      await Api.units.update(editingUnit.unit_id, { harga_jual: Number(editHargaJual) || 0, harga_modal: Number(editHargaModal) || 0 });
+      showToast("Harga unit diperbarui");
+      setEditingUnit(null);
+      await loadUnits();
+    } catch (updateError) {
+      showToast(updateError instanceof Error ? updateError.message : "Update harga gagal", "error");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+  const deleteUnit = async (unit: Unit): Promise<void> => {
+    if (!window.confirm(`Hapus unit ${unit.unit_id} (${unit.merk} ${unit.tipe})? Aksi ini tidak bisa dibatalkan.`)) return;
+    try {
+      await Api.units.remove(unit.unit_id);
+      showToast("Unit dihapus");
+      await loadUnits();
+    } catch (deleteError) {
+      showToast(deleteError instanceof Error ? deleteError.message : "Hapus unit gagal", "error");
+    }
+  };
+
   return (
     <div className="space-y-8">
       <header className="jp-page-header">
@@ -95,13 +132,21 @@ export default function StokPage(): JSX.Element {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-[13px]">
               <thead className="border-b border-jp-border text-left text-[11px] font-medium text-jp-muted dark:border-jp-border-dark dark:text-jp-muted-dark"><tr><th className="px-6 py-3.5">Kode unit</th><th className="px-5 py-3.5">Perangkat</th><th className="px-5 py-3.5">IMEI</th><th className="px-5 py-3.5">Kondisi</th><th className="px-5 py-3.5 text-right">Harga jual</th><th className="px-5 py-3.5 text-right">Status</th><th className="px-5 py-3.5 text-center">Umur stok</th><th className="tbl-action-col px-6 py-3.5 text-right">Aksi</th></tr></thead>
-              <tbody>{displayedUnits.map((unit) => { const age = getStockAgeInfo(unit.tgl_masuk); return <tr key={unit.unit_id} className="h-14 border-b border-jp-border/80 last:border-0 hover:bg-jp-surface-subtle/70 dark:border-jp-border-dark dark:hover:bg-jp-surface-subtle-dark/60"><td className="whitespace-nowrap px-6 font-mono text-[12px] text-jp-muted dark:text-jp-muted-dark">{unit.unit_id}</td><td className="px-5"><p className="font-medium text-jp-text dark:text-jp-text-dark">{unit.merk} {unit.tipe}</p><p className="mt-0.5 text-[11px] text-jp-muted dark:text-jp-muted-dark">{unit.storage} · {unit.ram} · {unit.warna}</p></td><td className="px-5 font-mono text-[12px] text-jp-muted dark:text-jp-muted-dark">{unit.imei}</td><td className="px-5 text-jp-muted dark:text-jp-muted-dark">{unit.kondisi_hp}</td><td className="px-5 text-right font-mono text-[12px] font-medium text-jp-text dark:text-jp-text-dark">{formatRupiah(unit.harga_jual)}</td><td className="px-5 text-right"><UnitStatusBadge status={unit.status} /></td><td className={`whitespace-nowrap px-5 text-center text-[11px] font-medium ${STOCK_AGE_TONE_CLASSNAME[age.tone]}`}>{age.label}</td><td className="tbl-action-col px-6 text-right"><button type="button" className="btn-ghost" onClick={() => void openDetail(unit.unit_id)}>Detail</button></td></tr>; })}</tbody>
+              <tbody>{displayedUnits.map((unit) => { const age = getStockAgeInfo(unit.tgl_masuk); return <tr key={unit.unit_id} className="h-14 border-b border-jp-border/80 last:border-0 hover:bg-jp-surface-subtle/70 dark:border-jp-border-dark dark:hover:bg-jp-surface-subtle-dark/60"><td className="whitespace-nowrap px-6 font-mono text-[12px] text-jp-muted dark:text-jp-muted-dark">{unit.unit_id}</td><td className="px-5"><p className="font-medium text-jp-text dark:text-jp-text-dark">{unit.merk} {unit.tipe}</p><p className="mt-0.5 text-[11px] text-jp-muted dark:text-jp-muted-dark">{unit.storage} · {unit.ram} · {unit.warna}</p></td><td className="px-5 font-mono text-[12px] text-jp-muted dark:text-jp-muted-dark">{unit.imei}</td><td className="px-5 text-jp-muted dark:text-jp-muted-dark">{unit.kondisi_hp}</td><td className="px-5 text-right font-mono text-[12px] font-medium text-jp-text dark:text-jp-text-dark">{formatRupiah(unit.harga_jual)}</td><td className="px-5 text-right"><UnitStatusBadge status={unit.status} /></td><td className={`whitespace-nowrap px-5 text-center text-[11px] font-medium ${STOCK_AGE_TONE_CLASSNAME[age.tone]}`}>{age.label}</td><td className="tbl-action-col px-6 text-right"><div className="flex justify-end gap-1.5"><button type="button" className="btn-ghost" onClick={() => void openDetail(unit.unit_id)}>Detail</button>{canManage && unit.status === "Tersedia" && <><button type="button" className="btn-ghost" onClick={() => openEditPrice(unit)}>Edit Harga</button><button type="button" className="btn-ghost text-jp-danger dark:text-jp-danger-dark" onClick={() => void deleteUnit(unit)}>Hapus</button></>}</div></td></tr>; })}</tbody>
             </table>
           </div>
         </section>
       )}
 
       <UnitDetailModal unit={selectedUnit} onClose={() => setSelectedUnit(null)} />
+      <Modal isOpen={Boolean(editingUnit)} onClose={() => setEditingUnit(null)} title={editingUnit ? `Edit Harga ${editingUnit.unit_id}` : "Edit Harga"}>
+        <div className="space-y-3">
+          <p className="text-sm text-jp-muted dark:text-jp-muted-dark">{editingUnit?.merk} {editingUnit?.tipe}</p>
+          <LabelledInput label="Harga Jual" type="number" min={0} value={editHargaJual} onChange={(event) => setEditHargaJual(event.target.value)} />
+          <LabelledInput label="Harga Modal" type="number" min={0} value={editHargaModal} onChange={(event) => setEditHargaModal(event.target.value)} />
+          <button type="button" className="btn-primary w-full" disabled={savingEdit} onClick={() => void saveEditPrice()}>{savingEdit ? "Menyimpan..." : "Simpan"}</button>
+        </div>
+      </Modal>
     </div>
   );
 }

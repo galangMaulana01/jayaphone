@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { Modal } from "@/components/ui/Modal";
-import { LabelledInput, LabelledSelect, LabelledTextarea } from "@/components/ui/InputField";
+import { LabelledCheckboxGroup, LabelledInput, LabelledSelect, LabelledTextarea } from "@/components/ui/InputField";
 import { ImageUploader } from "@/components/ui/ImageUploader";
 import { useToast } from "@/contexts/ToastContext";
 import { formatDateTimeShort, NOT_SET } from "@/lib/utils/formatters";
@@ -77,7 +77,7 @@ export default function KurirDashboardPage(): JSX.Element {
           <LabelledInput label="RAM" value={unit.ram} onChange={(e) => update("ram", e.target.value)} placeholder="Contoh: 6GB"/>
           <LabelledInput label="Warna" value={unit.warna} onChange={(e) => update("warna", e.target.value)} placeholder="Contoh: Midnight Black"/>
           <LabelledSelect label="Tipe SIM" value={unit.tipe_sim} onChange={(e) => update("tipe_sim", e.target.value)}>{TIPE_SIM_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}</LabelledSelect>
-          <LabelledSelect label="Keamanan" value={unit.keamanan} onChange={(e) => update("keamanan", e.target.value)}>{KEAMANAN_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}</LabelledSelect>
+          <LabelledCheckboxGroup label="Keamanan" options={KEAMANAN_OPTIONS} value={unit.keamanan} onChange={(v) => update("keamanan", v)} exclusiveOption="Tidak Ada"/>
           <LabelledSelect label="Speaker" value={unit.speaker} onChange={(e) => update("speaker", e.target.value)}>{SPEAKER_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}</LabelledSelect>
           <LabelledSelect label="LCD" value={unit.lcd} onChange={(e) => update("lcd", e.target.value)}>{LCD_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}</LabelledSelect>
           <LabelledSelect label="Kondisi HP" value={unit.kondisi_hp} onChange={(e) => update("kondisi_hp", e.target.value)}><option>Mulus</option><option>Repair</option></LabelledSelect>

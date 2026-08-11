@@ -92,6 +92,10 @@ const units = {
   approveRepair: (unitId: string, body: { harga_jual: number }) =>
     requestJson<ApiEnvelope<Unit>>("POST", `/units/${unitId}/approve-repair`, body),
   detail: (unitId: string) => requestJson<ApiEnvelope<Unit>>("GET", `/units/${unitId}/detail`),
+  update: (unitId: string, body: { harga_jual?: number; harga_modal?: number }) =>
+    requestJson<ApiEnvelope<Unit>>("PATCH", `/units/${unitId}`, body),
+  remove: (unitId: string) =>
+    requestJson<ApiEnvelope<null>>("DELETE", `/units/${unitId}`),
 };
 
 // ─── Transaksi ───────────────────────────────────────────────────────────
@@ -188,6 +192,10 @@ const service = {
       "GET",
       `/service/${serviceId}/detail`,
     ),
+  useSparepart: (serviceId: string, body: { sp_id: string; jumlah: number }) =>
+    requestJson<ApiEnvelope<ServiceTicket>>("POST", `/service/${serviceId}/sparepart`, body),
+  removeSparepart: (serviceId: string, spId: string) =>
+    requestJson<ApiEnvelope<ServiceTicket>>("DELETE", `/service/${serviceId}/sparepart/${spId}`),
 };
 
 // ─── Customer ────────────────────────────────────────────────────────────

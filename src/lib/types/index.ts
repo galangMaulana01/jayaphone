@@ -57,6 +57,9 @@ export interface DashboardStats {
     profit_hari_ini?: number;
     profit_harian?: number;
     total_transaksi: number;
+    total_poin_dipakai?: number;
+    total_poin_dapat?: number;
+    biaya_poin_dipakai?: number;
   };
   recent_transaksi?: TransaksiSummary[];
 }
@@ -170,7 +173,7 @@ export interface ServiceTicket {
   estimasi_selesai?: string | null;
   created_at: string;
   updated_at?: string;
-  sparepart_items?: { sp_id: string; jumlah: number }[];
+  sparepart_items?: { sp_id: string; nama: string; jumlah: number; harga_jual: number }[];
 }
 
 // ─── Customer ────────────────────────────────────────────────────────────

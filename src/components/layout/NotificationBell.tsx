@@ -26,24 +26,36 @@ interface NotificationEntry {
   isRead: boolean;
 }
 
-const NOTIF_STORAGE_KEY = "jyp_notif";
-const NOTIF_SEEN_STORAGE_KEY = "jyp_notif_seen";
 const POLL_INTERVAL_MILLIS = 30_000;
 
-function loadInitialEntries(): NotificationEntry[] {
+// Storage keys are scoped per-username — these entries are role-derived
+// (pending approvals, incoming transfers, sparepart ready) and must never
+// leak from one logged-in account to another on a shared browser. Without
+// this, an owner/kasir's stale "Service Selesai — Butuh Approval" entries
+// (targetPageKey "approval-repair") would still be sitting in a GLOBAL key
+// the next time anyone — including a teknisi who can't even open that
+// page — logs in on the same device, and clicking one would 404/403.
+function notifStorageKey(username: string): string {
+  return `jyp_notif_${username}`;
+}
+function notifSeenStorageKey(username: string): string {
+  return `jyp_notif_seen_${username}`;
+}
+
+function loadEntriesFor(username: string): NotificationEntry[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(NOTIF_STORAGE_KEY);
+    const raw = window.localStorage.getItem(notifStorageKey(username));
     return raw ? (JSON.parse(raw) as NotificationEntry[]) : [];
   } catch {
     return [];
   }
 }
 
-function loadInitialSeenSet(): Set<string> {
+function loadSeenSetFor(username: string): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    const raw = window.localStorage.getItem(NOTIF_SEEN_STORAGE_KEY);
+    const raw = window.localStorage.getItem(notifSeenStorageKey(username));
     return new Set(raw ? (JSON.parse(raw) as string[]) : []);
   } catch {
     return new Set();
@@ -61,28 +73,57 @@ function formatTimeSince(emittedAtMillis: number): string {
 export function NotificationBell(): JSX.Element | null {
   const { user: currentUser } = useAuth();
   const router = useRouter();
+  const currentUsername = currentUser?.username ?? null;
 
-  const [notificationEntries, setNotificationEntries] = useState<NotificationEntry[]>(() => loadInitialEntries());
+  const [notificationEntries, setNotificationEntries] = useState<NotificationEntry[]>([]);
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
-  const seenIdsRef = useRef<Set<string>>(loadInitialSeenSet());
+  const seenIdsRef = useRef<Set<string>>(new Set());
+
+  // Which username's data is currently loaded into state/ref above, and
+  // whether the persistence effect below should skip its next run (it
+  // would otherwise fire right after this effect swaps in the new user's
+  // entries and re-save them under... whichever key was current at that
+  // instant — harmless in effect order today, but this guard keeps it that
+  // way even if effect ordering ever changes).
+  const loadedUsernameRef = useRef<string | null>(null);
+  const skipNextPersistRef = useRef(false);
+
+  useEffect(() => {
+    if (currentUsername === loadedUsernameRef.current) return;
+    loadedUsernameRef.current = currentUsername;
+    skipNextPersistRef.current = true;
+    if (!currentUsername) {
+      setNotificationEntries([]);
+      seenIdsRef.current = new Set();
+      return;
+    }
+    setNotificationEntries(loadEntriesFor(currentUsername));
+    seenIdsRef.current = loadSeenSetFor(currentUsername);
+  }, [currentUsername]);
 
   const unreadCount = useMemo(
     () => notificationEntries.filter((entry) => !entry.isRead).length,
     [notificationEntries],
   );
 
-  // Persist to localStorage on every change.
+  // Persist to localStorage on every change — but not the change that just
+  // loaded a (possibly different) user's own entries in the effect above.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(notificationEntries.slice(0, 30)));
-  }, [notificationEntries]);
+    if (typeof window === "undefined" || !currentUsername) return;
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      return;
+    }
+    window.localStorage.setItem(notifStorageKey(currentUsername), JSON.stringify(notificationEntries.slice(0, 30)));
+  }, [notificationEntries, currentUsername]);
 
   const enqueueNotification = useCallback((incomingEntry: Omit<NotificationEntry, "emittedAtMillis" | "isRead">): boolean => {
+    if (!currentUsername) return false;
     if (seenIdsRef.current.has(incomingEntry.id)) return false;
     seenIdsRef.current.add(incomingEntry.id);
     if (typeof window !== "undefined") {
       window.localStorage.setItem(
-        NOTIF_SEEN_STORAGE_KEY,
+        notifSeenStorageKey(currentUsername),
         JSON.stringify([...seenIdsRef.current].slice(0, 100)),
       );
     }
@@ -91,7 +132,7 @@ export function NotificationBell(): JSX.Element | null {
       ...previous,
     ]);
     return true;
-  }, []);
+  }, [currentUsername]);
 
   const runPollingCycle = useCallback(async (): Promise<void> => {
     if (!currentUser) return;

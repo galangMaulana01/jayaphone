@@ -142,7 +142,7 @@ export default function SparepartPage(): JSX.Element {
                   Harga Modal ke SEMUA role (termasuk teknisi), bukan Harga
                   Jual, sesuai desain: biaya repair dihitung dari modal part,
                   bukan harga retail yang tidak relevan di sini. */}
-              <thead className="tbl-head border-b"><tr>{["Kode", "Nama Sparepart", "Kategori", "Cabang", "Stok Tersedia", "Harga Modal", "Aksi"].map((h) => <th key={h} className={`px-5 py-3.5 text-left font-medium ${h === "Aksi" ? "tbl-action-col" : ""}`}>{h}</th>)}</tr></thead>
+              <thead className="tbl-head border-b"><tr>{["Kode", "Nama Sparepart", "Kategori", "Cabang", "Stok Bebas", "Sedang Dipakai", "Harga Modal", "Aksi"].map((h) => <th key={h} className={`px-5 py-3.5 text-left font-medium ${h === "Aksi" ? "tbl-action-col" : ""}`}>{h}</th>)}</tr></thead>
               <tbody>
                 {visibleTersedia.length ? visibleTersedia.map((s) => (
                   <tr key={s.sp_id} className="tbl-row">
@@ -151,6 +151,7 @@ export default function SparepartPage(): JSX.Element {
                     <td className="px-5 py-4 text-jp-muted dark:text-jp-muted-dark">{s.kategori}</td>
                     <td className="px-5 py-4 text-jp-muted dark:text-jp-muted-dark">{s.cabang}</td>
                     <td className={`px-5 py-4 font-semibold ${s.stok <= 0 ? "text-jp-danger dark:text-jp-danger-dark" : "font-mono text-jp-text dark:text-jp-text-dark"}`}>{s.stok} {s.satuan}</td>
+                    <td className="px-5 py-4 font-mono text-jp-muted dark:text-jp-muted-dark">{s.dipakai > 0 ? `${s.dipakai} ${s.satuan}` : "-"}</td>
                     <td className="px-5 py-4">{formatRupiah(s.harga_beli)}</td>
                     <td className="tbl-action-col px-5 py-4">
                       <div className="flex flex-wrap justify-end gap-1.5">
@@ -159,7 +160,7 @@ export default function SparepartPage(): JSX.Element {
                       </div>
                     </td>
                   </tr>
-                )) : <tr><td colSpan={7}><EmptyState message="Belum ada sparepart tersedia" iconName="wrenchSvg" /></td></tr>}
+                )) : <tr><td colSpan={8}><EmptyState message="Belum ada sparepart tersedia" iconName="wrenchSvg" /></td></tr>}
               </tbody>
             </table>
           </div>

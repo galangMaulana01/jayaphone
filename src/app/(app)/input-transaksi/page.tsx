@@ -23,7 +23,10 @@ export default function InputTransaksiPage(): JSX.Element {
   const [warranty, setWarranty] = useState("7"); const [warrantyFee, setWarrantyFee] = useState("0"); const [points, setPoints] = useState("0"); const [note, setNote] = useState(""); const [search, setSearch] = useState(""); const [cart, setCart] = useState<CartItem[]>([]); const [images, setImages] = useState<UploadedImage[]>([]); const [uploaderKey, setUploaderKey] = useState(0);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null); const [customerMatches, setCustomerMatches] = useState<Customer[]>([]); const [customerSearchField, setCustomerSearchField] = useState<"nama" | "kontak" | null>(null); const [cod, setCod] = useState(false); const [address, setAddress] = useState(""); const [wa, setWa] = useState(""); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [completed, setCompleted] = useState<Transaksi | null>(null);
 
-  useEffect(() => { Promise.all([Api.units.list({ status: "Tersedia" }), Api.sparepart.list({})]).then(([u, s]) => { setUnits(u.data ?? []); setSpareparts(s.data ?? []); }).catch((error) => showToast(error instanceof Error ? error.message : "Gagal memuat item", "error")).finally(() => setLoading(false)); }, [showToast]);
+  // Hanya sparepart jenis "dijual" yang boleh dijual lewat transaksi retail —
+  // jenis "repair" cuma boleh dipakai lewat modul Service, "equipment" tidak
+  // dijual per-unit sama sekali (backend juga menolak keduanya di sini).
+  useEffect(() => { Promise.all([Api.units.list({ status: "Tersedia" }), Api.sparepart.list({ jenis: "dijual" })]).then(([u, s]) => { setUnits(u.data ?? []); setSpareparts(s.data ?? []); }).catch((error) => showToast(error instanceof Error ? error.message : "Gagal memuat item", "error")).finally(() => setLoading(false)); }, [showToast]);
   // Search-as-you-type works the same way for name and phone number — kasir
   // can start typing either one and get matching members without needing
   // to type the full value, then pick from the list to fill both fields.

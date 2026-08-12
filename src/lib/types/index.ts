@@ -201,6 +201,10 @@ export interface Sparepart {
   jenis: SparepartJenis;
   satuan: string;
   stok: number;
+  /** Total sedang dipakai teknisi di tiket-tiket aktif — terpisah dari `stok`
+   * (yang cuma sisa bebas). Bermakna untuk jenis "repair"; selalu 0 untuk
+   * "dijual"/"equipment" karena keduanya tidak direservasi ke tiket. */
+  dipakai: number;
   harga_beli: number;
   harga_jual: number;
   dimensi_str?: string;

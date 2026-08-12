@@ -15,7 +15,7 @@ import { formatRupiah, formatDateTimeShort, NOT_SET } from "@/lib/utils/formatte
 import { useCabangTimezones, resolveCabangTimezone } from "@/contexts/CabangTzContext";
 import type { Sparepart, SparepartInUseItem, SparepartJenis, ServiceTicket } from "@/lib/types";
 
-type SparepartTab = "tersedia" | "sedang_dipakai" | "untuk_dijual";
+type SparepartTab = "tersedia" | "sedang_dipakai" | "riwayat" | "untuk_dijual";
 const JENIS_OPTIONS: { value: SparepartJenis; label: string }[] = [
   { value: "repair", label: "Repair (dipakai teknisi)" },
   { value: "dijual", label: "Dijual (langsung ke customer)" },
@@ -56,6 +56,11 @@ export default function SparepartPage(): JSX.Element {
     useApiList<Sparepart>(() => Api.sparepart.list({ kategori: category || undefined, jenis: "dijual" }).then((r) => r.data ?? []), [category], "Gagal memuat sparepart untuk dijual");
   const { items: sedangDipakai, loading: dipakaiLoading, error: dipakaiError, reload: reloadDipakai } =
     useApiList<SparepartInUseItem>(() => Api.sparepart.inUse().then((r) => r.data ?? []), [], "Gagal memuat sparepart sedang dipakai");
+  // Transien: cuma tampil beberapa jam setelah tiketnya Selesai (lihat
+  // RIWAYAT_WINDOW_HOURS di backend), lalu menghilang dari sini walau
+  // datanya tetap ada di tiket.
+  const { items: riwayat, loading: riwayatLoading, error: riwayatError, reload: reloadRiwayat } =
+    useApiList<SparepartInUseItem>(() => Api.sparepart.riwayat().then((r) => r.data ?? []), [], "Gagal memuat riwayat pemakaian sparepart");
   // Open tickets to pick from in "Gunakan Sparepart" — teknisi only sees their
   // own (backend's use_sparepart 403s otherwise anyway), owner sees all.
   const { items: openTickets } = useApiList<ServiceTicket>(
@@ -69,7 +74,7 @@ export default function SparepartPage(): JSX.Element {
   );
 
   const totalSparepart = tersedia.length + dijual.length;
-  const reloadAll = async () => { await Promise.all([reloadTersedia(), reloadDijual(), reloadDipakai()]); };
+  const reloadAll = async () => { await Promise.all([reloadTersedia(), reloadDijual(), reloadDipakai(), reloadRiwayat()]); };
 
   const visibleTersedia = useMemo(() => tersedia.filter((s) => `${s.nama} ${s.sp_id} ${s.kategori}`.toLowerCase().includes(query.toLowerCase())), [tersedia, query]);
   const visibleDijual = useMemo(() => dijual.filter((s) => `${s.nama} ${s.sp_id} ${s.kategori}`.toLowerCase().includes(query.toLowerCase())), [dijual, query]);
@@ -102,6 +107,7 @@ export default function SparepartPage(): JSX.Element {
   const tabs: { key: SparepartTab; label: string; count: number }[] = [
     { key: "tersedia", label: "Sparepart Tersedia", count: tersedia.length },
     { key: "sedang_dipakai", label: "Sparepart Sedang Dipakai", count: sedangDipakai.length },
+    { key: "riwayat", label: "Riwayat Pemakaian", count: riwayat.length },
     { key: "untuk_dijual", label: "Sparepart Untuk Dijual", count: dijual.length },
   ];
 
@@ -126,7 +132,7 @@ export default function SparepartPage(): JSX.Element {
         {tabs.map((t) => <button type="button" key={t.key} className={`filter-tab ${tab === t.key ? "filter-tab-active" : ""}`} onClick={() => setTab(t.key)}>{t.label} ({t.count})</button>)}
       </div>
 
-      {tab !== "sedang_dipakai" && (
+      {tab !== "sedang_dipakai" && tab !== "riwayat" && (
         <div className="jp-toolbar">
           <input className="field-control w-full sm:max-w-md" placeholder="Cari sparepart..." value={query} onChange={(e) => setQuery(e.target.value)} />
           <input className="field-control w-full sm:w-auto" placeholder="Kategori" value={category} onChange={(e) => setCategory(e.target.value)} />
@@ -198,6 +204,41 @@ export default function SparepartPage(): JSX.Element {
             </div>
           ) : <EmptyState message="Tidak ada sparepart yang sedang dipakai" iconName="wrenchSvg" />
         )
+      )}
+
+      {tab === "riwayat" && (
+        <>
+          <p className="rounded-jp-sm bg-jp-surface-subtle p-3 text-[11px] text-jp-muted dark:bg-jp-surface-subtle-dark/60 dark:text-jp-muted-dark">Sparepart yang baru selesai dipakai — tampil sementara di sini, lalu menghilang beberapa jam setelah tiketnya Selesai.</p>
+          {riwayatLoading ? <LoadingSkeleton numberOfRows={5} /> : riwayatError ? <ErrorState message={riwayatError} onRetry={reloadRiwayat} /> : (
+            riwayat.length ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {riwayat.map((it, idx) => (
+                  <div key={`${it.service_id}-${it.sp_id}-${idx}`} className="panel space-y-3 rounded-jp-md p-4 opacity-80">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold">{it.nama}</p>
+                      <span className="badge badge-selesai">Selesai Dipakai</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div><p className="text-jp-muted dark:text-jp-muted-dark">Kode</p><p className="font-mono">{it.sp_id}</p></div>
+                      <div><p className="text-jp-muted dark:text-jp-muted-dark">Kategori</p><p>{it.kategori || NOT_SET}</p></div>
+                      <div><p className="text-jp-muted dark:text-jp-muted-dark">Jumlah</p><p className="font-mono">{it.jumlah}</p></div>
+                      <div><p className="text-jp-muted dark:text-jp-muted-dark">Harga Modal</p><p className="font-mono">{formatRupiah(it.harga_modal)}</p></div>
+                    </div>
+                    <div className="border-t border-jp-border pt-3 text-xs dark:border-jp-border-dark">
+                      <p className="text-jp-muted dark:text-jp-muted-dark">Untuk Service</p>
+                      <p className="font-medium">{it.service_id} · {it.unit_label}</p>
+                      {it.imei && <p className="font-mono text-[11px] text-jp-muted dark:text-jp-muted-dark">IMEI: {it.imei}</p>}
+                      <p className="mt-1 text-jp-muted dark:text-jp-muted-dark">Teknisi</p>
+                      <p className="font-medium">{it.teknisi || NOT_SET}</p>
+                      <p className="mt-1 text-jp-muted dark:text-jp-muted-dark">Selesai Pakai</p>
+                      <p>{it.selesai_pakai ? formatDateTimeShort(it.selesai_pakai, resolveCabangTimezone(cabangTz, it.cabang)) : NOT_SET}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : <EmptyState message="Belum ada riwayat pemakaian dalam beberapa jam terakhir" iconName="wrenchSvg" />
+          )}
+        </>
       )}
 
       {tab === "untuk_dijual" && (

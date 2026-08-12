@@ -37,6 +37,7 @@ import type {
   SparepartInUseItem,
   RequestSparepart,
   RequestSparepartJenis,
+  RequestSparepartNotifItem,
   Transaksi,
   TransferStok,
   Unit,
@@ -223,6 +224,8 @@ const sparepart = {
     requestJson<ApiEnvelope<Sparepart[]>>("GET", `/sparepart${buildQueryString(params)}`),
   inUse: (params?: { cabang?: string }) =>
     requestJson<ApiEnvelope<SparepartInUseItem[]>>("GET", `/sparepart/sedang-dipakai${buildQueryString(params)}`),
+  riwayat: (params?: { cabang?: string }) =>
+    requestJson<ApiEnvelope<SparepartInUseItem[]>>("GET", `/sparepart/riwayat-pemakaian${buildQueryString(params)}`),
   create: (body: Partial<Sparepart> & { nama: string; harga_jual: number; harga_beli: number; stok: number }) =>
     requestJson<ApiEnvelope<Sparepart>>("POST", "/sparepart", body),
   updateStok: (sparepartId: string, body: { delta: number; catatan?: string }) =>
@@ -269,6 +272,10 @@ const requestSparepart = {
     requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/beli`, body),
   terima: (reqId: string, body: { tanggal_terima?: string; catatan?: string }) =>
     requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/terima`, body),
+  notifCount: () =>
+    requestJson<ApiEnvelope<{ count: number }>>("GET", "/request-sparepart/notif/count"),
+  notifPending: () =>
+    requestJson<ApiEnvelope<RequestSparepartNotifItem[]>>("GET", "/request-sparepart/notif/pending"),
 };
 
 // ─── Transfer Stok ───────────────────────────────────────────────────────

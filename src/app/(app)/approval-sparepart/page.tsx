@@ -111,8 +111,11 @@ export default function ApprovalSparepartPage(): JSX.Element {
         </p>
         <LabelledInput label="Supplier" required value={supplier} onChange={(e) => setSupplier(e.target.value)}/>
         <LabelledInput label="Harga Beli Aktual (per satuan)" type="number" min={1} required value={hargaAktual} onChange={(e) => setHargaAktual(e.target.value)}/>
-        {Number(hargaAktual) > 0 && beliTarget?.harga_disetujui && Number(hargaAktual) !== beliTarget.harga_disetujui &&
-          <p className="text-[11px] text-jp-warning dark:text-jp-warning-dark">Beda dari harga disetujui ({formatRupiah(beliTarget.harga_disetujui)}) — tetap bisa disimpan, hanya sebagai catatan.</p>}
+        {Number(hargaAktual) > 0 && beliTarget?.harga_disetujui && (
+          Number(hargaAktual) === beliTarget.harga_disetujui
+            ? <p className="text-[11px] text-jp-teal dark:text-jp-teal-dark">✓ Harga sesuai approval</p>
+            : <p className="text-[11px] text-jp-warning dark:text-jp-warning-dark">Beda dari harga disetujui ({formatRupiah(beliTarget.harga_disetujui)}) — tetap bisa disimpan, hanya sebagai catatan.</p>
+        )}
         <ImageUploader id="bukti-nota" maxFiles={1} label="Bukti / Nota Pembelian" onChange={(imgs) => setBuktiUrl(imgs[0]?.secure_url ?? "")}/>
         <LabelledTextarea label="Catatan" rows={2} value={catatanBeli} onChange={(e) => setCatatanBeli(e.target.value)}/>
         <label className="flex items-center gap-2 text-sm">

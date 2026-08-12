@@ -225,7 +225,19 @@ export interface SparepartInUseItem {
   imei: string;
   teknisi: string;
   mulai_pakai?: string | null;
+  /** Terisi cuma untuk baris "Riwayat Pemakaian" (dari GET
+   * /sparepart/riwayat-pemakaian) — kosong untuk "Sedang Dipakai". */
+  selesai_pakai?: string | null;
   cabang: string;
+}
+
+// ─── Notifikasi sparepart untuk teknisi ────────────────────────────────
+export interface RequestSparepartNotifItem {
+  req_id: string;
+  nama_sp: string;
+  jumlah: number;
+  service_id?: string | null;
+  unit_label?: string | null;
 }
 
 // ─── Cabang ──────────────────────────────────────────────────────────────

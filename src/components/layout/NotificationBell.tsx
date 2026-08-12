@@ -8,6 +8,8 @@
 //   • FBUG-014: only poll /service/pending-approval for the roles the backend
 //     actually allows (kasir / kepala_cabang / owner). Kurir/influencer skip.
 //   • Only poll /transfer-stok/notif/{count,pending} for owner + kepala_cabang.
+//   • Only poll /request-sparepart/notif/{count,pending} for teknisi — that's
+//     the only role a "sparepart Anda sudah tersedia" notification applies to.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -134,6 +136,34 @@ export function NotificationBell(): JSX.Element | null {
         /* silent */
       }
     }
+
+    // Sparepart request yang baru diterima/direservasi — teknisi only. Cuma
+    // muncul selama beberapa jam setelah diterima (jendela sama dengan tab
+    // "Riwayat Pemakaian" di halaman Sparepart), jadi id-based dedup di
+    // enqueueNotification sudah cukup untuk mencegah notifikasi berulang
+    // tanpa perlu backend menandai "sudah dilihat".
+    if (role === "teknisi") {
+      try {
+        const countResponse = await Api.requestSparepart.notifCount();
+        const pendingCount = countResponse.data?.count ?? 0;
+        if (pendingCount > 0) {
+          const pendingResponse = await Api.requestSparepart.notifPending();
+          for (const requestEntry of pendingResponse.data) {
+            enqueueNotification({
+              id: requestEntry.req_id,
+              variant: "info",
+              title: `Sparepart Tersedia — ${requestEntry.nama_sp}`,
+              body: requestEntry.service_id
+                ? `Untuk servis ${requestEntry.service_id}${requestEntry.unit_label ? ` · ${requestEntry.unit_label}` : ""}`
+                : `${requestEntry.jumlah} unit sudah masuk stok`,
+              targetPageKey: "sparepart",
+            });
+          }
+        }
+      } catch {
+        /* silent */
+      }
+    }
   }, [currentUser, enqueueNotification]);
 
   // Polling lifecycle.
@@ -168,7 +198,7 @@ export function NotificationBell(): JSX.Element | null {
   // the polling gate above — no polling means nothing to show).
   const isBellVisible =
     !!currentUser &&
-    (currentUser.role === "kasir" || currentUser.role === "kepala_cabang" || currentUser.role === "owner");
+    (currentUser.role === "kasir" || currentUser.role === "kepala_cabang" || currentUser.role === "owner" || currentUser.role === "teknisi");
   if (!isBellVisible) return null;
 
   return (

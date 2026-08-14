@@ -98,7 +98,9 @@ export default function ServiceListPage(): JSX.Element {
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [reqNama, setReqNama] = useState("");
   const [reqJumlah, setReqJumlah] = useState("1");
+  const [reqHarga, setReqHarga] = useState("");
   const [reqAlasan, setReqAlasan] = useState("");
+  const [reqLink, setReqLink] = useState("");
   const [reqKeterangan, setReqKeterangan] = useState("");
 
   const { items: stokItems, loading: stokLoading, reload: reloadStok } = useApiList<Sparepart>(
@@ -183,7 +185,10 @@ export default function ServiceListPage(): JSX.Element {
   };
 
   // ── 4B: Request Sparepart ───────────────────────────────────────────────
-  const openRequestForm = () => { setReqNama(""); setReqJumlah("1"); setReqAlasan(""); setReqKeterangan(""); setRequestModalOpen(true); };
+  const openRequestForm = () => {
+    setReqNama(""); setReqJumlah("1"); setReqHarga(""); setReqAlasan(""); setReqLink(""); setReqKeterangan("");
+    setRequestModalOpen(true);
+  };
   const submitRequest = async () => {
     if (!active || !user) return;
     if (!reqNama.trim() || !reqAlasan.trim()) { showToast("Nama sparepart dan alasan wajib diisi", "error"); return; }
@@ -192,7 +197,9 @@ export default function ServiceListPage(): JSX.Element {
     try {
       await Api.requestSparepart.create({
         tipe: "SPAREPART", jenis: "repair", service_id: active.service_id,
-        nama_sp: reqNama.trim(), jumlah: Number(reqJumlah), alasan: reqAlasan.trim(),
+        nama_sp: reqNama.trim(), jumlah: Number(reqJumlah),
+        harga_diajukan: reqHarga ? Number(reqHarga) : undefined,
+        alasan: reqAlasan.trim(), product_link: reqLink.trim() || undefined,
         keterangan: reqKeterangan || undefined, cabang: user.cabang || "JYP",
       });
       showToast("Request sparepart terkirim, menunggu approval Kepala Cabang");
@@ -541,8 +548,10 @@ export default function ServiceListPage(): JSX.Element {
         <div className="space-y-3">
           <LabelledInput label="Sparepart yang dibutuhkan" required value={reqNama} onChange={(e) => setReqNama(e.target.value)} />
           <LabelledInput label="Jumlah" type="number" min={1} required value={reqJumlah} onChange={(e) => setReqJumlah(e.target.value)} />
-          <LabelledTextarea label="Alasan / Keterangan" required rows={2} value={reqAlasan} onChange={(e) => setReqAlasan(e.target.value)} />
-          <LabelledTextarea label="Catatan (Opsional)" rows={2} value={reqKeterangan} onChange={(e) => setReqKeterangan(e.target.value)} />
+          <LabelledInput label="Harga yang Diajukan (per satuan, opsional)" type="number" min={1} helper="Boleh dikosongkan — Kepala Cabang/Kasir bisa isi belakangan." value={reqHarga} onChange={(e) => setReqHarga(e.target.value)} />
+          <LabelledTextarea label="Alasan" required rows={2} helper="Jelaskan kenapa sparepart ini dibutuhkan — dipakai Kepala Cabang untuk review." value={reqAlasan} onChange={(e) => setReqAlasan(e.target.value)} />
+          <LabelledInput label="Link Produk (opsional)" type="url" placeholder="https://..." helper="Isi kalau sudah ada referensi barang yang mau dibeli." value={reqLink} onChange={(e) => setReqLink(e.target.value)} />
+          <LabelledTextarea label="Keterangan (Opsional)" rows={2} value={reqKeterangan} onChange={(e) => setReqKeterangan(e.target.value)} />
           <div className="flex gap-2">
             <button type="button" className="btn-ghost flex-1" onClick={() => setRequestModalOpen(false)}>Batal</button>
             <button type="button" disabled={busy} className="btn-primary flex-1" onClick={() => void submitRequest()}>{busy ? "Mengirim..." : "Kirim Request"}</button>

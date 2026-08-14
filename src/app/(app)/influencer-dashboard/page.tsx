@@ -11,7 +11,7 @@ import { createDefaultDateFilter, type DateFilterState } from "@/lib/utils/dateF
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { formatCompactNumber } from "@/lib/utils/formatters";
-const options: Array<{ value: Platform | ""; label: string }> = [{value:"",label:"Semua"},{value:"tiktok",label:"TikTok"},{value:"instagram",label:"Instagram"}];
+const options: Array<{ value: Platform | ""; label: string }> = [{value:"",label:"Semua"},{value:"tiktok",label:"TikTok"},{value:"instagram",label:"Instagram"},{value:"youtube",label:"YouTube"}];
 export default function InfluencerDashboardPage(): JSX.Element {
  const {user}=useAuth(); const {showToast}=useToast(); const [filter,setFilter]=useState<DateFilterState>(createDefaultDateFilter()); const [platform,setPlatform]=useState<Platform|"">(""); const [stats,setStats]=useState<InfluencerDashboardStats|null>(null); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
  const load=useCallback(async()=>{setLoading(true);setError("");try{const days=filter.preset==="7d"?7:filter.preset==="1y"?365:filter.preset==="90d"?90:filter.start&&filter.end?Math.max(1,Math.ceil((new Date(filter.end).getTime()-new Date(filter.start).getTime())/86400000)+1):30;setStats((await Api.influencer.dashboard(days,platform||undefined)).data)}catch(e){const m=e instanceof ApiError?e.message:"Gagal memuat dashboard influencer";setError(m);showToast(m,"error")}finally{setLoading(false)}},[filter,platform,showToast]); useEffect(()=>{void load()},[load]);

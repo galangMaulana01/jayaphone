@@ -44,7 +44,6 @@ const ownerNavigation: NavigationEntry[] = [
   { pageKey: "service",             label: "Data Service",       iconName: "settingSvg" },
   { pageKey: "approval-repair",     label: "Approval Repair",    iconName: "settingSvg" },
   { pageKey: "sparepart",           label: "Sparepart",          iconName: "stokSvg2" },
-  { pageKey: "request-sparepart",   label: "Request Sparepart",  iconName: "stokSvg2" },
   { pageKey: "karyawan",            label: "Karyawan",           iconName: "karyawanSvg" },
   { pageKey: "cabang",              label: "Manajemen Cabang",   iconName: "stokSvg2" },
   { pageKey: "log",                 label: "Log Aktivitas",      iconName: "logSvg" },
@@ -63,7 +62,6 @@ const kepalaCabangNavigation: NavigationEntry[] = [
   { pageKey: "service",             label: "Data Service",       iconName: "settingSvg" },
   { pageKey: "approval-repair",     label: "Approval Repair",    iconName: "settingSvg" },
   { pageKey: "sparepart",           label: "Sparepart",          iconName: "stokSvg2" },
-  { pageKey: "request-sparepart",   label: "Request Sparepart",  iconName: "stokSvg2" },
   { pageKey: "karyawan",            label: "Karyawan",           iconName: "karyawanSvg" },
   { pageKey: "log",                 label: "Log Aktivitas",      iconName: "logSvg" },
   { pageKey: "kurir-monitoring",    label: "Monitor Kurir",      iconName: "dashboardSvg" },
@@ -87,7 +85,6 @@ const kasirNavigation: NavigationEntry[] = [
 const teknisiNavigation: NavigationEntry[] = [
   { pageKey: "service-list",        label: "Data Service",       iconName: "settingSvg" },
   { pageKey: "sparepart",           label: "Sparepart",          iconName: "stokSvg2" },
-  { pageKey: "request-sparepart",   label: "Request Sparepart",  iconName: "stokSvg2" },
   { pageKey: "teknisi-log",         label: "Log Aktivitas",      iconName: "logSvg" },
   { pageKey: "settings",            label: "Pengaturan",         iconName: "settingSvg" },
 ];
@@ -147,7 +144,6 @@ export const pageMetadataByKey: Record<string, PageMetadata> = {
   "cod-beli":             { title: "COD Beli" },
   "service-list":         { title: "Data Service" },
   "teknisi-log":          { title: "Log Aktivitas" },
-  "request-sparepart":    { title: "Request Sparepart" },
   "influencer-dashboard": { title: "Dashboard Influencer" },
   "influencer-catalog":   { title: "Katalog Produk" },
   "influencer-videos":    { title: "Video Saya" },

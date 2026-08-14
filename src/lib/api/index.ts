@@ -32,6 +32,8 @@ import type {
   LoginResponse,
   Platform,
   ServiceTicket,
+  ServiceTicketDetail,
+  ServiceRiwayatItem,
   Sparepart,
   SparepartJenis,
   SparepartInUseItem,
@@ -193,10 +195,9 @@ const service = {
   pendingApproval: (params?: { cabang?: string; limit?: number }) =>
     requestJson<ApiEnvelope<ServiceTicket[]>>("GET", `/service/pending-approval${buildQueryString(params)}`),
   detail: (serviceId: string) =>
-    requestJson<ApiEnvelope<ServiceTicket & { timeline: { event: string; waktu: string }[] }>>(
-      "GET",
-      `/service/${serviceId}/detail`,
-    ),
+    requestJson<ApiEnvelope<ServiceTicketDetail>>("GET", `/service/${serviceId}/detail`),
+  riwayat: (params?: { cabang?: string }) =>
+    requestJson<ApiEnvelope<ServiceRiwayatItem[]>>("GET", `/service/riwayat${buildQueryString(params)}`),
   useSparepart: (serviceId: string, body: { sp_id: string; jumlah: number }) =>
     requestJson<ApiEnvelope<ServiceTicket>>("POST", `/service/${serviceId}/sparepart`, body),
   removeSparepart: (serviceId: string, spId: string) =>
@@ -260,7 +261,9 @@ const requestSparepart = {
     sp_id?: string;
     nama_sp: string;
     jumlah: number;
-    harga_diajukan: number;
+    /** Opsional sekarang — teknisi cukup bilang butuh apa & kenapa; Kepala
+     * Cabang/Kasir yang isi harga/link belakangan kalau masih kosong. */
+    harga_diajukan?: number;
     alasan: string;
     keterangan?: string;
     cabang: string;
@@ -272,6 +275,12 @@ const requestSparepart = {
     requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/beli`, body),
   terima: (reqId: string, body: { tanggal_terima?: string; catatan?: string }) =>
     requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/terima`, body),
+  /** Teknisi konfirmasi "Gunakan Sparepart" — request yang sudah Diterima
+   * (ditahan buat tiket ini) baru di titik ini ditulis ke sparepart_items
+   * tiket. estimasi_selesai wajib diisi backend HANYA kalau ini request
+   * blocking terakhir tiketnya (baca: yang melepas tiket balik ke Proses). */
+  gunakan: (reqId: string, body?: { estimasi_selesai?: string }) =>
+    requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/gunakan`, body ?? {}),
   notifCount: () =>
     requestJson<ApiEnvelope<{ count: number }>>("GET", "/request-sparepart/notif/count"),
   notifPending: () =>

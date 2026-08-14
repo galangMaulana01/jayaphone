@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useApiList } from "@/hooks/useApiList";
 import { formatRupiah } from "@/lib/utils/formatters";
-import type { RequestSparepart, RequestSparepartJenis, ServiceTicket, Sparepart } from "@/lib/types";
+import type { RequestSparepart, RequestSparepartJenis, Sparepart } from "@/lib/types";
 
 const STATUS_TABS = ["", "Pending", "Menunggu_Pembelian", "Menunggu_Barang", "Diterima", "Digunakan", "Ditolak"];
 const STATUS_LABEL: Record<string, string> = {
@@ -24,8 +24,6 @@ export default function RequestSparepartPage(): JSX.Element {
   const [formOpen, setFormOpen] = useState(false);
   const [selected, setSelected] = useState<RequestSparepart | null>(null);
   const [type, setType] = useState("SPAREPART");
-  const [jenis, setJenis] = useState<RequestSparepartJenis>("repair");
-  const [serviceId, setServiceId] = useState("");
   const [name, setName] = useState(""); const [quantity, setQuantity] = useState("1"); const [spId, setSpId] = useState("");
   const [hargaDiajukan, setHargaDiajukan] = useState(""); const [alasan, setAlasan] = useState("");
   const [productLink, setProductLink] = useState(""); const [note, setNote] = useState(""); const [estimate, setEstimate] = useState("");
@@ -33,6 +31,10 @@ export default function RequestSparepartPage(): JSX.Element {
   const [stokQuery, setStokQuery] = useState("");
 
   const canCreate = user?.role === "teknisi"; const canApprove = user?.role === "kepala_cabang" || user?.role === "owner";
+  // Request jenis=repair (terkait tiket) hanya bisa dibuat dari dalam layar
+  // "Pilih Kebutuhan" di Data Service sekarang — halaman ini cuma untuk
+  // request jenis=equipment (alat kerja teknisi, tidak terkait tiket).
+  const jenis: RequestSparepartJenis = "equipment";
 
   const { items, loading, error, reload: load } = useApiList<RequestSparepart>(
     () => Api.requestSparepart.list({ status: status || undefined }).then((r) => r.data ?? []),
@@ -46,31 +48,18 @@ export default function RequestSparepartPage(): JSX.Element {
   const { items: stokItems, loading: stokLoading } = useApiList<Sparepart>(() => (canCreate ? Api.sparepart.list({ jenis: "repair" }).then((r) => r.data ?? []) : Promise.resolve([])), [canCreate], "Gagal memuat stok sparepart");
   const visibleStok = useMemo(() => stokItems.filter((s) => `${s.nama} ${s.sp_id} ${s.kategori}`.toLowerCase().includes(stokQuery.toLowerCase())), [stokItems, stokQuery]);
 
-  // Request jenis=repair harus terkait tiket service yang sedang dikerjakan
-  // teknisi ini — dipilih lewat picker, bukan diketik manual, supaya tidak
-  // ada salah-ketik service_id.
-  const { items: openTickets } = useApiList<ServiceTicket>(
-    () => (canCreate ? Api.service.list({ status: "Proses", limit: 100 }).then((r) => r.data ?? []) : Promise.resolve([])),
-    [canCreate], "Gagal memuat tiket servis"
-  );
-  const myOpenTickets = useMemo(() => openTickets.filter((t) => t.teknisi === user?.name), [openTickets, user]);
-
   const openRequestForm = (prefill?: Sparepart) => {
-    setType("SPAREPART"); setJenis("repair"); setServiceId(""); setName(prefill?.nama ?? ""); setQuantity("1");
+    setType("SPAREPART"); setName(prefill?.nama ?? ""); setQuantity("1");
     setSpId(prefill?.sp_id ?? ""); setHargaDiajukan(""); setAlasan(""); setProductLink(""); setNote(""); setFormOpen(true);
   };
 
   const create = async () => {
     if (!name.trim() || Number(quantity) <= 0) { showToast("Nama sparepart dan jumlah wajib diisi", "error"); return; }
-    if (!spId.trim() && !productLink.trim().startsWith("https://")) { showToast("Link produk (https://...) wajib diisi jika SP ID kosong", "error"); return; }
-    if (!Number(hargaDiajukan) || Number(hargaDiajukan) <= 0) { showToast("Harga yang diajukan wajib diisi", "error"); return; }
     if (!alasan.trim()) { showToast("Alasan request wajib diisi", "error"); return; }
-    if (jenis === "repair" && !serviceId) { showToast("Pilih tiket servis yang sedang Anda kerjakan", "error"); return; }
     try {
       await Api.requestSparepart.create({
-        tipe: type, jenis, service_id: jenis === "repair" ? serviceId : undefined,
-        sp_id: spId || undefined, nama_sp: name.trim(), jumlah: Number(quantity),
-        harga_diajukan: Number(hargaDiajukan), alasan: alasan.trim(),
+        tipe: type, jenis, sp_id: spId || undefined, nama_sp: name.trim(), jumlah: Number(quantity),
+        harga_diajukan: hargaDiajukan ? Number(hargaDiajukan) : undefined, alasan: alasan.trim(),
         keterangan: note || undefined, cabang: user?.cabang || "JYP", product_link: productLink.trim() || undefined,
       });
       showToast("Request sparepart berhasil dibuat"); setFormOpen(false); await load();
@@ -99,7 +88,7 @@ export default function RequestSparepartPage(): JSX.Element {
       {canCreate && <button type="button" className="btn-primary" onClick={() => openRequestForm()}>+ Request Baru</button>}
     </div>
     {canCreate && <p className="rounded-jp-sm bg-jp-surface-subtle p-3 text-[11px] text-jp-muted dark:bg-jp-surface-subtle-dark/60 dark:text-jp-muted-dark">
-      Alur: Request Anda dengan harga diajukan + alasan (Pending) → direview Kepala Cabang, harga dikunci (Menunggu Pembelian), atau Ditolak → Kasir catat pembelian (Menunggu Barang) → Kasir konfirmasi barang sampai (Diterima) → sparepart masuk inventory. Untuk jenis Repair, part langsung direservasi ke tiket servis yang Anda pilih (Digunakan) — tidak perlu request lagi lewat halaman Sparepart.
+      Halaman ini untuk request <span className="font-medium text-jp-text dark:text-jp-text-dark">equipment</span> (alat kerja, tidak terkait tiket servis tertentu). Butuh sparepart untuk perbaikan HP? Buka tiket servisnya di Data Service dan pilih &quot;Request Sparepart&quot; dari sana — supaya otomatis terhubung ke HP yang sedang Anda kerjakan.
     </p>}
     {canCreate && <div className="space-y-2">
       <div className="flex items-center justify-between"><h2 className="text-sm font-semibold text-jp-text dark:text-jp-text-dark">Cek Stok Cabang</h2><input className="field-control w-full max-w-xs" placeholder="Cari sparepart..." value={stokQuery} onChange={(e) => setStokQuery(e.target.value)}/></div>
@@ -108,24 +97,15 @@ export default function RequestSparepartPage(): JSX.Element {
     <div className="segmented-control">{STATUS_TABS.map((s) => <button type="button" key={s || "all"} className={`filter-tab ${status === s ? "filter-tab-active" : ""}`} onClick={() => setStatus(s)}>{s ? (STATUS_LABEL[s] ?? s) : "Semua"}</button>)}</div>
     {loading ? <LoadingSkeleton numberOfRows={5}/> : error ? <ErrorState message={error} onRetry={load}/> : <div className="table-wrap overflow-x-auto rounded-jp-md"><table className="w-full text-xs"><thead className="tbl-head border-b"><tr>{["Request","Sparepart","Jenis","Jumlah","Harga Diajukan/Disetujui","Cabang","Status","Aksi"].map((h) => <th key={h} className={`px-5 py-3.5 text-left font-medium ${h === "Aksi" ? "tbl-action-col" : ""}`}>{h}</th>)}</tr></thead><tbody>{items.length ? items.map((r) => <tr key={r.id} className="tbl-row"><td className="px-5 py-4 font-mono text-jp-muted dark:text-jp-muted-dark">{r.req_id}</td><td className="px-5 py-4"><p className="font-medium">{r.nama_sp}</p><p className="text-[10px] text-jp-muted dark:text-jp-muted-dark">{r.sp_id || "Custom"}{r.service_id ? ` · ${r.service_id}` : ""}</p>{r.alasan && <p className="mt-0.5 text-[10px] italic text-jp-muted dark:text-jp-muted-dark">&ldquo;{r.alasan}&rdquo;</p>}</td><td className="px-5 py-4 text-jp-muted dark:text-jp-muted-dark">{r.jenis === "equipment" ? "Equipment" : "Repair"}</td><td className="px-5 py-4">{r.jumlah}</td><td className="px-5 py-4">{r.harga_disetujui ? formatRupiah(r.harga_disetujui) : r.harga_diajukan ? <span className="text-jp-muted dark:text-jp-muted-dark">{formatRupiah(r.harga_diajukan)} (diajukan)</span> : "-"}</td><td className="px-5 py-4 text-jp-muted dark:text-jp-muted-dark">{r.cabang}</td><td className="px-5 py-4"><span className="badge badge-booking">{STATUS_LABEL[r.status] ?? r.status}</span></td><td className="tbl-action-col px-5 py-4">{canApprove && r.status === "Pending" ? <button type="button" className="btn-ghost" onClick={() => { setSelected(r); setEstimate(""); setNote(""); setHargaDisetujui(String(r.harga_diajukan ?? "")); }}>Proses</button> : <span className="text-jp-muted dark:text-jp-muted-dark">—</span>}</td></tr>) : <tr><td colSpan={8}><EmptyState message="Belum ada request sparepart" iconName="packageSvg"/></td></tr>}</tbody></table></div>}
 
-    <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title="Request Sparepart">
+    <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title="Request Equipment">
       <div className="space-y-3">
-        <LabelledSelect label="Jenis" value={jenis} onChange={(e) => setJenis(e.target.value as RequestSparepartJenis)}>
-          <option value="repair">Repair (dipakai di tiket servis)</option>
-          <option value="equipment">Equipment (alat kerja teknisi)</option>
-        </LabelledSelect>
-        {jenis === "repair" && <LabelledSelect label="Tiket Servis" required value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
-          <option value="">— pilih tiket —</option>
-          {myOpenTickets.map((t) => <option key={t.service_id} value={t.service_id}>{t.service_id} — {t.unit_label}</option>)}
-        </LabelledSelect>}
-        {jenis === "repair" && myOpenTickets.length === 0 && <p className="text-[11px] text-jp-danger dark:text-jp-danger-dark">Tidak ada tiket servis Proses yang bisa dipilih — mulai servis dulu di halaman Data Service.</p>}
         <LabelledSelect label="Tipe" value={type} onChange={(e) => setType(e.target.value)}><option>SPAREPART</option><option>Servis</option><option>Barang</option></LabelledSelect>
-        <LabelledInput label="Nama Sparepart" required value={name} onChange={(e) => setName(e.target.value)}/>
+        <LabelledInput label="Nama Alat/Barang" required value={name} onChange={(e) => setName(e.target.value)}/>
         {spId && <p className="rounded-jp-sm bg-jp-surface-subtle px-3 py-2 text-xs text-jp-muted dark:bg-jp-surface-subtle-dark/60 dark:text-jp-muted-dark">Dari stok cabang: <span className="font-mono font-medium text-jp-text dark:text-jp-text-dark">{spId}</span></p>}
         <LabelledInput label="Jumlah" type="number" min={1} required value={quantity} onChange={(e) => setQuantity(e.target.value)}/>
-        <LabelledInput label="Harga yang Diajukan (per satuan)" type="number" min={1} required value={hargaDiajukan} onChange={(e) => setHargaDiajukan(e.target.value)}/>
-        <LabelledTextarea label="Alasan" required rows={2} helper="Jelaskan kenapa part/alat ini dibutuhkan — dipakai Kepala Cabang untuk review." value={alasan} onChange={(e) => setAlasan(e.target.value)}/>
-        {!spId && <LabelledInput label="Link Produk" required type="url" placeholder="https://..." helper="Part ini belum ada di stok cabang — isi link referensi barang yang mau dibeli. Kalau partnya sudah ada di stok tapi kosong, klik &quot;Request&quot; langsung dari tabel Cek Stok Cabang di bawah, bukan lewat form ini." value={productLink} onChange={(e) => setProductLink(e.target.value)}/>}
+        <LabelledInput label="Harga yang Diajukan (per satuan, opsional)" type="number" min={1} helper="Boleh dikosongkan — Kepala Cabang/Kasir bisa isi belakangan." value={hargaDiajukan} onChange={(e) => setHargaDiajukan(e.target.value)}/>
+        <LabelledTextarea label="Alasan" required rows={2} helper="Jelaskan kenapa alat/barang ini dibutuhkan — dipakai Kepala Cabang untuk review." value={alasan} onChange={(e) => setAlasan(e.target.value)}/>
+        <LabelledInput label="Link Produk (opsional)" type="url" placeholder="https://..." helper="Isi kalau sudah ada referensi barang yang mau dibeli." value={productLink} onChange={(e) => setProductLink(e.target.value)}/>
         <LabelledTextarea label="Keterangan" rows={2} value={note} onChange={(e) => setNote(e.target.value)}/>
         <button type="button" className="btn-primary w-full" onClick={() => void create()}>Kirim Request</button>
       </div>

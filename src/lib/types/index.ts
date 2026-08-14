@@ -93,6 +93,7 @@ export interface Unit {
   storage: string;
   ram: string;
   warna: string;
+  kelengkapan?: string;
   imei: string;
   imei2?: string;
   tipe_sim: string;
@@ -174,6 +175,30 @@ export interface ServiceTicket {
   created_at: string;
   updated_at?: string;
   sparepart_items?: { sp_id: string; nama: string; jumlah: number; harga_modal: number; mulai_pakai?: string }[];
+  /** Joined in at the route layer for GET /service (list) — for the "HP/IMEI" table column. */
+  imei?: string;
+}
+
+/** Extra unit fields joined into GET /service/{id}/detail only (not on the
+ * base ServiceTicket / list response) — for the read-only "Pilih HP" screen. */
+export interface ServiceTicketDetail extends ServiceTicket {
+  warna: string;
+  kondisi: string;
+  kelengkapan: string;
+  imei: string;
+  timeline: { event: string; waktu: string }[];
+}
+
+/** One row of GET /service/riwayat — ticket-centric completed-service
+ * history, no time window (unlike Sparepart's "Riwayat Pemakaian"). */
+export interface ServiceRiwayatItem {
+  service_id: string;
+  unit_label: string;
+  imei: string;
+  sparepart_items: { sp_id: string; nama: string; jumlah: number; harga_modal: number }[];
+  harga_modal_total: number;
+  selesai_at?: string | null;
+  status: string;
 }
 
 // ─── Customer ────────────────────────────────────────────────────────────
@@ -294,10 +319,11 @@ export interface KaryawanStats {
 }
 
 // ─── Sparepart requests ────────────────────────────────────────────────
-// Alur (diagram "ALUR TEKNISI – REQUEST SPAREPART & PEMAKAIAN"):
+// Alur (diagram "WORKFLOW SERVICE & REQUEST SPAREPART"):
 // Pending -> [KC approve harga, terkunci di harga_disetujui] -> Menunggu_Pembelian
 // -> [Kasir catat pembelian] -> Menunggu_Barang (atau langsung Diterima kalau barang_di_tangan)
-// -> [Kasir konfirmasi barang sampai] -> Diterima -> auto-reserved ke tiket -> Digunakan
+// -> [Kasir konfirmasi barang sampai] -> Diterima (ditahan buat tiket ini, badge FE
+//    "Sparepart Tersedia") -> [Teknisi konfirmasi "Gunakan Sparepart"] -> Digunakan
 // Ditolak bisa terjadi di titik KC review.
 export type RequestSparepartStatus =
   | "Pending" | "Disetujui" | "Menunggu_Pembelian" | "Dibeli"

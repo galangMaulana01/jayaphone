@@ -133,7 +133,7 @@ export default function ApprovalSparepartPage(): JSX.Element {
       <div className="space-y-4">
         <p className="font-medium">{terimaTarget?.nama_sp} · {terimaTarget?.jumlah} unit</p>
         <p className="text-xs text-jp-muted dark:text-jp-muted-dark">Supplier: {terimaTarget?.supplier || "-"} · Harga beli aktual: {formatRupiah(terimaTarget?.harga_beli_aktual ?? 0)}</p>
-        {terimaTarget?.service_id && <p className="rounded-jp-sm bg-jp-surface-subtle p-3 text-xs text-jp-muted dark:bg-jp-surface-subtle-dark/60 dark:text-jp-muted-dark">Part ini akan langsung direservasi ke tiket <span className="font-medium text-jp-text dark:text-jp-text-dark">{terimaTarget.service_id}</span> (Sedang Dipakai) — tidak masuk stok umum.</p>}
+        {terimaTarget?.service_id && <p className="rounded-jp-sm bg-jp-surface-subtle p-3 text-xs text-jp-muted dark:bg-jp-surface-subtle-dark/60 dark:text-jp-muted-dark">Part ini akan ditahan untuk tiket <span className="font-medium text-jp-text dark:text-jp-text-dark">{terimaTarget.service_id}</span> (tidak masuk stok umum) — teknisi akan diberi notifikasi dan harus konfirmasi &quot;Gunakan Sparepart&quot; sebelum part ini benar-benar tercatat dipakai.</p>}
         <LabelledInput label="Tanggal Terima" type="date" value={tanggalTerima} onChange={(e) => setTanggalTerima(e.target.value)}/>
         <LabelledTextarea label="Catatan" rows={2} value={catatanTerima} onChange={(e) => setCatatanTerima(e.target.value)}/>
         <button className="btn-success w-full" type="button" onClick={() => void submitTerima()}>Konfirmasi Barang Diterima</button>

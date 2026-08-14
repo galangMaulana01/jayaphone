@@ -86,7 +86,6 @@ export default function ServiceListPage(): JSX.Element {
   const [step, setStep] = useState<Step>("detail");
   const [busy, setBusy] = useState(false);
 
-  const [beforePhotos, setBeforePhotos] = useState<UploadedImage[]>([]);
   const [catatanKerusakan, setCatatanKerusakan] = useState("");
   const [estimasi, setEstimasi] = useState("");
   const [catatanProses, setCatatanProses] = useState("");
@@ -130,7 +129,6 @@ export default function ServiceListPage(): JSX.Element {
       const detail = (await Api.service.detail(serviceId)).data;
       setActive(detail);
       setStep(resolveInitialStep(detail));
-      setBeforePhotos((detail.foto_before_urls || []).map((secure_url) => ({ secure_url })));
       setAfterPhotos((detail.foto_after_urls || []).map((secure_url) => ({ secure_url })));
       setCatatanKerusakan(detail.catatan_kerusakan || "");
       setEstimasi(detail.estimasi_selesai ? detail.estimasi_selesai.replace(" ", "T").slice(0, 16) : "");
@@ -149,13 +147,10 @@ export default function ServiceListPage(): JSX.Element {
   // ── Step 2: Pilih HP -> Pilih Kebutuhan ─────────────────────────────────
   const goKebutuhan = async () => {
     if (!active) return;
-    if (!beforePhotos.length) { showToast("Foto kondisi HP sebelum dikerjakan wajib diupload", "error"); return; }
+    if (catatanKerusakan === (active.catatan_kerusakan || "")) { setStep("kebutuhan"); return; }
     setBusy(true);
     try {
-      await Api.service.update(active.service_id, {
-        foto_before_urls: beforePhotos.map((i) => i.secure_url),
-        catatan_kerusakan: catatanKerusakan || undefined,
-      });
+      await Api.service.update(active.service_id, { catatan_kerusakan: catatanKerusakan || undefined });
       setStep("kebutuhan");
     } catch (e) { showToast(e instanceof Error ? e.message : "Gagal menyimpan foto", "error"); } finally { setBusy(false); }
   };
@@ -373,10 +368,6 @@ export default function ServiceListPage(): JSX.Element {
                 <div><p className="text-xs text-jp-muted dark:text-jp-muted-dark">IMEI</p><p className="font-mono text-sm">{active.imei || NOT_SET}</p></div>
               </div>
               <LabelledTextarea label="Catatan Kerusakan" rows={2} value={catatanKerusakan} onChange={(e) => setCatatanKerusakan(e.target.value)} />
-              <div>
-                <p className="mb-2 text-xs font-semibold text-jp-text dark:text-jp-text-dark">Foto kondisi HP sebelum dikerjakan</p>
-                <ImageUploader id="svc-before" maxFiles={5} initialImages={beforePhotos} folder="jayaphone/service/before" onChange={setBeforePhotos} />
-              </div>
               <button type="button" disabled={busy} className="btn-primary w-full" onClick={() => void goKebutuhan()}>{busy ? "Menyimpan..." : "Lanjut Proses"}</button>
             </div>
           )}

@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { Modal } from "@/components/ui/Modal";
+import { ImageUploader } from "@/components/ui/ImageUploader";
 import { LabelledInput, LabelledSelect, LabelledTextarea } from "@/components/ui/InputField";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
@@ -15,7 +16,7 @@ import { formatRupiah, formatDateTimeShort, NOT_SET } from "@/lib/utils/formatte
 import { useCabangTimezones, resolveCabangTimezone } from "@/contexts/CabangTzContext";
 import type { RequestSparepart, RequestSparepartJenis, Sparepart, SparepartInUseItem, SparepartJenis, ServiceTicket } from "@/lib/types";
 
-type SparepartTab = "tersedia" | "sedang_dipakai" | "riwayat" | "untuk_dijual" | "request";
+type SparepartTab = "tersedia" | "sedang_dipakai" | "riwayat" | "untuk_dijual" | "request" | "menunggu_pembelian" | "menunggu_barang";
 const JENIS_OPTIONS: { value: SparepartJenis; label: string }[] = [
   { value: "repair", label: "Repair (dipakai teknisi)" },
   { value: "dijual", label: "Dijual (langsung ke customer)" },
@@ -69,11 +70,26 @@ export default function SparepartPage(): JSX.Element {
   const [reqHargaDisetujui, setReqHargaDisetujui] = useState("");
   const [reqCatatan, setReqCatatan] = useState("");
 
+  // ── Menunggu Pembelian / Menunggu Barang (kasir) — merged in from the old
+  // standalone Approval Sparepart page. Continues the same request_sparepart
+  // lifecycle as the "Request Sparepart" tab above, one stage further along.
+  const [beliTarget, setBeliTarget] = useState<RequestSparepart | null>(null);
+  const [terimaTarget, setTerimaTarget] = useState<RequestSparepart | null>(null);
+  const [supplier, setSupplier] = useState("");
+  const [hargaAktual, setHargaAktual] = useState("");
+  const [buktiUrl, setBuktiUrl] = useState("");
+  const [catatanBeli, setCatatanBeli] = useState("");
+  const [barangDiTangan, setBarangDiTangan] = useState(false);
+  const [tanggalTerimaBeli, setTanggalTerimaBeli] = useState("");
+  const [tanggalTerima, setTanggalTerima] = useState("");
+  const [catatanTerima, setCatatanTerima] = useState("");
+
   // Backend only lets kepala_cabang/owner create sparepart or adjust stock
   // (require_kepala_or_owner on POST /sparepart and PATCH /{id}/stok) — kasir
   // reaches this same page read-only, to check availability, not manage it.
   const canManage = user?.role === "owner" || user?.role === "kepala_cabang";
   const isTeknisi = user?.role === "teknisi";
+  const isKasir = user?.role === "kasir";
   // Request Sparepart tab: kepala_cabang/owner approve, teknisi create/view
   // their own — kasir has no role in this tab at all (matches the old
   // standalone page's nav visibility, which never included kasir).
@@ -97,6 +113,18 @@ export default function SparepartPage(): JSX.Element {
       () => (canSeeRequestTab ? Api.requestSparepart.list({ status: reqStatusFilter || undefined }).then((r) => r.data ?? []) : Promise.resolve([])),
       [canSeeRequestTab, reqStatusFilter], "Gagal memuat request sparepart",
     );
+  // Kasir-only continuation of the same request_sparepart lifecycle above.
+  const { items: menungguPembelian, loading: menungguPembelianLoading, error: menungguPembelianError, reload: reloadMenungguPembelian } =
+    useApiList<RequestSparepart>(
+      () => (isKasir ? Api.requestSparepart.list({ status: "Menunggu_Pembelian" }).then((r) => r.data ?? []) : Promise.resolve([])),
+      [isKasir], "Gagal memuat request menunggu pembelian",
+    );
+  const { items: menungguBarang, loading: menungguBarangLoading, error: menungguBarangError, reload: reloadMenungguBarang } =
+    useApiList<RequestSparepart>(
+      () => (isKasir ? Api.requestSparepart.list({ status: "Menunggu_Barang" }).then((r) => r.data ?? []) : Promise.resolve([])),
+      [isKasir], "Gagal memuat request menunggu barang",
+    );
+  const reloadProcurement = () => { void reloadMenungguPembelian(); void reloadMenungguBarang(); };
   // Open tickets to pick from in "Gunakan Sparepart" — teknisi only sees their
   // own (backend's use_sparepart 403s otherwise anyway), owner sees all.
   const { items: openTickets } = useApiList<ServiceTicket>(
@@ -172,12 +200,43 @@ export default function SparepartPage(): JSX.Element {
     } catch (e) { showToast(e instanceof Error ? e.message : "Aksi request gagal", "error"); }
   };
 
+  const openBeli = (r: RequestSparepart) => {
+    setBeliTarget(r); setSupplier(""); setHargaAktual(String(r.harga_disetujui ?? "")); setBuktiUrl("");
+    setCatatanBeli(""); setBarangDiTangan(false); setTanggalTerimaBeli("");
+  };
+  const submitBeli = async () => {
+    if (!beliTarget) return;
+    if (!supplier.trim()) { showToast("Supplier wajib diisi", "error"); return; }
+    if (!Number(hargaAktual) || Number(hargaAktual) <= 0) { showToast("Harga beli aktual wajib diisi", "error"); return; }
+    try {
+      await Api.requestSparepart.beli(beliTarget.req_id, {
+        supplier: supplier.trim(), harga_beli_aktual: Number(hargaAktual), bukti_url: buktiUrl || undefined,
+        catatan: catatanBeli || undefined, barang_di_tangan: barangDiTangan,
+        tanggal_terima: barangDiTangan ? (tanggalTerimaBeli || undefined) : undefined,
+      });
+      showToast(barangDiTangan ? "Pembelian dicatat, barang langsung masuk inventory" : "Pembelian dicatat, menunggu barang sampai");
+      setBeliTarget(null); reloadProcurement();
+    } catch (e) { showToast(e instanceof Error ? e.message : "Catat pembelian gagal", "error"); }
+  };
+  const submitTerima = async () => {
+    if (!terimaTarget) return;
+    try {
+      await Api.requestSparepart.terima(terimaTarget.req_id, { tanggal_terima: tanggalTerima || undefined, catatan: catatanTerima || undefined });
+      showToast("Barang diterima, masuk inventory");
+      setTerimaTarget(null); reloadProcurement();
+    } catch (e) { showToast(e instanceof Error ? e.message : "Konfirmasi terima gagal", "error"); }
+  };
+
   const tabs: { key: SparepartTab; label: string; count: number }[] = [
     { key: "tersedia", label: "Sparepart Tersedia", count: tersedia.length },
     { key: "sedang_dipakai", label: "Sparepart Sedang Dipakai", count: sedangDipakai.length },
     { key: "riwayat", label: "Riwayat Pemakaian", count: riwayat.length },
     { key: "untuk_dijual", label: "Sparepart Untuk Dijual", count: dijual.length },
     ...(canSeeRequestTab ? [{ key: "request" as const, label: "Request Sparepart", count: requests.length }] : []),
+    ...(isKasir ? [
+      { key: "menunggu_pembelian" as const, label: "Menunggu Pembelian", count: menungguPembelian.length },
+      { key: "menunggu_barang" as const, label: "Menunggu Barang", count: menungguBarang.length },
+    ] : []),
   ];
 
   return (
@@ -188,6 +247,7 @@ export default function SparepartPage(): JSX.Element {
           <p className="text-sm text-jp-muted dark:text-jp-muted-dark">{canManage ? "Master sparepart dan stok cabang" : "Cek ketersediaan sparepart di cabang Anda"}</p>
         </div>
         {tab === "request" ? (canCreateRequest && <button type="button" className="btn-primary" onClick={openRequestForm}>+ Request Baru</button>)
+          : (tab === "menunggu_pembelian" || tab === "menunggu_barang") ? null
           : (canManage && <button type="button" className="btn-primary" onClick={openCreate}>+ Tambah Sparepart</button>)}
       </div>
 
@@ -202,7 +262,7 @@ export default function SparepartPage(): JSX.Element {
         {tabs.map((t) => <button type="button" key={t.key} className={`filter-tab ${tab === t.key ? "filter-tab-active" : ""}`} onClick={() => setTab(t.key)}>{t.label} ({t.count})</button>)}
       </div>
 
-      {tab !== "sedang_dipakai" && tab !== "riwayat" && tab !== "request" && (
+      {tab !== "sedang_dipakai" && tab !== "riwayat" && tab !== "request" && tab !== "menunggu_pembelian" && tab !== "menunggu_barang" && (
         <div className="jp-toolbar">
           <input className="field-control w-full sm:max-w-md" placeholder="Cari sparepart..." value={query} onChange={(e) => setQuery(e.target.value)} />
           <input className="field-control w-full sm:w-auto" placeholder="Kategori" value={category} onChange={(e) => setCategory(e.target.value)} />
@@ -373,6 +433,52 @@ export default function SparepartPage(): JSX.Element {
         </>
       )}
 
+      {tab === "menunggu_pembelian" && isKasir && (
+        menungguPembelianLoading ? <LoadingSkeleton numberOfRows={5} /> : menungguPembelianError ? <ErrorState message={menungguPembelianError} onRetry={reloadMenungguPembelian} /> : (
+          <div className="table-wrap overflow-x-auto rounded-jp-md">
+            <table className="w-full text-xs">
+              <thead className="tbl-head border-b"><tr>{["ID", "Jenis", "Nama Barang", "Jumlah", "Cabang", "Harga Disetujui", "Aksi"].map((h) => <th key={h} className={`px-5 py-3.5 text-left font-medium ${h === "Aksi" ? "tbl-action-col" : ""}`}>{h}</th>)}</tr></thead>
+              <tbody>
+                {menungguPembelian.length ? menungguPembelian.map((r) => (
+                  <tr key={r.id} className="tbl-row">
+                    <td className="px-5 py-4 font-mono text-jp-muted dark:text-jp-muted-dark">{r.req_id}</td>
+                    <td className="px-5 py-4">{r.jenis === "equipment" ? "Equipment" : "Repair"}</td>
+                    <td className="px-5 py-4 font-medium">{r.nama_sp}{r.service_id ? <span className="ml-1 text-[10px] font-normal text-jp-muted dark:text-jp-muted-dark">({r.service_id})</span> : null}</td>
+                    <td className="px-5 py-4">{r.jumlah}</td>
+                    <td className="px-5 py-4 text-jp-muted dark:text-jp-muted-dark">{r.cabang}</td>
+                    <td className="px-5 py-4">{formatRupiah(r.harga_disetujui ?? 0)}</td>
+                    <td className="tbl-action-col px-5 py-4"><button type="button" className="btn-primary" onClick={() => openBeli(r)}>Catat Pembelian</button></td>
+                  </tr>
+                )) : <tr><td colSpan={7}><EmptyState message="Tidak ada request menunggu pembelian" iconName="packageSvg" /></td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )
+      )}
+
+      {tab === "menunggu_barang" && isKasir && (
+        menungguBarangLoading ? <LoadingSkeleton numberOfRows={5} /> : menungguBarangError ? <ErrorState message={menungguBarangError} onRetry={reloadMenungguBarang} /> : (
+          <div className="table-wrap overflow-x-auto rounded-jp-md">
+            <table className="w-full text-xs">
+              <thead className="tbl-head border-b"><tr>{["ID", "Jenis", "Nama Barang", "Jumlah", "Cabang", "Harga Beli Aktual", "Aksi"].map((h) => <th key={h} className={`px-5 py-3.5 text-left font-medium ${h === "Aksi" ? "tbl-action-col" : ""}`}>{h}</th>)}</tr></thead>
+              <tbody>
+                {menungguBarang.length ? menungguBarang.map((r) => (
+                  <tr key={r.id} className="tbl-row">
+                    <td className="px-5 py-4 font-mono text-jp-muted dark:text-jp-muted-dark">{r.req_id}</td>
+                    <td className="px-5 py-4">{r.jenis === "equipment" ? "Equipment" : "Repair"}</td>
+                    <td className="px-5 py-4 font-medium">{r.nama_sp}{r.service_id ? <span className="ml-1 text-[10px] font-normal text-jp-muted dark:text-jp-muted-dark">({r.service_id})</span> : null}</td>
+                    <td className="px-5 py-4">{r.jumlah}</td>
+                    <td className="px-5 py-4 text-jp-muted dark:text-jp-muted-dark">{r.cabang}</td>
+                    <td className="px-5 py-4">{formatRupiah(r.harga_beli_aktual ?? 0)}</td>
+                    <td className="tbl-action-col px-5 py-4"><button type="button" className="btn-primary" onClick={() => { setTerimaTarget(r); setTanggalTerima(""); setCatatanTerima(""); }}>Barang Diterima</button></td>
+                  </tr>
+                )) : <tr><td colSpan={7}><EmptyState message="Tidak ada request menunggu barang" iconName="packageSvg" /></td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )
+      )}
+
       {canManage && (
         <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title="Tambah Sparepart">
           <div className="space-y-3">
@@ -455,6 +561,47 @@ export default function SparepartPage(): JSX.Element {
               <button type="button" className="btn-error flex-1" onClick={() => void respondRequest("Ditolak")}>Tolak</button>
               <button type="button" className="btn-success flex-1" onClick={() => void respondRequest("Diterima")}>Setujui</button>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {isKasir && (
+        <Modal isOpen={beliTarget !== null} onClose={() => setBeliTarget(null)} title={beliTarget ? `Catat Pembelian ${beliTarget.req_id}` : "Catat Pembelian"}>
+          <div className="space-y-4">
+            <p className="font-medium">{beliTarget?.nama_sp} · {beliTarget?.jumlah} unit</p>
+            <p className="rounded-jp-sm bg-jp-surface-subtle p-3 text-xs text-jp-muted dark:bg-jp-surface-subtle-dark/60 dark:text-jp-muted-dark">
+              Harga disetujui Kepala Cabang: <span className="font-medium text-jp-text dark:text-jp-text-dark">{formatRupiah(beliTarget?.harga_disetujui ?? 0)}</span> per satuan.
+            </p>
+            <LabelledInput label="Supplier" required value={supplier} onChange={(e) => setSupplier(e.target.value)} />
+            <LabelledInput label="Harga Beli Aktual (per satuan)" type="number" min={1} required value={hargaAktual} onChange={(e) => setHargaAktual(e.target.value)} />
+            {Number(hargaAktual) > 0 && beliTarget?.harga_disetujui && (
+              Number(hargaAktual) === beliTarget.harga_disetujui
+                ? <p className="text-[11px] text-jp-teal dark:text-jp-teal-dark">✓ Harga sesuai approval</p>
+                : <p className="text-[11px] text-jp-warning dark:text-jp-warning-dark">Beda dari harga disetujui ({formatRupiah(beliTarget.harga_disetujui)}) — tetap bisa disimpan, hanya sebagai catatan.</p>
+            )}
+            <ImageUploader id="bukti-nota" maxFiles={1} label="Bukti / Nota Pembelian" onChange={(imgs) => setBuktiUrl(imgs[0]?.secure_url ?? "")} />
+            <LabelledTextarea label="Catatan" rows={2} value={catatanBeli} onChange={(e) => setCatatanBeli(e.target.value)} />
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={barangDiTangan} onChange={(e) => setBarangDiTangan(e.target.checked)} />
+              Barang sudah di tangan sekarang (beli langsung/COD, tidak perlu tunggu kirim)
+            </label>
+            {barangDiTangan && <LabelledInput label="Tanggal Terima" type="date" value={tanggalTerimaBeli} onChange={(e) => setTanggalTerimaBeli(e.target.value)} />}
+            <button type="button" className="btn-primary w-full" onClick={() => void submitBeli()}>
+              {barangDiTangan ? "Simpan & Masukkan ke Inventory" : "Simpan Pembelian"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {isKasir && (
+        <Modal isOpen={terimaTarget !== null} onClose={() => setTerimaTarget(null)} title={terimaTarget ? `Barang Diterima ${terimaTarget.req_id}` : "Barang Diterima"}>
+          <div className="space-y-4">
+            <p className="font-medium">{terimaTarget?.nama_sp} · {terimaTarget?.jumlah} unit</p>
+            <p className="text-xs text-jp-muted dark:text-jp-muted-dark">Supplier: {terimaTarget?.supplier || "-"} · Harga beli aktual: {formatRupiah(terimaTarget?.harga_beli_aktual ?? 0)}</p>
+            {terimaTarget?.service_id && <p className="rounded-jp-sm bg-jp-surface-subtle p-3 text-xs text-jp-muted dark:bg-jp-surface-subtle-dark/60 dark:text-jp-muted-dark">Part ini akan ditahan untuk tiket <span className="font-medium text-jp-text dark:text-jp-text-dark">{terimaTarget.service_id}</span> (tidak masuk stok umum) — teknisi akan diberi notifikasi dan harus konfirmasi &quot;Gunakan Sparepart&quot; sebelum part ini benar-benar tercatat dipakai.</p>}
+            <LabelledInput label="Tanggal Terima" type="date" value={tanggalTerima} onChange={(e) => setTanggalTerima(e.target.value)} />
+            <LabelledTextarea label="Catatan" rows={2} value={catatanTerima} onChange={(e) => setCatatanTerima(e.target.value)} />
+            <button type="button" className="btn-success w-full" onClick={() => void submitTerima()}>Konfirmasi Barang Diterima</button>
           </div>
         </Modal>
       )}

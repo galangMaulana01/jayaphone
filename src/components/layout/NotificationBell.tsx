@@ -142,13 +142,17 @@ export function NotificationBell(): JSX.Element | null {
     if (role === "kasir" || role === "kepala_cabang" || role === "owner") {
       try {
         const response = await Api.service.pendingApproval({ limit: 50 });
+        // Owner/kepala_cabang no longer have a standalone "Approval Repair"
+        // nav item (folded into Data Service's own inline Approve, filtered
+        // via ?status=Selesai) — kasir still does, so its target is unchanged.
+        const targetPageKey = role === "kasir" ? "approval-repair" : "service?status=Selesai";
         for (const serviceTicket of response.data) {
           enqueueNotification({
             id: serviceTicket.service_id,
             variant: "approval",
             title: "Service Selesai — Butuh Approval",
             body: `${serviceTicket.unit_label || serviceTicket.unit_id} · ${serviceTicket.keluhan ?? ""}`,
-            targetPageKey: "approval-repair",
+            targetPageKey,
           });
         }
       } catch {

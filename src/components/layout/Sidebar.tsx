@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navigationByRole } from "@/lib/config/nav";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePendingRepairApprovalCount } from "@/hooks/usePendingRepairApprovalCount";
 import { Icon } from "@/lib/icons";
 import { NOT_SET } from "@/lib/utils/formatters";
 import { UserAvatar } from "./UserAvatar";
@@ -16,6 +17,12 @@ interface SidebarProps {
 export function Sidebar({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProps): JSX.Element | null {
   const { user: currentUser } = useAuth();
   const currentPathname = usePathname();
+  // Zero-click discovery for the pending-repair-approval count that used to
+  // live on its own "Approval Repair" sidebar item (owner/kepala_cabang only
+  // — see nav.ts). Returns 0 for every other role, so the lookup below is a
+  // no-op for them.
+  const pendingRepairApprovalCount = usePendingRepairApprovalCount();
+  const badgeCountByPageKey: Record<string, number> = { service: pendingRepairApprovalCount };
 
   if (!currentUser) return null;
   const menuEntries = navigationByRole[currentUser.role] ?? [];
@@ -58,6 +65,7 @@ export function Sidebar({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarPr
               ? "bg-jp-text text-white dark:bg-jp-text-dark dark:text-jp-text"
               : "text-jp-muted hover:bg-jp-surface-subtle hover:text-jp-text dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark dark:hover:text-jp-text-dark";
             const iconClassName = "text-current";
+            const badgeCount = badgeCountByPageKey[menuEntry.pageKey] ?? 0;
 
             return (
               <Link
@@ -69,7 +77,15 @@ export function Sidebar({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarPr
                 <span className={"flex h-8 w-8 shrink-0 items-center justify-center " + iconClassName}>
                   <Icon name={menuEntry.iconName} className="h-[18px] w-[18px]" />
                 </span>
-                <span className="min-w-0 truncate">{menuEntry.label}</span>
+                <span className="min-w-0 flex-1 truncate">{menuEntry.label}</span>
+                {badgeCount > 0 && (
+                  <span
+                    className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-jp-danger px-1.5 text-[10px] font-semibold text-white"
+                    aria-label={`${badgeCount} menunggu persetujuan`}
+                  >
+                    {badgeCount > 99 ? "99+" : badgeCount}
+                  </span>
+                )}
               </Link>
             );
           })}

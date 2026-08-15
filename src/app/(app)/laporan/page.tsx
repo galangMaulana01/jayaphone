@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Api, ApiError } from "@/lib/api";
 import type { DashboardStats, RequestSparepart, ServiceStatus, ServiceTicket, Transaksi } from "@/lib/types";
 import { CabangFilter } from "@/components/ui/CabangFilter";
@@ -12,9 +12,11 @@ import { ServiceStatusBadge } from "@/components/ui/Badge";
 import { createDefaultDateFilter, toApiQueryParams, type DateFilterState } from "@/lib/utils/dateFilter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCabangTimezones, resolveCabangTimezone } from "@/contexts/CabangTzContext";
+import { useUrlParam } from "@/hooks/useUrlParam";
 import { formatDateTimeShort } from "@/lib/utils/formatters";
 
 type LaporanTab = "penjualan" | "sparepart" | "service" | "keuangan";
+const LAPORAN_TABS: readonly LaporanTab[] = ["penjualan", "sparepart", "service", "keuangan"];
 const TAB_LABEL: Record<LaporanTab, string> = { penjualan: "Penjualan", sparepart: "Sparepart", service: "Service", keuangan: "Keuangan" };
 
 function money(value: number | undefined): string {
@@ -22,17 +24,22 @@ function money(value: number | undefined): string {
 }
 
 export default function LaporanPage(): JSX.Element {
+  return (
+    <Suspense fallback={null}>
+      <LaporanPageInner />
+    </Suspense>
+  );
+}
+
+function LaporanPageInner(): JSX.Element {
   const { user } = useAuth();
   const cabangTz = useCabangTimezones();
   // Historically this page was a single "Laporan Keuangan" view — bare
   // /laporan (no ?tab=) keeps showing that same tab so existing bookmarks
   // and links aren't disrupted. The sidebar's Penjualan/Sparepart/Service
-  // children deep-link the other three explicitly.
-  const [tab, setTab] = useState<LaporanTab>("keuangan");
-  useEffect(() => {
-    const initialTab = new URLSearchParams(window.location.search).get("tab");
-    if (initialTab && (["penjualan", "sparepart", "service", "keuangan"] as string[]).includes(initialTab)) setTab(initialTab as LaporanTab);
-  }, []);
+  // children deep-link the other three explicitly. Single source of truth
+  // is the ?tab= query param itself (see useUrlParam).
+  const [tab, setTab] = useUrlParam<LaporanTab>("tab", LAPORAN_TABS, "keuangan");
 
   const [filter, setFilter] = useState<DateFilterState>(createDefaultDateFilter());
   const [branch, setBranch] = useState("");
@@ -125,7 +132,11 @@ export default function LaporanPage(): JSX.Element {
         </div>
       </div>
 
-      <div className="segmented-control">
+      {/* Desktop relies on the sidebar's Laporan children (identical 4 tabs)
+          as the single navigation for this switch — this bar would be a
+          pure duplicate there. Mobile keeps it: the sidebar isn't visible
+          without opening the drawer, so this is the only way to switch tabs. */}
+      <div className="segmented-control md:hidden">
         {(["penjualan", "sparepart", "service", "keuangan"] as LaporanTab[]).map((t) => (
           <button type="button" key={t} className={`filter-tab ${tab === t ? "filter-tab-active" : ""}`} onClick={() => setTab(t)}>{TAB_LABEL[t]}</button>
         ))}

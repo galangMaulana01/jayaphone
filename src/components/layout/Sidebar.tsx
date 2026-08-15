@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { navigationByRole, type NavigationChild, type NavigationEntry } from "@/lib/config/nav";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePendingRepairApprovalCount } from "@/hooks/usePendingRepairApprovalCount";
@@ -65,10 +65,26 @@ function groupContainsCurrentPage(entry: NavigationEntry, currentPathname: strin
   return (entry.children ?? []).some((child) => splitHref(child.href).pathname === currentPathname);
 }
 
-export function Sidebar({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProps): JSX.Element | null {
+// useSearchParams() (below) requires a Suspense boundary in the app-router —
+// wrapped here so every call site (desktop <aside>, mobile drawer) gets it
+// for free instead of needing to remember it themselves.
+export function Sidebar(props: SidebarProps): JSX.Element {
+  return (
+    <Suspense fallback={null}>
+      <SidebarInner {...props} />
+    </Suspense>
+  );
+}
+
+function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProps): JSX.Element | null {
   const { user: currentUser } = useAuth();
   const currentPathname = usePathname();
-  const [currentSearch, setCurrentSearch] = useState<string>("");
+  // Same source of truth as every page's own tab state (see useUrlParam) —
+  // reading the URL reactively here, instead of a locally-tracked copy,
+  // is what guarantees the sidebar's active child can never disagree with
+  // what the page itself is showing, regardless of how the navigation
+  // happened (Link click, back/forward, or a full reload).
+  const currentSearch = useSearchParams().toString();
   const [expandedGroupLabels, setExpandedGroupLabels] = useState<Set<string>>(new Set());
   // Zero-click discovery for the pending-repair-approval count that used to
   // live on its own "Approval Repair" sidebar item (owner/kepala_cabang only
@@ -78,18 +94,6 @@ export function Sidebar({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarPr
   const badgeCountByPageKey: Record<string, number> = { service: pendingRepairApprovalCount };
 
   const menuEntries = navigationByRole[currentUser?.role ?? "owner"] ?? [];
-
-  // Query-only navigations (tab/status/filter shortcuts) don't change
-  // `currentPathname`, so this app avoids useSearchParams() in every route's
-  // subtree (it would force the whole layout out of static optimization).
-  // Instead: read the real browser URL on mount/pathname change, plus listen
-  // for back/forward — same-page tab clicks below update state directly.
-  useEffect(() => {
-    setCurrentSearch(window.location.search.replace(/^\?/, ""));
-    const handlePopState = (): void => setCurrentSearch(window.location.search.replace(/^\?/, ""));
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [currentPathname]);
 
   useEffect(() => {
     setExpandedGroupLabels((previouslyExpanded) => {
@@ -196,10 +200,7 @@ export function Sidebar({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarPr
                   {hasOwnPage ? (
                     <Link
                       href={pagePath as string}
-                      onClick={() => {
-                        setCurrentSearch("");
-                        onNavigateFromMobile?.();
-                      }}
+                      onClick={onNavigateFromMobile}
                       className="flex min-w-0 flex-1 items-center gap-3 focus-visible:outline-none"
                     >
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center text-current">
@@ -248,10 +249,7 @@ export function Sidebar({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarPr
                         <Link
                           key={child.key}
                           href={child.href}
-                          onClick={() => {
-                            setCurrentSearch(splitHref(child.href).search);
-                            onNavigateFromMobile?.();
-                          }}
+                          onClick={onNavigateFromMobile}
                           className={"flex min-h-9 items-center rounded-jp-sm px-3 py-2 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal " + childClassName}
                         >
                           <span className="truncate">{child.label}</span>

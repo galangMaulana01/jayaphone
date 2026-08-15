@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Api } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -12,11 +12,13 @@ import { LabelledInput, LabelledSelect, LabelledTextarea } from "@/components/ui
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useApiList } from "@/hooks/useApiList";
+import { useUrlParam } from "@/hooks/useUrlParam";
 import { formatRupiah, formatDateTimeShort, NOT_SET } from "@/lib/utils/formatters";
 import { useCabangTimezones, resolveCabangTimezone } from "@/contexts/CabangTzContext";
 import type { RequestSparepart, RequestSparepartJenis, Sparepart, SparepartInUseItem, SparepartJenis, ServiceTicket } from "@/lib/types";
 
 type SparepartTab = "tersedia" | "sedang_dipakai" | "riwayat" | "untuk_dijual" | "request" | "menunggu_pembelian" | "menunggu_barang";
+const SPAREPART_TABS: readonly SparepartTab[] = ["tersedia", "sedang_dipakai", "riwayat", "untuk_dijual", "request", "menunggu_pembelian", "menunggu_barang"];
 const JENIS_OPTIONS: { value: SparepartJenis; label: string }[] = [
   { value: "repair", label: "Repair (dipakai teknisi)" },
   { value: "dijual", label: "Dijual (langsung ke customer)" },
@@ -34,19 +36,23 @@ const REQUEST_STATUS_LABEL: Record<string, string> = {
 const REQUEST_JENIS: RequestSparepartJenis = "equipment";
 
 export default function SparepartPage(): JSX.Element {
+  return (
+    <Suspense fallback={null}>
+      <SparepartPageInner />
+    </Suspense>
+  );
+}
+
+function SparepartPageInner(): JSX.Element {
   const { user } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
   const cabangTz = useCabangTimezones();
-  const [tab, setTab] = useState<SparepartTab>("tersedia");
-  // Deep-link support: a sidebar dropdown shortcut (e.g. "Untuk Dijual") can
-  // land here with ?tab= already applied — same pattern as Data Service's
-  // ?status=.
-  useEffect(() => {
-    const initialTab = new URLSearchParams(window.location.search).get("tab");
-    const validTabs: SparepartTab[] = ["tersedia", "sedang_dipakai", "riwayat", "untuk_dijual", "request", "menunggu_pembelian", "menunggu_barang"];
-    if (initialTab && (validTabs as string[]).includes(initialTab)) setTab(initialTab as SparepartTab);
-  }, []);
+  // Single source of truth: the ?tab= query param, not local state — so the
+  // sidebar's active child, this page's own segmented control, and the
+  // rendered content can never disagree about which tab is showing (see
+  // useUrlParam's doc comment for the bug this replaces).
+  const [tab, setTab] = useUrlParam<SparepartTab>("tab", SPAREPART_TABS, "tersedia");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [formOpen, setFormOpen] = useState(false);

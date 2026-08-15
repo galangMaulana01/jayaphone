@@ -103,8 +103,16 @@ const ownerNavigation: NavigationEntry[] = [
   { pageKey: "karyawan",            label: "Karyawan",           iconName: "karyawanSvg" },
   { pageKey: "cabang",              label: "Manajemen Cabang",   iconName: "stokSvg2" },
   { pageKey: "log",                 label: "Log Aktivitas",      iconName: "logSvg" },
-  { pageKey: "influencer-monitor",  label: "Monitor Influencer", iconName: "karyawanSvg" },
-  { pageKey: "kurir-monitoring",    label: "Monitor Kurir",      iconName: "dashboardSvg" },
+  {
+    // Pure group: owner is the only role with two monitor-type destinations
+    // (Kurir + Influencer) — kepala_cabang only has Monitor Kurir, so that
+    // role keeps it as a flat item instead of a one-child group (see below).
+    label: "Monitor", iconName: "dashboardSvg",
+    children: [
+      { key: "monitor-influencer", label: "Monitor Influencer", href: "/influencer-monitor" },
+      { key: "monitor-kurir",      label: "Monitor Kurir",      href: "/kurir-monitoring" },
+    ],
+  },
   {
     pageKey: "customers", label: "Data Customer", iconName: "clientSvg",
     children: [
@@ -178,8 +186,19 @@ const kasirNavigation: NavigationEntry[] = [
       { key: "cod-delivery", label: "Delivery",     href: "/cod-delivery" },
     ],
   },
-  { pageKey: "approval-cod",        label: "Approval COD",       iconName: "settingSvg" },
-  { pageKey: "approval-repair",     label: "Approval Repair",    iconName: "settingSvg" },
+  {
+    // Pure group: both children are still genuinely standalone approval
+    // queues for kasir (no domain page to fold either into — kasir has no
+    // "Data Service" nav item at all, unlike owner/kc where repair-approval
+    // already lives as a Data Service tab). Grouping here is purely to stop
+    // "Approval X" / "Approval Y" from reading as two unrelated root items
+    // when they're the same mental job (approve pending items).
+    label: "Approval", iconName: "settingSvg",
+    children: [
+      { key: "approval-cod",    label: "Approval COD",    href: "/approval-cod" },
+      { key: "approval-repair", label: "Approval Repair", href: "/approval-repair" },
+    ],
+  },
   {
     pageKey: "sparepart", label: "Sparepart", iconName: "stokSvg2",
     children: [

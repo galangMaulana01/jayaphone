@@ -273,7 +273,7 @@ export const pageMetadataByKey: Record<string, PageMetadata> = {
   "stok":                 { title: "Manajemen Stok" },
   "transfer-stok":        { title: "Transfer Stok Antar Cabang" },
   "transaksi":            { title: "Transaksi" },
-  "laporan":              { title: "Laporan Keuangan" },
+  "laporan":              { title: "Laporan" },
   "service":              { title: "Data Service" },
   "approval-repair":      { title: "Approval Repair" },
   "approval-cod":         { title: "Approval COD Beli" },

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Api } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -15,6 +15,12 @@ import type { TransferStok, Unit } from "@/lib/types";
 export default function TransferStokPage(): JSX.Element {
   const { user } = useAuth(); const { showToast } = useToast(); const cabangTz = useCabangTimezones(); const [filter, setFilter] = useState(""); const [createOpen, setCreateOpen] = useState(false); const [responding, setResponding] = useState<TransferStok | null>(null); const [branches, setBranches] = useState<{ kode: string; nama: string }[]>([]); const [units, setUnits] = useState<Unit[]>([]); const [target, setTarget] = useState(""); const [selectedUnits, setSelectedUnits] = useState<string[]>([]); const [note, setNote] = useState(""); const [decisionNote, setDecisionNote] = useState(""); const [decision, setDecision] = useState<"Diterima" | "Ditolak">("Diterima"); const [search, setSearch] = useState("");
   const { items, loading, error, reload: load } = useApiList<TransferStok>(() => Api.transferStok.list({ status: filter || undefined }).then((r) => r.data ?? []), [filter], "Gagal memuat transfer stok");
+  // Deep-link support: sidebar's "Riwayat Transfer" shortcut lands here with
+  // ?filter=Diterima already applied — same pattern as Data Service/Sparepart.
+  useEffect(() => {
+    const initialFilter = new URLSearchParams(window.location.search).get("filter");
+    if (initialFilter && ["Pending", "Diterima", "Ditolak"].includes(initialFilter)) setFilter(initialFilter);
+  }, []);
   const openCreate = async () => { try { const [b,u] = await Promise.all([Api.transferStok.cabangList(), Api.units.list({ status: "Tersedia", cabang: user?.cabang, limit: 200 })]); setBranches((b.data ?? []).filter((branch) => branch.kode !== user?.cabang)); setUnits(u.data ?? []); setSelectedUnits([]); setTarget(""); setNote(""); setCreateOpen(true); } catch (e) { showToast(e instanceof Error ? e.message : "Gagal memuat data transfer", "error"); } };
   const create = async () => { if (!target || !selectedUnits.length) { showToast("Pilih cabang tujuan dan minimal satu unit", "error"); return; } try { await Api.transferStok.create({ cabang_tujuan: target, unit_ids: selectedUnits.map((unit_id) => ({ unit_id })), catatan: note || undefined }); showToast("Transfer berhasil diajukan"); setCreateOpen(false); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Gagal membuat transfer", "error"); } };
   const respond = async () => { if (!responding || (decision === "Ditolak" && !decisionNote.trim())) { showToast("Catatan wajib diisi jika transfer ditolak", "error"); return; } try { await Api.transferStok.respond(responding.transfer_id, { status: decision, catatan: decisionNote || undefined }); showToast(`Transfer ${decision.toLowerCase()}`); setResponding(null); setDecisionNote(""); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Gagal memproses transfer", "error"); } };

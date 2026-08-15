@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Api } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -39,6 +39,14 @@ export default function SparepartPage(): JSX.Element {
   const router = useRouter();
   const cabangTz = useCabangTimezones();
   const [tab, setTab] = useState<SparepartTab>("tersedia");
+  // Deep-link support: a sidebar dropdown shortcut (e.g. "Untuk Dijual") can
+  // land here with ?tab= already applied — same pattern as Data Service's
+  // ?status=.
+  useEffect(() => {
+    const initialTab = new URLSearchParams(window.location.search).get("tab");
+    const validTabs: SparepartTab[] = ["tersedia", "sedang_dipakai", "riwayat", "untuk_dijual", "request", "menunggu_pembelian", "menunggu_barang"];
+    if (initialTab && (validTabs as string[]).includes(initialTab)) setTab(initialTab as SparepartTab);
+  }, []);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [formOpen, setFormOpen] = useState(false);

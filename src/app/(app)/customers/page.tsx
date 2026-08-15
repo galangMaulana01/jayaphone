@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Api } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -18,12 +18,25 @@ export default function CustomersPage(): JSX.Element {
   const [query, setQuery] = useState(""); const [status, setStatus] = useState("");
   const [addOpen, setAddOpen] = useState(false); const [rejecting, setRejecting] = useState<Customer | null>(null);
   const [name, setName] = useState(""); const [contact, setContact] = useState(""); const [reason, setReason] = useState("");
+  const [sortByPoin, setSortByPoin] = useState(false);
   const { items, loading, error, reload: load } = useApiList<Customer>(
     () => Api.customer.list({ status: status || undefined }).then((r) => r.data ?? []),
     [status],
     "Gagal memuat customer",
   );
-  const filtered = useMemo(() => items.filter((c) => `${c.nama} ${c.kontak} ${c.cabang}`.toLowerCase().includes(query.toLowerCase())), [items, query]);
+  // Deep-link support: sidebar's "Verifikasi"/"Poin Customer" shortcuts land
+  // here with ?status= / ?sort=poin already applied — same pattern as Data
+  // Service/Sparepart/Transfer Stok.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const initialStatus = params.get("status");
+    if (initialStatus && ["Pending", "Verified", "Rejected"].includes(initialStatus)) setStatus(initialStatus);
+    if (params.get("sort") === "poin") setSortByPoin(true);
+  }, []);
+  const filtered = useMemo(() => {
+    const bySearch = items.filter((c) => `${c.nama} ${c.kontak} ${c.cabang}`.toLowerCase().includes(query.toLowerCase()));
+    return sortByPoin ? [...bySearch].sort((a, b) => (b.points || 0) - (a.points || 0)) : bySearch;
+  }, [items, query, sortByPoin]);
   const isApprover = user?.role === "owner" || user?.role === "kepala_cabang";
   const create = async () => { if (!name.trim() || !contact.trim()) { showToast("Nama dan kontak wajib diisi", "error"); return; } try { await Api.customer.create({ nama: name.trim(), kontak: contact.trim(), cabang: user?.cabang || "JYP" }); showToast("Customer berhasil ditambahkan"); setName(""); setContact(""); setAddOpen(false); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Gagal menambah customer", "error"); } };
   const action = async (kind: "approve" | "reject" | "resubmit", customer: Customer) => { try { if (kind === "approve") await Api.customer.approve(customer.id); else if (kind === "reject") { if (!reason.trim()) { showToast("Alasan reject wajib diisi", "error"); return; } await Api.customer.reject(customer.id, reason.trim()); } else await Api.customer.resubmit(customer.id); showToast(kind === "approve" ? "Customer disetujui" : kind === "reject" ? "Customer ditolak" : "Customer diajukan ulang"); setRejecting(null); setReason(""); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Aksi customer gagal", "error"); } };

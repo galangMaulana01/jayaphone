@@ -7,41 +7,52 @@ const tailwindConfig: Config = {
   content: [
     "./src/app/**/*.{ts,tsx}",
     "./src/components/**/*.{ts,tsx}",
+    "./src/contexts/**/*.{ts,tsx}",
+    "./src/hooks/**/*.{ts,tsx}",
     "./src/lib/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
       colors: {
-        // Jayaphone Design System — use these semantic tokens instead of arbitrary colours.
+        // Jayaphone Visual Design System v2 — light is the canonical surface.
+        // Dark tokens stay available for the existing ThemeContext compatibility.
         jp: {
-          app: "#F7F7F3",
+          app: "#FFFFFF",
           "app-dark": "#0B0B0D",
           surface: "#FFFFFF",
           "surface-dark": "#141416",
-          "surface-subtle": "#F1F1EC",
+          "surface-subtle": "#FAFAF8",
           "surface-subtle-dark": "#1B1B1E",
-          text: "#161618",
+          text: "#0A0A0A",
           "text-dark": "#F4F4F5",
-          muted: "#6F706F",
+          "text-soft": "#303330",
+          muted: "#6E736F",
           "muted-dark": "#A1A1AA",
-          border: "#E8E8E2",
+          faint: "#A5AAA6",
+          border: "#E7EAE7",
+          "border-strong": "#D4D8D5",
           "border-dark": "#2A2A2E",
-          teal: "#4FD1C5",
-          "teal-soft": "#DDF7F3",
+          teal: "rgb(var(--jp-teal) / <alpha-value>)",
+          "teal-dark": "#5FC9BE",
+          "teal-hover": "#095C57",
+          "teal-soft": "#E8F2F0",
+          "teal-muted": "#C8E0DC",
           "teal-soft-dark": "#123B38",
-          yellow: "#F6D74B",
-          success: "#2FAE74",
-          "success-dark": "#34D399",
-          warning: "#D99A22",
-          "warning-dark": "#FBBF24",
-          info: "#4886DA",
-          "info-dark": "#60A5FA",
-          danger: "#E85C5C",
-          "danger-dark": "#FB7185",
+          success: "#0B6F68",
+          "success-dark": "#5FC9BE",
+          warning: "#7A5A18",
+          "warning-soft": "#F7F1E4",
+          "warning-dark": "#D8B96A",
+          info: "#303330",
+          "info-soft": "#F1F3F1",
+          "info-dark": "#D6D9D6",
+          danger: "#9B3733",
+          "danger-soft": "#F8E9E7",
+          "danger-dark": "#E58A84",
         },
         // Backward-compatible alias used by existing components.
         brand: {
-          teal: "#4FD1C5",
+          teal: "rgb(var(--jp-teal) / <alpha-value>)",
         },
       },
       fontFamily: {
@@ -56,7 +67,19 @@ const tailwindConfig: Config = {
           "Arial",
           "sans-serif",
         ],
-        mono: ["var(--font-geist-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        // Preserve the existing font-mono call sites while keeping one visual
+        // family throughout the product. Tabular numerals handle alignment.
+        mono: ["var(--font-geist-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+      },
+      borderRadius: {
+        "jp-xs": "6px",
+        "jp-sm": "10px",
+        "jp-md": "14px",
+        "jp-lg": "18px",
+      },
+      boxShadow: {
+        "jp-overlay": "0 8px 24px rgba(10, 10, 10, 0.08)",
+        "jp-modal": "0 20px 60px rgba(10, 10, 10, 0.14)",
       },
       keyframes: {
         "fade-up": {

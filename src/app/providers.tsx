@@ -7,12 +7,15 @@ import type { ReactNode } from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ToastProvider } from "@/contexts/ToastContext";
+import { CabangTzProvider } from "@/contexts/CabangTzContext";
 
 export function AppProviders({ children }: { children: ReactNode }): JSX.Element {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <ToastProvider>{children}</ToastProvider>
+        <CabangTzProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </CabangTzProvider>
       </AuthProvider>
     </ThemeProvider>
   );

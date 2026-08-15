@@ -8,6 +8,8 @@
 //   • FBUG-014: only poll /service/pending-approval for the roles the backend
 //     actually allows (kasir / kepala_cabang / owner). Kurir/influencer skip.
 //   • Only poll /transfer-stok/notif/{count,pending} for owner + kepala_cabang.
+//   • Only poll /request-sparepart/notif/{count,pending} for teknisi — that's
+//     the only role a "sparepart Anda sudah tersedia" notification applies to.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -24,24 +26,36 @@ interface NotificationEntry {
   isRead: boolean;
 }
 
-const NOTIF_STORAGE_KEY = "jyp_notif";
-const NOTIF_SEEN_STORAGE_KEY = "jyp_notif_seen";
 const POLL_INTERVAL_MILLIS = 30_000;
 
-function loadInitialEntries(): NotificationEntry[] {
+// Storage keys are scoped per-username — these entries are role-derived
+// (pending approvals, incoming transfers, sparepart ready) and must never
+// leak from one logged-in account to another on a shared browser. Without
+// this, an owner/kasir's stale "Service Selesai — Butuh Approval" entries
+// (targetPageKey "approval-repair") would still be sitting in a GLOBAL key
+// the next time anyone — including a teknisi who can't even open that
+// page — logs in on the same device, and clicking one would 404/403.
+function notifStorageKey(username: string): string {
+  return `jyp_notif_${username}`;
+}
+function notifSeenStorageKey(username: string): string {
+  return `jyp_notif_seen_${username}`;
+}
+
+function loadEntriesFor(username: string): NotificationEntry[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(NOTIF_STORAGE_KEY);
+    const raw = window.localStorage.getItem(notifStorageKey(username));
     return raw ? (JSON.parse(raw) as NotificationEntry[]) : [];
   } catch {
     return [];
   }
 }
 
-function loadInitialSeenSet(): Set<string> {
+function loadSeenSetFor(username: string): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    const raw = window.localStorage.getItem(NOTIF_SEEN_STORAGE_KEY);
+    const raw = window.localStorage.getItem(notifSeenStorageKey(username));
     return new Set(raw ? (JSON.parse(raw) as string[]) : []);
   } catch {
     return new Set();
@@ -59,28 +73,57 @@ function formatTimeSince(emittedAtMillis: number): string {
 export function NotificationBell(): JSX.Element | null {
   const { user: currentUser } = useAuth();
   const router = useRouter();
+  const currentUsername = currentUser?.username ?? null;
 
-  const [notificationEntries, setNotificationEntries] = useState<NotificationEntry[]>(() => loadInitialEntries());
+  const [notificationEntries, setNotificationEntries] = useState<NotificationEntry[]>([]);
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
-  const seenIdsRef = useRef<Set<string>>(loadInitialSeenSet());
+  const seenIdsRef = useRef<Set<string>>(new Set());
+
+  // Which username's data is currently loaded into state/ref above, and
+  // whether the persistence effect below should skip its next run (it
+  // would otherwise fire right after this effect swaps in the new user's
+  // entries and re-save them under... whichever key was current at that
+  // instant — harmless in effect order today, but this guard keeps it that
+  // way even if effect ordering ever changes).
+  const loadedUsernameRef = useRef<string | null>(null);
+  const skipNextPersistRef = useRef(false);
+
+  useEffect(() => {
+    if (currentUsername === loadedUsernameRef.current) return;
+    loadedUsernameRef.current = currentUsername;
+    skipNextPersistRef.current = true;
+    if (!currentUsername) {
+      setNotificationEntries([]);
+      seenIdsRef.current = new Set();
+      return;
+    }
+    setNotificationEntries(loadEntriesFor(currentUsername));
+    seenIdsRef.current = loadSeenSetFor(currentUsername);
+  }, [currentUsername]);
 
   const unreadCount = useMemo(
     () => notificationEntries.filter((entry) => !entry.isRead).length,
     [notificationEntries],
   );
 
-  // Persist to localStorage on every change.
+  // Persist to localStorage on every change — but not the change that just
+  // loaded a (possibly different) user's own entries in the effect above.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(notificationEntries.slice(0, 30)));
-  }, [notificationEntries]);
+    if (typeof window === "undefined" || !currentUsername) return;
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      return;
+    }
+    window.localStorage.setItem(notifStorageKey(currentUsername), JSON.stringify(notificationEntries.slice(0, 30)));
+  }, [notificationEntries, currentUsername]);
 
   const enqueueNotification = useCallback((incomingEntry: Omit<NotificationEntry, "emittedAtMillis" | "isRead">): boolean => {
+    if (!currentUsername) return false;
     if (seenIdsRef.current.has(incomingEntry.id)) return false;
     seenIdsRef.current.add(incomingEntry.id);
     if (typeof window !== "undefined") {
       window.localStorage.setItem(
-        NOTIF_SEEN_STORAGE_KEY,
+        notifSeenStorageKey(currentUsername),
         JSON.stringify([...seenIdsRef.current].slice(0, 100)),
       );
     }
@@ -89,7 +132,7 @@ export function NotificationBell(): JSX.Element | null {
       ...previous,
     ]);
     return true;
-  }, []);
+  }, [currentUsername]);
 
   const runPollingCycle = useCallback(async (): Promise<void> => {
     if (!currentUser) return;
@@ -99,13 +142,17 @@ export function NotificationBell(): JSX.Element | null {
     if (role === "kasir" || role === "kepala_cabang" || role === "owner") {
       try {
         const response = await Api.service.pendingApproval({ limit: 50 });
+        // Owner/kepala_cabang no longer have a standalone "Approval Repair"
+        // nav item (folded into Data Service's own inline Approve, filtered
+        // via ?status=Selesai) — kasir still does, so its target is unchanged.
+        const targetPageKey = role === "kasir" ? "approval-repair" : "service?status=Selesai";
         for (const serviceTicket of response.data) {
           enqueueNotification({
             id: serviceTicket.service_id,
             variant: "approval",
             title: "Service Selesai — Butuh Approval",
             body: `${serviceTicket.unit_label || serviceTicket.unit_id} · ${serviceTicket.keluhan ?? ""}`,
-            targetPageKey: "approval-repair",
+            targetPageKey,
           });
         }
       } catch {
@@ -127,6 +174,34 @@ export function NotificationBell(): JSX.Element | null {
               title: `Transfer Stok Masuk — ${transferEntry.transfer_id}`,
               body: `${transferEntry.jumlah} unit dari ${transferEntry.cabang_asal} menunggu persetujuan`,
               targetPageKey: "transfer-stok",
+            });
+          }
+        }
+      } catch {
+        /* silent */
+      }
+    }
+
+    // Sparepart request yang baru diterima/direservasi — teknisi only. Cuma
+    // muncul selama beberapa jam setelah diterima (jendela sama dengan tab
+    // "Riwayat Pemakaian" di halaman Sparepart), jadi id-based dedup di
+    // enqueueNotification sudah cukup untuk mencegah notifikasi berulang
+    // tanpa perlu backend menandai "sudah dilihat".
+    if (role === "teknisi") {
+      try {
+        const countResponse = await Api.requestSparepart.notifCount();
+        const pendingCount = countResponse.data?.count ?? 0;
+        if (pendingCount > 0) {
+          const pendingResponse = await Api.requestSparepart.notifPending();
+          for (const requestEntry of pendingResponse.data) {
+            enqueueNotification({
+              id: requestEntry.req_id,
+              variant: "info",
+              title: `Sparepart Tersedia — ${requestEntry.nama_sp}`,
+              body: requestEntry.service_id
+                ? `Untuk servis ${requestEntry.service_id}${requestEntry.unit_label ? ` · ${requestEntry.unit_label}` : ""}`
+                : `${requestEntry.jumlah} unit sudah masuk stok`,
+              targetPageKey: "sparepart",
             });
           }
         }
@@ -168,7 +243,7 @@ export function NotificationBell(): JSX.Element | null {
   // the polling gate above — no polling means nothing to show).
   const isBellVisible =
     !!currentUser &&
-    (currentUser.role === "kasir" || currentUser.role === "kepala_cabang" || currentUser.role === "owner");
+    (currentUser.role === "kasir" || currentUser.role === "kepala_cabang" || currentUser.role === "owner" || currentUser.role === "teknisi");
   if (!isBellVisible) return null;
 
   return (
@@ -177,13 +252,13 @@ export function NotificationBell(): JSX.Element | null {
         type="button"
         aria-label={`Notifikasi (${unreadCount} belum dibaca)`}
         onClick={isPanelOpen ? () => setIsPanelOpen(false) : handlePanelOpen}
-        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        className="relative flex h-10 w-10 items-center justify-center rounded-jp-sm text-jp-muted transition-colors hover:bg-jp-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
       >
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute right-0.5 top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold text-white">
+          <span className="absolute right-0 top-0 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-jp-danger px-1 text-[9px] font-semibold text-white">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -191,7 +266,7 @@ export function NotificationBell(): JSX.Element | null {
 
       {isPanelOpen && (
         <div
-          className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+          className="absolute right-0 top-full z-50 mt-2 w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-jp-md border border-jp-border bg-jp-surface shadow-jp-overlay dark:border-jp-border-dark dark:bg-jp-surface-dark"
           onMouseLeave={() => setIsPanelOpen(false)}
         >
           <div className="flex items-center justify-between border-b border-divider px-4 py-2">
@@ -199,14 +274,14 @@ export function NotificationBell(): JSX.Element | null {
             <button
               type="button"
               onClick={clearAll}
-              className="text-[11px] text-zinc-400 hover:text-red-500"
+              className="text-[11px] font-medium text-jp-muted hover:text-jp-danger dark:text-jp-muted-dark dark:hover:text-jp-danger-dark"
             >
               Bersihkan
             </button>
           </div>
           <div className="max-h-80 overflow-y-auto">
             {notificationEntries.length === 0 ? (
-              <div className="px-4 py-6 text-center text-xs text-zinc-400 dark:text-zinc-600">
+              <div className="px-4 py-8 text-center text-xs text-jp-muted dark:text-jp-muted-dark">
                 Tidak ada notifikasi
               </div>
             ) : (
@@ -215,17 +290,18 @@ export function NotificationBell(): JSX.Element | null {
                   key={entry.id}
                   type="button"
                   onClick={() => handleNotificationClick(entry.targetPageKey)}
-                  className={`w-full cursor-pointer px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/60 ${
-                    entry.isRead ? "" : "bg-teal-50/60 dark:bg-teal-500/5"
+                  className={`relative w-full cursor-pointer border-t border-jp-border px-4 py-3.5 text-left transition-colors first:border-t-0 hover:bg-jp-surface-subtle dark:border-jp-border-dark dark:hover:bg-jp-surface-subtle-dark/60 ${
+                    entry.isRead ? "" : "bg-jp-teal-soft dark:bg-jp-teal-soft-dark/50"
                   }`}
                 >
-                  <p className="text-xs font-medium leading-tight text-zinc-700 dark:text-zinc-200">
+                  {!entry.isRead ? <span className="absolute inset-y-3 left-0 w-0.5 rounded-full bg-jp-teal" aria-hidden="true" /> : null}
+                  <p className="text-xs font-medium leading-snug text-jp-text dark:text-jp-text-dark">
                     {entry.title}
                   </p>
-                  <p className="mt-0.5 text-[11px] leading-tight text-zinc-400 dark:text-zinc-500">
+                  <p className="mt-1 text-[11px] leading-relaxed text-jp-muted dark:text-jp-muted-dark">
                     {entry.body}
                   </p>
-                  <p className="mt-1 text-[10px] text-zinc-300 dark:text-zinc-600">
+                  <p className="mt-1.5 text-[10px] text-jp-faint dark:text-jp-muted-dark">
                     {formatTimeSince(entry.emittedAtMillis)}
                   </p>
                 </button>

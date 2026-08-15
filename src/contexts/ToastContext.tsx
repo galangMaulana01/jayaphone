@@ -59,7 +59,12 @@ interface ToastViewportProps {
 function ToastViewport({ toastEntries }: ToastViewportProps): JSX.Element {
   return (
     <div
-      className="pointer-events-none fixed bottom-4 right-4 z-[100] flex flex-col items-end gap-2"
+      className="pointer-events-none fixed right-4 z-[100] flex flex-col items-end gap-2"
+      // Pages with their own fixed bottom bar (e.g. Input Transaksi's sticky
+      // confirm bar) report their height via --sticky-bottom-offset so a
+      // toast never lands on top of it; pages without one leave the
+      // variable unset and this falls back to the original 1rem.
+      style={{ bottom: "calc(1rem + var(--sticky-bottom-offset, 0px))" }}
       aria-live="polite"
       role="status"
     >

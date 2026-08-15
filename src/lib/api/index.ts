@@ -15,6 +15,7 @@ import type {
   ActivityLog,
   AuthenticatedUser,
   Cabang,
+  CabangTimezoneEntry,
   CODRequest,
   CODStatus,
   Customer,
@@ -31,8 +32,14 @@ import type {
   LoginResponse,
   Platform,
   ServiceTicket,
+  ServiceTicketDetail,
+  ServiceRiwayatItem,
   Sparepart,
+  SparepartJenis,
+  SparepartInUseItem,
   RequestSparepart,
+  RequestSparepartJenis,
+  RequestSparepartNotifItem,
   Transaksi,
   TransferStok,
   Unit,
@@ -92,6 +99,10 @@ const units = {
   approveRepair: (unitId: string, body: { harga_jual: number }) =>
     requestJson<ApiEnvelope<Unit>>("POST", `/units/${unitId}/approve-repair`, body),
   detail: (unitId: string) => requestJson<ApiEnvelope<Unit>>("GET", `/units/${unitId}/detail`),
+  update: (unitId: string, body: { harga_jual?: number }) =>
+    requestJson<ApiEnvelope<Unit>>("PATCH", `/units/${unitId}`, body),
+  remove: (unitId: string) =>
+    requestJson<ApiEnvelope<null>>("DELETE", `/units/${unitId}`),
 };
 
 // ─── Transaksi ───────────────────────────────────────────────────────────
@@ -184,10 +195,13 @@ const service = {
   pendingApproval: (params?: { cabang?: string; limit?: number }) =>
     requestJson<ApiEnvelope<ServiceTicket[]>>("GET", `/service/pending-approval${buildQueryString(params)}`),
   detail: (serviceId: string) =>
-    requestJson<ApiEnvelope<ServiceTicket & { timeline: { event: string; waktu: string }[] }>>(
-      "GET",
-      `/service/${serviceId}/detail`,
-    ),
+    requestJson<ApiEnvelope<ServiceTicketDetail>>("GET", `/service/${serviceId}/detail`),
+  riwayat: (params?: { cabang?: string }) =>
+    requestJson<ApiEnvelope<ServiceRiwayatItem[]>>("GET", `/service/riwayat${buildQueryString(params)}`),
+  useSparepart: (serviceId: string, body: { sp_id: string; jumlah: number }) =>
+    requestJson<ApiEnvelope<ServiceTicket>>("POST", `/service/${serviceId}/sparepart`, body),
+  removeSparepart: (serviceId: string, spId: string) =>
+    requestJson<ApiEnvelope<ServiceTicket>>("DELETE", `/service/${serviceId}/sparepart/${spId}`),
 };
 
 // ─── Customer ────────────────────────────────────────────────────────────
@@ -207,8 +221,12 @@ const customer = {
 
 // ─── Sparepart ───────────────────────────────────────────────────────────
 const sparepart = {
-  list: (params?: { cabang?: string; kategori?: string }) =>
+  list: (params?: { cabang?: string; kategori?: string; jenis?: SparepartJenis }) =>
     requestJson<ApiEnvelope<Sparepart[]>>("GET", `/sparepart${buildQueryString(params)}`),
+  inUse: (params?: { cabang?: string }) =>
+    requestJson<ApiEnvelope<SparepartInUseItem[]>>("GET", `/sparepart/sedang-dipakai${buildQueryString(params)}`),
+  riwayat: (params?: { cabang?: string }) =>
+    requestJson<ApiEnvelope<SparepartInUseItem[]>>("GET", `/sparepart/riwayat-pemakaian${buildQueryString(params)}`),
   create: (body: Partial<Sparepart> & { nama: string; harga_jual: number; harga_beli: number; stok: number }) =>
     requestJson<ApiEnvelope<Sparepart>>("POST", "/sparepart", body),
   updateStok: (sparepartId: string, body: { delta: number; catatan?: string }) =>
@@ -218,7 +236,9 @@ const sparepart = {
 // ─── Cabang ──────────────────────────────────────────────────────────────
 const cabang = {
   list: () => requestJson<ApiEnvelope<Cabang[]>>("GET", "/cabang"),
-  create: (body: { nama: string; kode: string; alamat?: string; telp?: string }) =>
+  /** kode->timezone lookup, open to every role — used to render each record's timestamp in its branch's local time. */
+  timezones: () => requestJson<ApiEnvelope<CabangTimezoneEntry[]>>("GET", "/cabang/timezones"),
+  create: (body: { nama: string; kode: string; alamat?: string; telp?: string; timezone?: string }) =>
     requestJson<ApiEnvelope<Cabang>>("POST", "/cabang", body),
   update: (kode: string, body: Partial<Cabang>) =>
     requestJson<ApiEnvelope<Cabang>>("PATCH", `/cabang/${kode}`, body),
@@ -236,18 +256,35 @@ const requestSparepart = {
     requestJson<ApiEnvelope<RequestSparepart[]>>("GET", `/request-sparepart${buildQueryString(params)}`),
   create: (body: {
     tipe: string;
+    jenis?: RequestSparepartJenis;
     service_id?: string;
     sp_id?: string;
     nama_sp: string;
     jumlah: number;
+    /** Opsional sekarang — teknisi cukup bilang butuh apa & kenapa; Kepala
+     * Cabang/Kasir yang isi harga/link belakangan kalau masih kosong. */
+    harga_diajukan?: number;
+    alasan: string;
     keterangan?: string;
     cabang: string;
     product_link?: string;
   }) => requestJson<ApiEnvelope<RequestSparepart>>("POST", "/request-sparepart", body),
-  respond: (reqId: string, body: { status: string; estimasi_tiba?: string; catatan?: string }) =>
+  respond: (reqId: string, body: { status: string; harga_disetujui?: number; estimasi_tiba?: string; catatan?: string }) =>
     requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/respond`, body),
-  approve: (reqId: string, body: { harga_jual: number; status: string; catatan?: string }) =>
-    requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/approve`, body),
+  beli: (reqId: string, body: { supplier: string; harga_beli_aktual: number; bukti_url?: string; catatan?: string; barang_di_tangan?: boolean; tanggal_terima?: string }) =>
+    requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/beli`, body),
+  terima: (reqId: string, body: { tanggal_terima?: string; catatan?: string }) =>
+    requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/terima`, body),
+  /** Teknisi konfirmasi "Gunakan Sparepart" — request yang sudah Diterima
+   * (ditahan buat tiket ini) baru di titik ini ditulis ke sparepart_items
+   * tiket. estimasi_selesai wajib diisi backend HANYA kalau ini request
+   * blocking terakhir tiketnya (baca: yang melepas tiket balik ke Proses). */
+  gunakan: (reqId: string, body?: { estimasi_selesai?: string }) =>
+    requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/gunakan`, body ?? {}),
+  notifCount: () =>
+    requestJson<ApiEnvelope<{ count: number }>>("GET", "/request-sparepart/notif/count"),
+  notifPending: () =>
+    requestJson<ApiEnvelope<RequestSparepartNotifItem[]>>("GET", "/request-sparepart/notif/pending"),
 };
 
 // ─── Transfer Stok ───────────────────────────────────────────────────────
@@ -298,18 +335,37 @@ const cod = {
     requestJson<ApiEnvelope<KurirListItem[]>>("GET", `/cod/kurir-list${buildQueryString(params)}`),
   kurirAccept: (codId: string) =>
     requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/accept`),
-  kurirReject: (codId: string) =>
-    requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/reject`),
-  /** Dedicated reject-beli endpoint — FBUG-007 fixed the missing binding here. */
+  /**
+   * Generic status-transition reject, for a COD still at menunggu_kurir
+   * (broadcast, not yet accepted) — matches COD_BELI_FLOW's
+   * menunggu_kurir -> ditolak transition. `note` is a query param on the
+   * backend route (app/routes/cod.py kurir_reject), not a JSON body.
+   */
+  kurirReject: (codId: string, note?: string) =>
+    requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/reject${buildQueryString({ note })}`),
+  /**
+   * Dedicated reject-beli endpoint — only valid AFTER the kurir has already
+   * met the seller (status sudah_bertemu_penjual); the service function's
+   * atomic filter requires exactly that status + kurir_id ownership, so
+   * calling this for a still-unassigned menunggu_kurir item always 409s.
+   */
   kurirRejectBeli: (codId: string, reason: string) =>
     requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/reject-beli`, { reason }),
-  kurirUpdateStatus: (codId: string, status: CODStatus, note?: string) =>
-    requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/status`, { status, note }),
+  kurirUpdateStatus: (codId: string, status: CODStatus, note?: string, foto_urls?: string[]) =>
+    requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/status`, { status, note, foto_urls }),
   kurirInputStok: (body: Partial<Unit> & { imei: string; merk: string; tipe: string }) =>
     requestJson<ApiEnvelope<{ unit_id: string }>>("POST", "/cod/kurir/input-stok", body),
   kurirSubmitBeli: (codId: string, body: { deal_price: number; unit_data: Partial<Unit> }) =>
     requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/submit-beli`, body),
-  approve: (codId: string, body: { harga_jual: number; unit_data: Partial<Unit>; garansi_toko?: number; catatan?: string }) =>
+  /**
+   * unit_data carries kat_kode/kondisi_kode (drive the generated unit_id,
+   * same as Api.units.create) AND the resolved kategori/kondisi labels —
+   * unlike unit creation via Tambah Unit, this endpoint does not resolve a
+   * label from the code server-side, so the frontend must send both or the
+   * backend silently falls back to kategori="Android"/kondisi="Normal"
+   * regardless of the actual unit (see NF-001 in notfixedlogic.md).
+   */
+  approve: (codId: string, body: { harga_jual: number; unit_data: Partial<Unit> & { kat_kode?: string; kondisi_kode?: string; kategori?: string }; garansi_toko?: number; catatan?: string }) =>
     requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/${codId}/approve`, body),
   reject: (codId: string, reason: string) =>
     requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/${codId}/reject`, { reason }),

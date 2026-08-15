@@ -13,9 +13,9 @@ export function ErrorState({ message, onRetry }: ErrorStateProps): JSX.Element {
 
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-red-500/10">
+      <div className="mb-4 flex h-10 w-10 items-center justify-center text-jp-danger dark:text-jp-danger-dark">
         <svg
-          className="h-5 w-5 text-red-400"
+          className="h-5 w-5"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -29,17 +29,17 @@ export function ErrorState({ message, onRetry }: ErrorStateProps): JSX.Element {
           />
         </svg>
       </div>
-      <p className="mb-1 text-sm font-medium text-zinc-700 dark:text-zinc-200">Gagal memuat data</p>
-      <p className="mb-1 max-w-[220px] text-xs text-zinc-400 dark:text-zinc-500">{message}</p>
+      <p className="mb-1 text-sm font-semibold text-jp-text dark:text-jp-text-dark">Gagal memuat data</p>
+      <p className="mb-1 max-w-sm text-xs leading-relaxed text-jp-muted dark:text-jp-muted-dark">{message}</p>
       {isTimeout && (
-        <p className="mb-4 max-w-[220px] text-[11px] text-zinc-400 dark:text-zinc-600">
+        <p className="mb-4 max-w-sm text-[11px] text-jp-muted dark:text-jp-muted-dark">
           Server Vercel cold start, tunggu 5 detik lalu coba lagi.
         </p>
       )}
       {!isTimeout && <div className="mb-4" />}
       {onRetry && (
-        <button type="button" onClick={onRetry} className="btn-ghost text-xs">
-          ↺ Coba lagi
+        <button type="button" onClick={onRetry} className="btn-secondary text-xs">
+          Coba lagi
         </button>
       )}
     </div>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { pageMetadataByKey } from "@/lib/config/nav";
+import { isPageAllowedForRole, pageMetadataByKey } from "@/lib/config/nav";
 import { UserAvatar } from "./UserAvatar";
 import { NotificationBell } from "./NotificationBell";
 
@@ -21,7 +21,11 @@ export function AppHeader({ onOpenMobileSidebar, isMobileSidebarOpen }: AppHeade
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState<boolean>(false);
 
   const currentPageKey = currentPathname.replace(/^\//, "").split("/")[0] || "";
-  const pageTitle = pageMetadataByKey[currentPageKey]?.title ?? "";
+  // Don't show the real page title's chrome when the role guard below is
+  // about to render an access-denied body for this path — otherwise the
+  // header confidently names a page the user is being told they can't see.
+  const isPageAllowed = currentPageKey === "" || !currentUser || isPageAllowedForRole(currentUser.role, currentPageKey);
+  const pageTitle = isPageAllowed ? pageMetadataByKey[currentPageKey]?.title ?? "" : "";
 
   const handleLogout = (): void => {
     logOut();
@@ -29,7 +33,7 @@ export function AppHeader({ onOpenMobileSidebar, isMobileSidebarOpen }: AppHeade
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-jp-border bg-jp-app px-4 dark:border-jp-border-dark dark:bg-jp-app-dark md:px-8">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-jp-border bg-jp-surface px-4 dark:border-jp-border-dark dark:bg-jp-app-dark md:px-6 lg:px-8">
       <div className="flex min-w-0 items-center gap-2">
         <button
           type="button"
@@ -37,13 +41,13 @@ export function AppHeader({ onOpenMobileSidebar, isMobileSidebarOpen }: AppHeade
           aria-expanded={isMobileSidebarOpen}
           aria-controls="mobile-navigation"
           onClick={onOpenMobileSidebar}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-jp-muted transition-colors hover:bg-jp-surface-subtle focus:outline-none focus:ring-2 focus:ring-jp-teal/50 md:hidden dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-jp-sm text-jp-muted transition-colors hover:bg-jp-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal md:hidden dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <h1 className="truncate text-sm font-semibold tracking-tight text-jp-text dark:text-jp-text-dark md:text-base">{pageTitle}</h1>
+        <h1 className="truncate text-sm font-medium tracking-[-0.01em] text-jp-muted dark:text-jp-muted-dark">{pageTitle}</h1>
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
@@ -51,7 +55,7 @@ export function AppHeader({ onOpenMobileSidebar, isMobileSidebarOpen }: AppHeade
         <button
           type="button"
           onClick={toggleTheme}
-          className="flex h-11 w-11 items-center justify-center rounded-xl text-jp-muted transition-colors hover:bg-jp-surface-subtle focus:outline-none focus:ring-2 focus:ring-jp-teal/50 dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
+          className="flex h-11 w-11 items-center justify-center rounded-jp-sm text-jp-muted transition-colors hover:bg-jp-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
           aria-label={currentTheme === "dark" ? "Ubah ke tema terang" : "Ubah ke tema gelap"}
         >
           {currentTheme === "dark" ? (
@@ -65,11 +69,11 @@ export function AppHeader({ onOpenMobileSidebar, isMobileSidebarOpen }: AppHeade
           )}
         </button>
 
-        <div className="relative border-l border-jp-border pl-2 dark:border-jp-border-dark">
+        <div className="relative pl-1">
           <button
             type="button"
             onClick={() => setIsAvatarMenuOpen((wasOpen) => !wasOpen)}
-            className="flex min-h-11 items-center gap-2 rounded-xl px-1.5 py-1 transition-colors hover:bg-jp-surface-subtle focus:outline-none focus:ring-2 focus:ring-jp-teal/50 dark:hover:bg-jp-surface-subtle-dark"
+            className="flex min-h-11 items-center gap-2 rounded-jp-sm px-1.5 py-1 transition-colors hover:bg-jp-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal dark:hover:bg-jp-surface-subtle-dark"
             aria-label="Menu akun"
             aria-expanded={isAvatarMenuOpen}
           >
@@ -82,7 +86,7 @@ export function AppHeader({ onOpenMobileSidebar, isMobileSidebarOpen }: AppHeade
 
           {isAvatarMenuOpen ? (
             <div
-              className="absolute right-0 top-full mt-2 w-44 overflow-hidden rounded-xl border border-jp-border bg-jp-surface shadow-lg dark:border-jp-border-dark dark:bg-jp-surface-dark"
+              className="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-jp-sm border border-jp-border bg-jp-surface p-1 shadow-jp-overlay dark:border-jp-border-dark dark:bg-jp-surface-dark"
               onMouseLeave={() => setIsAvatarMenuOpen(false)}
             >
               <button
@@ -91,14 +95,14 @@ export function AppHeader({ onOpenMobileSidebar, isMobileSidebarOpen }: AppHeade
                   setIsAvatarMenuOpen(false);
                   router.push("/settings");
                 }}
-                className="block w-full px-3 py-2.5 text-left text-xs text-jp-text transition-colors hover:bg-jp-surface-subtle dark:text-jp-text-dark dark:hover:bg-jp-surface-subtle-dark"
+                className="block w-full rounded-jp-xs px-3 py-2.5 text-left text-xs text-jp-text transition-colors hover:bg-jp-surface-subtle dark:text-jp-text-dark dark:hover:bg-jp-surface-subtle-dark"
               >
                 Pengaturan Profil
               </button>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="block w-full px-3 py-2.5 text-left text-xs text-jp-danger transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                className="block w-full rounded-jp-xs px-3 py-2.5 text-left text-xs text-jp-danger transition-colors hover:bg-jp-danger-soft dark:text-jp-danger-dark dark:hover:bg-jp-danger/15"
               >
                 Keluar
               </button>

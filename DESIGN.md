@@ -1,209 +1,184 @@
-# Jayaphone Design System
+# Jayaphone Visual Design System v2
 
-Panduan UI wajib untuk seluruh perubahan frontend Jayaphone. Tujuannya adalah membuat dashboard operasional toko HP yang terasa tenang, rapi, dan premium—bukan dashboard generik hasil template AI.
+Status: diimplementasikan pada frontend branch `claude/jayaphone-frontend-qa-3lyr4h`.
+
+Sistem ini mengatur presentasi visual saja. API, state, role guard, struktur data, dan alur bisnis tidak boleh bergantung pada aturan di dokumen ini.
 
 ## 1. Arah visual
 
-Jayaphone memakai gaya **soft operational workspace**: antarmuka bersih, latar netral hangat, ruang kosong cukup, aksen warna terukur, dan hierarki informasi yang kuat. Referensi visualnya adalah dashboard SaaS editorial: panel ringan, judul besar, sidebar ringkas, serta elemen dekoratif yang sangat minim.
+Jayaphone adalah ruang kerja operasional toko HP yang terang, tenang, dan presisi. Hierarki dibentuk terutama oleh tipografi, jarak, dan alignment. Panel dan warna hanya digunakan ketika memiliki fungsi grouping atau status yang jelas.
 
-UI harus membantu kasir, kepala cabang, teknisi, kurir, dan owner bekerja cepat saat operasional ramai. Keindahan tidak boleh mengalahkan keterbacaan data atau kejelasan aksi.
+Aturan keras:
 
-## 2. Prinsip anti "AI slop"
+- Light adalah tampilan utama. Kelas `dark:*` dan `ThemeContext` tetap dipertahankan sebagai kompatibilitas legacy.
+- Kanvas utama putih; off-white hanya untuk area kerja sekunder.
+- Aksen visual hanya near-black dan teal Jayaphone.
+- Amber dan merah hanya untuk status yang benar-benar memerlukannya.
+- Tidak ada gradient, blur, glassmorphism, glow, neon, atau shadow dekoratif.
+- Geist adalah satu-satunya keluarga font. `font-mono` lama dipetakan ke Geist dan memakai tabular numerals.
+- Pill hanya untuk navigasi, filter terpilih, dan badge.
+- Shadow hanya untuk modal, drawer, dropdown, popover, dan toast.
+- Satu halaman memiliki satu fokus dominan; jangan membuat deretan kartu statistik identik tanpa prioritas.
 
-Wajib:
+## 2. Token warna
 
-- Gunakan hierarki jelas: halaman → section → panel → data → aksi.
-- Beri whitespace; jangan penuhi layar dengan card, border, atau badge.
-- Gunakan teks dan label spesifik Jayaphone, bukan copy generik.
-- Setiap warna status mempunyai arti tetap dan selalu disertai teks.
-- Empty state harus menjelaskan kondisi serta langkah berikutnya.
-- Alignment tabel, form, modal, dan toolbar harus konsisten.
+| Token | Nilai light | Fungsi |
+|---|---:|---|
+| `jp-app` / `jp-surface` | `#FFFFFF` | Kanvas dan surface utama |
+| `jp-surface-subtle` | `#FAFAF8` | Field, toolbar, metric sekunder |
+| `jp-text` | `#0A0A0A` | Judul, data utama, primary action |
+| `jp-text-soft` | `#303330` | Isi reguler |
+| `jp-muted` | `#6E736F` | Deskripsi dan metadata |
+| `jp-faint` | `#A5AAA6` | Placeholder dan disabled |
+| `jp-border` | `#E7EAE7` | Divider dan outline yang diperlukan |
+| `jp-border-strong` | `#D4D8D5` | Batas field yang perlu kontras |
+| `jp-teal` | `#0B6F68` | Identitas, focus, selected, progress |
+| `jp-teal-hover` | `#095C57` | Hover teal |
+| `jp-teal-soft` | `#E8F2F0` | Selected/positive soft |
+| `jp-teal-muted` | `#C8E0DC` | Border positive |
 
-Dilarang:
+Status:
 
-- Gradient mencolok, neon, glassmorphism, atau dekorasi yang mengganggu data.
-- Shadow tebal, border pada setiap elemen, serta card bersarang tanpa fungsi.
-- Ikon dari berbagai gaya/library dalam satu aplikasi.
-- Dashboard berisi banyak kartu statistik kecil tanpa prioritas.
-- Animasi dekoratif, bounce, atau teks seperti "Unlock insights" dan lorem ipsum.
-- Membulatkan semua elemen secara berlebihan.
+- Positif: teal `#0B6F68` di atas `#E8F2F0`.
+- Berjalan/info: near-black di atas neutral soft.
+- Menunggu: desaturated amber `#7A5A18` di atas `#F7F1E4`.
+- Gagal/berisiko: desaturated red `#9B3733` di atas `#F8E9E7`.
+- Nonaktif: muted neutral.
 
-## 3. Fondasi visual
+Jangan menggunakan purple, blue, orange, pink, cyan, atau yellow sebagai aksen dekoratif.
 
-### Typography
+## 3. Tipografi
 
-- Font utama: `Geist`.
-- Data teknis—ID, nominal, kode unit, nomor transaksi—boleh memakai `Geist Mono`.
-- Judul halaman: 28–32px, weight 600–700.
-- Judul section: 16–18px, weight 600.
-- Isi: 13–14px, weight 400–450.
-- Label dan metadata: 11–12px, weight 500.
-- Jangan memakai lebih dari dua keluarga font.
-- **Catatan Teknis Next.js:** Implementasikan font `Geist` dan `Geist Mono` menggunakan modul `next/font/google` atau `@vercel/font/geist` di dalam file `src/app/layout.tsx`.
+- Font: Geist untuk seluruh UI, termasuk ID, IMEI, nominal, dan kode transaksi.
+- Judul halaman: 28px mobile, 32px desktop, weight 600, tracking `-0.03em`.
+- Judul section: 18–20px, weight 600.
+- Judul card/modal: 16px, weight 600.
+- Data utama: 24–28px, weight 600.
+- Body: 14px, line-height sekitar 1.55.
+- Tabel/body compact: 13px.
+- Label: 12px, weight 500. Jangan uppercase.
+- Metadata: 11px.
+- Angka memakai `font-variant-numeric: tabular-nums`.
 
-### Spacing dan bentuk
+## 4. Spacing, radius, dan proporsi
 
-Gunakan skala 4px: `4, 8, 12, 16, 20, 24, 32, 40, 48`.
+Skala spacing: `4, 8, 12, 16, 20, 24, 32, 40, 52, 64, 84`.
 
-- Padding halaman desktop: 28–32px.
-- Jarak antar section: 28–40px.
-- Padding panel: 20–24px.
-- Radius input/button/badge: 10–12px.
-- Radius panel: 16px; modal: 18–20px.
-- Pakai border halus sebagai pemisah utama. Shadow hanya untuk modal, dropdown, popover, dan toast.
+- Padding halaman: 16px mobile; 32px desktop.
+- Jarak antarsection: 32px mobile; 40px desktop.
+- Padding panel: 20px mobile; 24px desktop.
+- Sidebar desktop: 232px.
+- Drawer mobile: `min(86vw, 320px)`.
+- Radius kecil: 6px; kontrol: 10px; panel: 14px; modal/hero: 18px.
 
-## 4. Palet warna
+Proporsi besar mengikuti pendekatan golden ratio:
 
-| Peran | Light | Dark | Penggunaan |
-|---|---|---|---|
-| App background | `#F7F7F3` | `#0B0B0D` | Latar utama |
-| Surface | `#FFFFFF` | `#141416` | Panel, tabel, modal |
-| Surface subtle | `#F1F1EC` | `#1B1B1E` | Toolbar dan field disabled |
-| Text utama | `#161618` | `#F4F4F5` | Judul dan data penting |
-| Text sekunder | `#6F706F` | `#A1A1AA` | Metadata dan deskripsi |
-| Border | `#E8E8E2` | `#2A2A2E` | Garis pemisah |
-| Teal Jayaphone | `#4FD1C5` | `#4FD1C5` | Identitas, focus, selected |
-| Teal soft | `#DDF7F3` | `#123B38` | Selected state dan aksen lembut |
-| Yellow action | `#F6D74B` | `#F6D74B` | Perhatian terbatas |
-| Success | `#2FAE74` | `#34D399` | Selesai dan tersedia |
-| Warning | `#D99A22` | `#FBBF24` | Pending dan perlu perhatian |
-| Info | `#4886DA` | `#60A5FA` | Proses dan informasi |
-| Danger | `#E85C5C` | `#FB7185` | Error, tolak, hapus |
+- Fokus utama dan rail pendamping: sekitar 61.8% / 38.2%.
+- Jarak antarsection sekitar 1.6× padding internal panel.
+- Form utama dan summary dapat memakai rasio 61.8% / 38.2%.
+- Jangan memaksakan golden ratio pada sidebar karena merusak ruang tabel.
 
-**Aturan Penting Warna:** 
-- Dasar netral harus dominan; satu halaman maksimal memiliki satu aksen aksi utama. 
-- Teal adalah warna identitas, bukan warna semua tombol. 
-- Merah hanya untuk tindakan atau status berisiko.
-- **Aksesibilitas Kontras:** Jika menggunakan background Teal `#4FD1C5` (misal untuk tombol *primary*), teks di atasnya **wajib** menggunakan warna gelap (`#161618`) agar kontras dan mudah dibaca, bukan warna putih.
+## 5. Shell aplikasi
 
-## 5. Layout aplikasi
+- Sidebar putih dengan ikon outline monokrom.
+- Navigasi aktif berbentuk capsule near-black dengan teks putih.
+- Header adalah surface putih yang tenang; konteks halaman di header lebih kecil daripada judul body.
+- Konten dibatasi `1440px` dan dipusatkan agar tabel tetap luas tetapi ritme whitespace terjaga.
+- Mobile memakai drawer; target sentuh minimal 40px dan ideal 44px.
 
-### Sidebar
-
-- Lebar desktop: 260px.
-- Berisi logo, navigasi utama, dan area akun di bawah.
-- Gunakan satu set ikon outline dengan ketebalan yang seragam.
-- Item aktif memakai surface kontras/teal-soft; ikon aktif boleh memakai kotak teal.
-- Hindari grup menu yang berlebihan. Tambahkan label grup kecil hanya bila menu sudah banyak.
-- Di mobile, sidebar menjadi drawer; jangan dipaksa tampil permanen.
-
-### Konten
-
-Struktur halaman standar:
-
-1. Breadcrumb opsional.
-2. Judul halaman dan deskripsi singkat.
-3. Aksi utama halaman.
-4. Toolbar: pencarian, filter yang relevan, tanggal, aksi sekunder.
-5. Konten utama: ringkasan seperlunya, tabel/card/detail.
-
-Header halaman tidak dimasukkan ke dalam card. Tabel boleh memakai lebar penuh. Grid ringkasan maksimal 3–4 kolom pada desktop.
-
-## 6. Komponen
+## 6. Primitives
 
 ### Button
 
-- Tinggi standar 38–40px.
-- Primary: near-black di light mode atau putih di dark mode; hanya untuk aksi paling penting.
-- Secondary: transparan/putih dengan border tipis.
-- Teal: untuk selected state atau aksi khas merek, bukan pengganti primary.
-- Icon button wajib memiliki tooltip atau `aria-label`.
-- Dalam satu toolbar, gunakan maksimal satu primary button.
+- Tinggi minimal 40px, radius 10px.
+- Primary: near-black solid, teks putih.
+- Success/brand action: teal solid, dipakai hemat.
+- Secondary: neutral subtle dengan border ringan.
+- Ghost: transparan; background hanya saat hover/focus.
+- Danger: red soft, bukan merah solid neon.
+- Maksimal satu aksi primary paling kuat dalam satu konteks form/toolbar.
 
-### Input dan form
+### Field
 
-- Label selalu di atas field; placeholder bukan pengganti label.
-- Tinggi field 40–44px, surface subtle, border tipis, focus ring teal lembut.
-- Field wajib memakai `*` pada label.
-- Error/helper text berada tepat di bawah field.
-- Form panjang dibagi menurut kelompok data, bukan dipisahkan banyak garis.
-- Data unit: identitas unit, kondisi, harga, foto/dokumen, dan catatan.
+- Tinggi minimal 44px, label selalu di atas.
+- Default memakai off-white dan border transparan.
+- Focus memakai border teal yang terlihat, tanpa glow.
+- Helper/error berada tepat di bawah field.
+
+### Card dan section
+
+- `.metric-card` memakai off-white tanpa border atau shadow.
+- `.section-panel` dipakai untuk satu kelompok informasi yang benar-benar terpisah.
+- `.form-section` memakai off-white untuk mengelompokkan form panjang tanpa tumpukan card ber-border.
+- `.hero-card` hanya satu per layar, near-black solid tanpa gradient.
+- Hindari card di dalam card.
+
+### Badge
+
+- Badge kecil berbentuk pill dan selalu memuat teks eksplisit.
+- Warna membantu scanning tetapi bukan satu-satunya penanda.
+- Platform, tipe, dan status proses netral; jangan memperkenalkan warna merek pihak ketiga.
 
 ### Table
 
-- Tabel adalah elemen inti Jayaphone dan harus diprioritaskan.
-- Header tenang, menggunakan text sekunder. Hindari uppercase berlebihan.
-- Tinggi row 52–60px dengan hover subtle.
-- Nominal rata kanan dan konsisten memakai format Rupiah.
-- ID dan kode unit memakai mono, kecil, dan mudah disalin.
-- Aksi di kolom paling kanan; gunakan menu bila aksi lebih dari dua.
-- Mobile: ubah row menjadi card ringkas, dengan data utama di bagian atas.
+- Tabel adalah produk utama, bukan dekorasi di dalam card.
+- Header tenang, row 52–60px, hover sangat halus.
+- Nominal rata kanan; ID dan kode mudah dipindai.
+- Kolom aksi paling kanan memakai `.tbl-action-col` dan tetap sticky di mobile.
+- Sticky action memakai surface solid dan divider kiri; tidak memakai gradient fade.
 
-### Status badge
+### Modal dan overlay
 
-Badge berbentuk pill kecil, memakai background transparan lembut, border tipis, dan teks eksplisit.
+- Modal radius 18px dengan shadow overlay saja.
+- Backdrop hitam transparan tanpa blur.
+- Action footer harus tetap mudah dijangkau pada mobile.
 
-| Kondisi | Warna | Contoh |
-|---|---|---|
-| Berhasil/tersedia | Hijau | Tersedia, Selesai, Verified |
-| Menunggu | Kuning | Pending, Menunggu Kasir |
-| Sedang berjalan | Biru | Proses, Dalam Pengiriman |
-| Gagal/ditolak | Merah | Ditolak, Gagal |
-| Netral | Abu-abu | Nonaktif, Draft |
+## 7. Chart
 
-### Card, modal, dan empty state
+- Garis 1.5–2px, tanpa area fill.
+- Titik default disembunyikan; tampil saat hover.
+- Grid dashed tipis dan netral.
+- Teal adalah satu-satunya warna data dekoratif.
+- Tooltip solid dengan radius moderat; tidak ada shadow/glow tebal.
+- Label dan legend ditempatkan dekat data yang dijelaskan.
+- Hindari chart junk, animasi berlebihan, dan palette multiwarna.
 
-- Card ringkasan hanya dibuat bila membantu pengambilan keputusan.
-- Satu card = satu informasi utama, bukan banyak metrik kecil.
-- Modal untuk input/keputusan yang perlu fokus; drawer untuk detail panjang tanpa kehilangan konteks tabel.
-- Aksi berbahaya harus menyebut target spesifik sebelum dikonfirmasi.
-- Empty state memakai SVG sederhana dan teks kontekstual, misalnya: “Belum ada unit tersedia” + tombol “Tambah unit”.
+## 8. Pola halaman
 
-## 7. Pola halaman Jayaphone
+- Dashboard: satu hero omzet solid, satu metric sekunder, lalu chart dan transaksi terbaru.
+- List/tabel: header halaman, toolbar off-white, tabel; jangan menambahkan summary card bila tidak membantu keputusan.
+- Form panjang: header tanpa card, section berdasarkan kelompok data, satu tombol submit utama.
+- Service: status dan foto before/after menjadi fokus; detail memakai section, bukan tumpukan panel dekoratif.
+- COD/kurir: CTA berikutnya harus eksplisit dan mudah disentuh di mobile.
+- Influencer: performa konten tetap memakai teal/neutral, bukan warna brand platform.
+- Log: satu daftar linear dengan divider, bukan card per event.
 
-### Dashboard
+## 9. Responsive dan aksesibilitas
 
-Tampilkan kondisi operasional hari ini: transaksi, unit yang perlu perhatian, COD pending, service aktif, dan verifikasi customer. Gunakan 3–4 ringkasan paling penting, lalu daftar tindakan yang membutuhkan respons. Chart hanya bila diperlukan untuk membaca tren.
-
-### Inventory dan unit
-
-Toolbar berisi pencarian, status, cabang, dan filter yang benar-benar dipakai. Tabel fokus pada foto kecil, nama/ID, kondisi/status, harga, cabang, dan aksi. Detail unit dibuka melalui drawer.
-
-### Transaksi kasir
-
-Hierarki alur: pilih customer → pilih unit → harga & pembayaran → konfirmasi. Satu tahap memiliki satu aksi utama. Informasi poin hanya ditampilkan bila customer member sudah dipilih dan statusnya mengizinkan.
-
-### COD dan monitor kurir
-
-Gunakan status timeline eksplisit, bukan hanya badge. Card tugas kurir wajib memuat jenis COD, lokasi/cabang, pihak terkait, status saat ini, dan CTA berikutnya. Hindari tabel yang terlalu lebar di mobile serta cegah submit status ganda.
-
-### Service dan sparepart
-
-Status service adalah informasi visual utama. Foto before/after memakai grid konsisten. Riwayat teknisi, sparepart, dan biaya ditampilkan sebagai timeline atau section detail, bukan tumpukan card. Progress approval sparepart harus linear dan mudah dibaca.
-
-## 8. Responsif dan aksesibilitas
-
-- Prioritaskan mobile untuk kasir dan kurir.
-- Target sentuh minimal 44×44px di mobile.
-- Jangan bergantung pada hover untuk aksi penting.
-- Warna tidak boleh menjadi satu-satunya penanda status/error.
-- Semua ikon aksi memiliki label aksesibel.
-- Focus state keyboard harus terlihat.
+- Toolbar bertumpuk di mobile dan kembali horizontal saat ruang cukup.
+- Grid empat kolom turun menjadi dua lalu satu bila isi tidak muat.
+- Tabel mempertahankan horizontal scroll dan sticky action column.
+- Aksi penting tidak boleh bergantung pada hover.
+- Focus keyboard harus terlihat.
+- Warna status selalu disertai teks.
 - Hormati `prefers-reduced-motion`.
+- Jangan memakai bounce, parallax, looping decoration, atau gerakan card saat hover.
 
-## 9. Motion
+## 10. Quality gate anti-AI-slop
 
-- Durasi transisi 120–220ms.
-- Hanya gunakan fade/slide kecil untuk modal, dropdown, drawer, dan pergantian konten.
-- Jangan memakai bounce, parallax, atau animasi loop dekoratif.
+Sebelum mengirim perubahan, pastikan:
 
-## 10. Checklist sebelum mengirim UI
-
-- [ ] Satu prioritas aksi halaman terlihat jelas.
-- [ ] Tidak ada card, border, shadow, atau warna yang tidak memberi fungsi.
-- [ ] Spacing mengikuti skala 4px.
-- [ ] Status memakai teks yang eksplisit.
-- [ ] Nominal, tanggal, ID, dan tabel mudah dipindai.
-- [ ] Desktop, mobile, loading, kosong, error, disabled, dan data panjang telah diperiksa.
-- [ ] Ikon konsisten dan copy berbahasa Indonesia bersifat spesifik.
-- [ ] Perubahan terasa sebagai bagian dari Jayaphone, bukan template acak.
-
-## 11. Instruksi untuk AI agent
-
-1. Baca file ini sebelum membuat atau mengubah UI.
-2. Pertahankan perilaku aplikasi yang sudah ada kecuali perubahan diminta secara eksplisit.
-3. Jangan mengganti satu halaman penuh hanya demi mengikuti tren desain.
-4. Bangun dari pola/komponen yang sudah ada agar konsisten.
-5. Jika menambah status warna atau komponen baru, pastikan tidak berbenturan dengan panduan ini.
-6. **Integrasi Tailwind:** Sebelum membuat komponen UI, wajib petakan palet warna, font, dan konfigurasi dari dokumen ini ke dalam `tailwind.config.ts` (extend theme) agar penulisan class Tailwind tetap rapi (misalnya menggunakan class `bg-jayaphone-surface` atau `text-jayaphone-teal`). Dilarang keras menggunakan *arbitrary values* warna secara berlebihan di HTML (seperti `bg-[#F7F7F3]`).
-7. Setelah implementasi, periksa hasil pada desktop dan mobile beserta semua state penting.
+- [ ] Tidak ada gradient CSS/Tailwind.
+- [ ] Tidak ada blur, glassmorphism, glow, atau neon.
+- [ ] Tidak ada shadow pada card, tabel, toolbar, atau section biasa.
+- [ ] Tidak ada aksen dekoratif selain near-black dan teal.
+- [ ] Amber/merah hanya dipakai sebagai status.
+- [ ] Tidak ada emoji sebagai ikon UI.
+- [ ] Radius moderat; pill tidak dipaksakan ke semua elemen.
+- [ ] Header halaman tidak berada di dalam card.
+- [ ] Metrik memiliki prioritas visual, bukan empat kotak identik yang berteriak bersama.
+- [ ] Copy tetap spesifik untuk operasi toko HP dan berbahasa Indonesia.
+- [ ] Semua route memakai ritme `jp-page`, header, toolbar, table/form yang konsisten.
+- [ ] `.tbl-action-col` tetap sticky.
+- [ ] Kelas `dark:*` dan logic tema legacy tetap dipertahankan.
+- [ ] Loading, empty, error, modal, dan target sentuh mobile tetap jelas.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import type { DateFilterPreset, DateFilterState } from "@/lib/utils/dateFilter";
 import { Modal } from "./Modal";
 
@@ -14,6 +14,7 @@ const presetOptions: { key: DateFilterPreset; label: string }[] = [
   { key: "30d", label: "30 Hari" },
   { key: "90d", label: "3 Bulan" },
   { key: "1y", label: "1 Tahun" },
+  { key: "custom", label: "Custom" },
 ];
 
 export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateFilterBarProps): JSX.Element {
@@ -36,37 +37,34 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
     setIsCustomModalOpen(false);
   };
 
+  // Single-select dropdown, consistent with the Cabang/Status filters it sits
+  // next to on every page that uses this bar — a 5-pill row was the same
+  // "pick one of a handful" behavior as those two dropdowns, just wearing a
+  // different pattern. "Custom" opens the same date-range modal as before;
+  // since the <select> stays controlled by currentFilterState.preset (not
+  // local UI state), cancelling the modal without applying naturally leaves
+  // the dropdown showing whatever preset was actually active.
+  const handlePeriodChange = (event: ChangeEvent<HTMLSelectElement>): void => {
+    const nextPreset = event.target.value as DateFilterPreset;
+    if (nextPreset === "custom") {
+      setIsCustomModalOpen(true);
+      return;
+    }
+    handlePresetClick(nextPreset);
+  };
+
   return (
     <>
-      <div className="flex flex-wrap gap-1 rounded-xl border border-jp-border bg-jp-surface-subtle p-1.5 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark">
-        {presetOptions.map((option) => {
-          const isActive = currentFilterState.preset === option.key;
-          const buttonClassName = isActive
-            ? "bg-jp-surface text-jp-text dark:bg-jp-surface-dark dark:text-jp-text-dark"
-            : "text-jp-muted hover:text-jp-text dark:text-jp-muted-dark dark:hover:text-jp-text-dark";
-          return (
-            <button
-              key={option.key}
-              type="button"
-              onClick={() => handlePresetClick(option.key)}
-              className={"min-h-9 rounded-lg px-3 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-jp-teal/50 " + buttonClassName}
-            >
-              {option.label}
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => setIsCustomModalOpen(true)}
-          className={"min-h-9 rounded-lg px-3 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-jp-teal/50 " + (
-            currentFilterState.preset === "custom"
-              ? "bg-jp-surface text-jp-text dark:bg-jp-surface-dark dark:text-jp-text-dark"
-              : "text-jp-muted hover:text-jp-text dark:text-jp-muted-dark dark:hover:text-jp-text-dark"
-          )}
-        >
-          Custom
-        </button>
-      </div>
+      <select
+        aria-label="Filter periode"
+        value={currentFilterState.preset}
+        onChange={handlePeriodChange}
+        className="field-control w-full text-xs sm:w-auto sm:min-w-[130px]"
+      >
+        {presetOptions.map((option) => (
+          <option key={option.key} value={option.key}>{option.label}</option>
+        ))}
+      </select>
 
       <Modal isOpen={isCustomModalOpen} onClose={() => setIsCustomModalOpen(false)} title="Pilih Rentang Tanggal" maxWidthClassName="max-w-md">
         <div className="space-y-4 py-2">
@@ -77,7 +75,7 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
               type="date"
               value={draftStartDate}
               onChange={(inputEvent) => setDraftStartDate(inputEvent.target.value)}
-              className="w-full rounded-xl border border-jp-border bg-jp-surface-subtle p-2.5 text-jp-text outline-none focus:border-jp-teal focus:ring-2 focus:ring-jp-teal/20 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark"
+              className="field-control"
             />
           </div>
           <div>
@@ -87,12 +85,12 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
               type="date"
               value={draftEndDate}
               onChange={(inputEvent) => setDraftEndDate(inputEvent.target.value)}
-              className="w-full rounded-xl border border-jp-border bg-jp-surface-subtle p-2.5 text-jp-text outline-none focus:border-jp-teal focus:ring-2 focus:ring-jp-teal/20 dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark"
+              className="field-control"
             />
           </div>
         </div>
         {draftStartDate && draftEndDate && draftStartDate > draftEndDate ? <p className="text-xs text-jp-danger">Tanggal mulai harus sebelum tanggal akhir.</p> : null}
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
           <button type="button" onClick={() => setIsCustomModalOpen(false)} className="btn-ghost flex-1">Batal</button>
           <button type="button" onClick={handleApplyCustom} className="btn-primary flex-1" disabled={!draftStartDate || !draftEndDate || draftStartDate > draftEndDate}>Terapkan Filter</button>
         </div>

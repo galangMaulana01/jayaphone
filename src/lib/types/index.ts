@@ -57,6 +57,9 @@ export interface DashboardStats {
     profit_hari_ini?: number;
     profit_harian?: number;
     total_transaksi: number;
+    total_poin_dipakai?: number;
+    total_poin_dapat?: number;
+    biaya_poin_dipakai?: number;
   };
   recent_transaksi?: TransaksiSummary[];
 }
@@ -90,6 +93,7 @@ export interface Unit {
   storage: string;
   ram: string;
   warna: string;
+  kelengkapan?: string;
   imei: string;
   imei2?: string;
   tipe_sim: string;
@@ -98,6 +102,7 @@ export interface Unit {
   lcd: string;
   harga_modal?: number;
   harga_jual: number;
+  kategori: string;
   kondisi: string;
   kondisi_hp: UnitKondisi;
   battery: number;
@@ -109,6 +114,8 @@ export interface Unit {
   garansi_toko: number;
   foto_url?: string | null;
   created_at?: string;
+  /** Pre-formatted "masuk stok" date string from the backend (`fmt_waktu(created_at)`) — used for the stock-aging indicator. */
+  tgl_masuk?: string;
   tgl_terjual?: string | null;
 }
 
@@ -145,10 +152,10 @@ export interface Transaksi {
   foto_serah_terima?: string | null;
 }
 /** Slim variant used in the dashboard's recent-transactions list. */
-export type TransaksiSummary = Pick<Transaksi, "trx_id" | "unit_label" | "harga_jual" | "waktu" | "kasir">;
+export type TransaksiSummary = Pick<Transaksi, "trx_id" | "unit_label" | "harga_jual" | "waktu" | "kasir" | "cabang">;
 
 // ─── Service ─────────────────────────────────────────────────────────────
-export type ServiceStatus = "Antrian" | "Proses" | "Selesai" | "Approved" | "Ditolak";
+export type ServiceStatus = "Antrian" | "Proses" | "Menunggu_Sparepart" | "Selesai" | "Approved" | "Ditolak";
 export interface ServiceTicket {
   id: string;
   service_id: string;
@@ -167,7 +174,31 @@ export interface ServiceTicket {
   estimasi_selesai?: string | null;
   created_at: string;
   updated_at?: string;
-  sparepart_items?: { sp_id: string; jumlah: number }[];
+  sparepart_items?: { sp_id: string; nama: string; jumlah: number; harga_modal: number; mulai_pakai?: string }[];
+  /** Joined in at the route layer for GET /service (list) — for the "HP/IMEI" table column. */
+  imei?: string;
+}
+
+/** Extra unit fields joined into GET /service/{id}/detail only (not on the
+ * base ServiceTicket / list response) — for the read-only "Pilih HP" screen. */
+export interface ServiceTicketDetail extends ServiceTicket {
+  warna: string;
+  kondisi: string;
+  kelengkapan: string;
+  imei: string;
+  timeline: { event: string; waktu: string }[];
+}
+
+/** One row of GET /service/riwayat — ticket-centric completed-service
+ * history, no time window (unlike Sparepart's "Riwayat Pemakaian"). */
+export interface ServiceRiwayatItem {
+  service_id: string;
+  unit_label: string;
+  imei: string;
+  sparepart_items: { sp_id: string; nama: string; jumlah: number; harga_modal: number }[];
+  harga_modal_total: number;
+  selesai_at?: string | null;
+  status: string;
 }
 
 // ─── Customer ────────────────────────────────────────────────────────────
@@ -186,19 +217,52 @@ export interface Customer {
 }
 
 // ─── Sparepart ───────────────────────────────────────────────────────────
+export type SparepartJenis = "repair" | "dijual" | "equipment";
 export interface Sparepart {
   id: string;
   sp_id: string;
   nama: string;
   kategori: string;
+  jenis: SparepartJenis;
   satuan: string;
   stok: number;
+  /** Total sedang dipakai teknisi di tiket-tiket aktif — terpisah dari `stok`
+   * (yang cuma sisa bebas). Bermakna untuk jenis "repair"; selalu 0 untuk
+   * "dijual"/"equipment" karena keduanya tidak direservasi ke tiket. */
+  dipakai: number;
   harga_beli: number;
   harga_jual: number;
   dimensi_str?: string;
   cabang: string;
   catatan?: string;
   product_link?: string;
+}
+
+/** One "Sedang Dipakai" row — a sparepart_items entry from an open (Proses) service ticket. */
+export interface SparepartInUseItem {
+  sp_id: string;
+  nama: string;
+  kategori: string;
+  harga_modal: number;
+  jumlah: number;
+  service_id: string;
+  unit_label: string;
+  imei: string;
+  teknisi: string;
+  mulai_pakai?: string | null;
+  /** Terisi cuma untuk baris "Riwayat Pemakaian" (dari GET
+   * /sparepart/riwayat-pemakaian) — kosong untuk "Sedang Dipakai". */
+  selesai_pakai?: string | null;
+  cabang: string;
+}
+
+// ─── Notifikasi sparepart untuk teknisi ────────────────────────────────
+export interface RequestSparepartNotifItem {
+  req_id: string;
+  nama_sp: string;
+  jumlah: number;
+  service_id?: string | null;
+  unit_label?: string | null;
 }
 
 // ─── Cabang ──────────────────────────────────────────────────────────────
@@ -208,7 +272,15 @@ export interface Cabang {
   alamat?: string;
   telp?: string;
   aktif: boolean;
+  /** IANA timezone of this branch (e.g. "Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"). */
+  timezone?: string;
   kepala_username?: string;
+}
+
+/** kode->timezone lookup entry, from GET /cabang/timezones (open to every role). */
+export interface CabangTimezoneEntry {
+  kode: string;
+  timezone: string;
 }
 
 // ─── Karyawan ────────────────────────────────────────────────────────────
@@ -247,27 +319,54 @@ export interface KaryawanStats {
 }
 
 // ─── Sparepart requests ────────────────────────────────────────────────
-export type RequestSparepartStatus = "Pending" | "Menunggu_Kasir" | "Disetujui" | "Ditolak" | "Selesai" | string;
+// Alur (diagram "WORKFLOW SERVICE & REQUEST SPAREPART"):
+// Pending -> [KC approve harga, terkunci di harga_disetujui] -> Menunggu_Pembelian
+// -> [Kasir catat pembelian] -> Menunggu_Barang (atau langsung Diterima kalau barang_di_tangan)
+// -> [Kasir konfirmasi barang sampai] -> Diterima (ditahan buat tiket ini, badge FE
+//    "Sparepart Tersedia") -> [Teknisi konfirmasi "Gunakan Sparepart"] -> Digunakan
+// Ditolak bisa terjadi di titik KC review.
+export type RequestSparepartStatus =
+  | "Pending" | "Disetujui" | "Menunggu_Pembelian" | "Dibeli"
+  | "Menunggu_Barang" | "Diterima" | "Digunakan" | "Ditolak" | string;
+export type RequestSparepartJenis = "repair" | "equipment";
 export interface RequestSparepart {
   id: string;
+  /** The human-readable business ID (e.g. "JYP-REQ-002") — every PATCH
+   * /request-sparepart/{req_id}/... route matches on THIS field, not `id`
+   * (the Mongo _id). Always use req_id, not id, when calling respond()/beli()/terima(). */
+  req_id: string;
   tipe: string;
+  jenis?: RequestSparepartJenis;
   service_id?: string | null;
   sp_id?: string | null;
   nama_sp: string;
   jumlah: number;
+  harga_diajukan?: number | null;
+  alasan?: string | null;
   keterangan?: string | null;
-  kebutuhan?: string | null;
   cabang: string;
   status: RequestSparepartStatus;
-  harga?: number | null;
-  harga_jual?: number | null;
+  harga_disetujui?: number | null;
+  supplier?: string | null;
+  harga_beli_aktual?: number | null;
+  bukti_url?: string | null;
+  catatan_beli?: string | null;
+  dibeli_oleh?: string | null;
+  dibeli_at?: string | null;
+  tanggal_terima?: string | null;
+  diterima_oleh?: string | null;
+  diterima_at?: string | null;
   estimasi_tiba?: string | null;
   catatan?: string | null;
   catatan_kc?: string | null;
+  disetujui_oleh_kc?: string | null;
+  disetujui_at_kc?: string | null;
   dibuat_oleh?: string | null;
   created_at?: string;
   updated_at?: string;
   product_link?: string | null;
+  /** Legacy (flow lama) — dipertahankan untuk data historis. */
+  harga_jual?: number | null;
 }
 
 // ─── Courier monitoring ────────────────────────────────────────────────

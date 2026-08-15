@@ -14,8 +14,9 @@ import { useToast } from "@/contexts/ToastContext";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LabelledInput } from "@/components/ui/InputField";
-import { UserAvatar } from "@/components/layout/UserAvatar";
-import type { AuthenticatedUser } from "@/lib/types";
+import { ImageUploader } from "@/components/ui/ImageUploader";
+import { NOT_SET } from "@/lib/utils/formatters";
+import type { AuthenticatedUser, UploadedImage } from "@/lib/types";
 
 export default function SettingsPage(): JSX.Element {
   const { refreshCurrentUser } = useAuth();
@@ -43,46 +44,52 @@ export default function SettingsPage(): JSX.Element {
     void loadProfile();
   }, [loadProfile]);
 
+  const handlePhotoChange = async (images: UploadedImage[]): Promise<void> => {
+    try {
+      const response = await Api.auth.updateProfile({ foto_profil_url: images[0]?.secure_url ?? null });
+      setProfileFromServer(response.data);
+      await refreshCurrentUser();
+      showToast(images.length ? "Foto profil berhasil diperbarui" : "Foto profil dihapus", "success");
+    } catch (updateError) {
+      const message = updateError instanceof ApiError ? updateError.message : "Gagal memperbarui foto profil";
+      showToast(message, "error");
+    }
+  };
+
   if (isFetching) return <LoadingSkeleton numberOfRows={4} />;
   if (fetchErrorMessage) return <ErrorState message={fetchErrorMessage} onRetry={loadProfile} />;
   if (!profileFromServer) return <></>;
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <h2 className="text-xl font-semibold tracking-tight">Pengaturan Profil</h2>
+    <div className="jp-page max-w-3xl">
+      <header><h1 className="jp-page-title">Pengaturan Profil</h1><p className="mt-2 text-sm text-jp-muted dark:text-jp-muted-dark">Kelola identitas akun dan keamanan akses.</p></header>
 
-      <section className="space-y-5 rounded-2xl border border-jp-border bg-jp-surface p-5 dark:border-jp-border-dark dark:bg-jp-surface-dark">
-        <h3 className="text-sm font-medium text-jp-muted dark:text-jp-muted-dark dark:text-jp-muted dark:text-jp-muted-dark">Informasi Akun</h3>
+      <section className="form-section">
+        <h3 className="text-sm font-medium text-jp-muted dark:text-jp-muted-dark">Informasi Akun</h3>
         <div className="space-y-3">
           <div>
             <p className="label">Role</p>
-            <div className="rounded-xl bg-jp-surface-subtle px-3 py-2 text-sm font-medium dark:bg-jp-surface-subtle-dark">
+            <div className="rounded-jp-sm bg-jp-surface-subtle px-3 py-2 text-sm font-medium dark:bg-jp-surface-subtle-dark">
               {profileFromServer.role}
             </div>
           </div>
           <div>
             <p className="label">Cabang</p>
-            <div className="rounded-xl bg-jp-surface-subtle px-3 py-2 text-sm font-medium dark:bg-jp-surface-subtle-dark">
-              {profileFromServer.cabang || "-"}
+            <div className="rounded-jp-sm bg-jp-surface-subtle px-3 py-2 text-sm font-medium dark:bg-jp-surface-subtle-dark">
+              {profileFromServer.cabang || NOT_SET}
             </div>
           </div>
           <LabelledInput label="Username" value={profileFromServer.username} readOnly />
           <LabelledInput label="Nama Tampil" value={profileFromServer.name ?? ""} readOnly />
-          <div>
-            <p className="label">Foto Profil</p>
-            <div className="flex items-center gap-4">
-              <UserAvatar
-                fotoProfileUrl={profileFromServer.foto_profil_url}
-                altText={profileFromServer.name ?? "Foto profil"}
-                sizeClassName="h-16 w-16"
-              />
-              <p className="text-xs text-jp-muted dark:text-jp-muted-dark dark:text-jp-muted dark:text-jp-muted-dark">
-                Untuk mengganti foto profil, gunakan komponen ImageUploader — masih dalam
-                antrian porting. Sementara ini update via endpoint /auth/me/profile secara
-                langsung.
-              </p>
-            </div>
-          </div>
+          <ImageUploader
+            id="settings-foto-profil"
+            label="Foto Profil"
+            maxFiles={1}
+            folder="jayaphone/profile"
+            deleteRemoteOnRemove
+            initialImages={profileFromServer.foto_profil_url ? [{ secure_url: profileFromServer.foto_profil_url }] : []}
+            onChange={(images) => void handlePhotoChange(images)}
+          />
         </div>
       </section>
 
@@ -151,9 +158,9 @@ function ChangePasswordCard({ onPasswordChanged }: ChangePasswordCardProps): JSX
   };
 
   return (
-    <section className="space-y-5 rounded-2xl border border-jp-border bg-jp-surface p-5 dark:border-jp-border-dark dark:bg-jp-surface-dark">
-      <h3 className="text-sm font-medium text-jp-muted dark:text-jp-muted-dark dark:text-jp-muted dark:text-jp-muted-dark">Ganti Password</h3>
-      <p className="text-xs text-jp-muted dark:text-jp-muted-dark dark:text-jp-muted dark:text-jp-muted-dark">
+    <section className="form-section">
+      <h3 className="text-sm font-medium text-jp-muted dark:text-jp-muted-dark">Ganti Password</h3>
+      <p className="text-xs text-jp-muted dark:text-jp-muted-dark">
         Masukkan password lama dan password baru (minimal 6 karakter).
       </p>
       <form onSubmit={handleSubmit} className="space-y-3">

@@ -65,12 +65,14 @@ export default function LoginPage(): JSX.Element {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 p-4 dark:from-zinc-950 dark:to-zinc-900">
-      <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mb-6 text-center">
-          <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Jayaphone</h1>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Masuk untuk melanjutkan</p>
+    <div className="flex min-h-screen items-center justify-center bg-jp-app p-4 sm:p-6 dark:bg-jp-app-dark">
+      {/* Satu blok solid memberi fokus; form tetap tenang dan terang. */}
+      <div className="relative w-full max-w-sm">
+        <div className="hero-card mb-4 text-center">
+          <h1 className="text-xl font-semibold tracking-[-0.02em] text-white dark:text-jp-text-dark">Jayaphone</h1>
+          <p className="mt-1 text-xs text-white/60 dark:text-jp-muted-dark">Masuk untuk melanjutkan</p>
         </div>
+        <div className="rounded-jp-md border border-jp-border bg-jp-surface p-6 shadow-none dark:border-jp-border-dark dark:bg-jp-surface-dark">
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <LabelledInput
@@ -93,7 +95,7 @@ export default function LoginPage(): JSX.Element {
           />
 
           {errorMessage && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-2.5 text-xs text-red-500">
+            <div className="rounded-xl border border-jp-danger/20 bg-jp-danger/10 p-2.5 text-xs text-jp-danger dark:text-jp-danger-dark">
               {errorMessage}
             </div>
           )}
@@ -112,6 +114,7 @@ export default function LoginPage(): JSX.Element {
             )}
           </button>
         </form>
+        </div>
       </div>
     </div>
   );

@@ -17,23 +17,24 @@ interface DashboardTrendChartProps {
 
 export function DashboardTrendChart({ points }: DashboardTrendChartProps): JSX.Element {
   const { currentTheme } = useTheme();
+  const lineColor = currentTheme === "dark" ? "#5FC9BE" : "#0B6F68";
 
   const chartData = useMemo<ChartData<"line">>(() => ({
     labels: points.map((point) => point.tanggal),
     datasets: [{
       label: "Omzet",
       data: points.map((point) => point.omzet),
-      borderColor: "#4FD1C5",
-      borderWidth: 2,
-      pointBackgroundColor: "#4FD1C5",
-      pointBorderColor: currentTheme === "dark" ? "#141416" : "#FFFFFF",
-      pointBorderWidth: 2,
-      pointRadius: 2,
-      pointHoverRadius: 4,
-      tension: 0.32,
+      borderColor: lineColor,
+      borderWidth: 1.75,
+      pointBackgroundColor: lineColor,
+      pointBorderColor: lineColor,
+      pointBorderWidth: 0,
+      pointRadius: 0,
+      pointHoverRadius: 3,
+      tension: 0.28,
       fill: false,
     }],
-  }), [currentTheme, points]);
+  }), [lineColor, points]);
 
   const chartOptions = useMemo<ChartOptions<"line">>(() => {
     const mutedColor = currentTheme === "dark" ? "#A1A1AA" : "#6F706F";
@@ -50,8 +51,9 @@ export function DashboardTrendChart({ points }: DashboardTrendChartProps): JSX.E
           backgroundColor: tooltipBackground,
           displayColors: false,
           padding: 10,
+          cornerRadius: 10,
           titleFont: { family: "var(--font-geist-sans)", size: 12, weight: 600 },
-          bodyFont: { family: "var(--font-geist-mono)", size: 11 },
+          bodyFont: { family: "var(--font-geist-sans)", size: 11 },
           callbacks: { label: (context) => formatRupiah(Number(context.parsed.y ?? 0)) },
         },
       },
@@ -64,10 +66,10 @@ export function DashboardTrendChart({ points }: DashboardTrendChartProps): JSX.E
         y: {
           beginAtZero: true,
           border: { display: false },
-          grid: { color: gridColor, drawTicks: false },
+          grid: { color: gridColor, drawTicks: false, borderDash: [4, 4] },
           ticks: {
             color: mutedColor,
-            font: { family: "var(--font-geist-mono)", size: 10 },
+            font: { family: "var(--font-geist-sans)", size: 10 },
             padding: 10,
             callback: (value) => formatRupiah(Number(value)),
           },
@@ -76,7 +78,13 @@ export function DashboardTrendChart({ points }: DashboardTrendChartProps): JSX.E
     };
   }, [currentTheme]);
 
-  if (points.length === 0) {
+  // UX-002 (UX_REVIEW_2026-08-07.md) — when every point is 0 (a branch/period
+  // with no sales), Chart.js's beginAtZero auto-scale picks a 0-1 range and
+  // the y-axis ticks come out as fractional Rupiah ("Rp 0,1", "Rp 0,2"...).
+  // Treat all-zero the same as no-data: same empty state the rest of the
+  // dashboard already uses for a quiet period, instead of a broken-looking axis.
+  const hasSales = points.some((point) => point.omzet > 0);
+  if (points.length === 0 || !hasSales) {
     return <EmptyState message="Belum ada transaksi pada periode ini" iconName="chartSvg" />;
   }
 

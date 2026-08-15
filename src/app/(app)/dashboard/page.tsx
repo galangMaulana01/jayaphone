@@ -4,19 +4,22 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Api, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCabangTimezones, resolveCabangTimezone } from "@/contexts/CabangTzContext";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { HeroCard } from "@/components/ui/HeroCard";
+import { CabangFilter } from "@/components/ui/CabangFilter";
 import { DateFilterBar } from "@/components/ui/DateFilterBar";
 import { createDefaultDateFilter, toApiQueryParams } from "@/lib/utils/dateFilter";
-import { formatDateTimeShort, formatRupiah } from "@/lib/utils/formatters";
+import { formatDateTimeShort, formatRupiah, formatRupiahCompact } from "@/lib/utils/formatters";
 import type { DashboardStats, DashboardTrend, DashboardTrendPoint } from "@/lib/types";
 
 const DashboardTrendChart = dynamic(
-  () => import("@/components/dashboard/DashboardTrendChart").then((module) => module.DashboardTrendChart),
+  () => import("./_components/DashboardTrendChart").then((module) => module.DashboardTrendChart),
   {
     ssr: false,
-    loading: () => <div className="h-64 animate-pulse rounded-xl bg-jp-surface-subtle dark:bg-jp-surface-subtle-dark md:h-72" />,
+    loading: () => <div className="h-64 animate-pulse rounded-jp-sm bg-jp-surface-subtle dark:bg-jp-surface-subtle-dark md:h-72" />,
   },
 );
 
@@ -29,7 +32,7 @@ interface DashboardMetricCardProps {
 
 function DashboardMetricCard({ label, value, description, mono = false }: DashboardMetricCardProps): JSX.Element {
   return (
-    <section className="rounded-2xl border border-jp-border bg-jp-surface p-5 dark:border-jp-border-dark dark:bg-jp-surface-dark">
+    <section className="metric-card">
       <p className="text-[11px] font-medium text-jp-muted dark:text-jp-muted-dark">{label}</p>
       <p className={"mt-3 text-2xl font-semibold tracking-tight text-jp-text dark:text-jp-text-dark " + (mono ? "font-mono text-xl tabular-nums" : "tabular-nums")}>{value}</p>
       <p className="mt-2 text-[11px] text-jp-muted dark:text-jp-muted-dark">{description}</p>
@@ -53,13 +56,19 @@ function normaliseTrendPoints(trendResponse: DashboardTrend): DashboardTrendPoin
 
 export default function DashboardPage(): JSX.Element {
   const { user: currentUser } = useAuth();
+  const cabangTz = useCabangTimezones();
   const [dateFilterState, setDateFilterState] = useState(createDefaultDateFilter);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [dashboardTrend, setDashboardTrend] = useState<DashboardTrendPoint[] | null>(null);
   const [isFetching, setIsFetching] = useState<boolean>(true);
   const [fetchErrorMessage, setFetchErrorMessage] = useState<string>("");
+  const [selectedCabangFilter, setSelectedCabangFilter] = useState<string>("");
 
-  const filterQueryParams = useMemo(() => toApiQueryParams(dateFilterState), [dateFilterState]);
+  const isOwner = currentUser?.role === "owner";
+  const filterQueryParams = useMemo(
+    () => ({ ...toApiQueryParams(dateFilterState), cabang: isOwner && selectedCabangFilter ? selectedCabangFilter : undefined }),
+    [dateFilterState, isOwner, selectedCabangFilter],
+  );
 
   const loadDashboardData = useCallback(async (): Promise<void> => {
     setIsFetching(true);
@@ -93,14 +102,15 @@ export default function DashboardPage(): JSX.Element {
   const recentTransaksi = dashboardStats?.recent_transaksi ?? [];
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+    <div className="jp-page">
+      <header className="jp-page-header">
         <div>
-          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-jp-text dark:text-jp-text-dark">Dashboard</h1>
+          <h1 className="jp-page-title">Dashboard</h1>
           <p className="mt-2 text-sm text-jp-muted dark:text-jp-muted-dark">Kondisi operasional Jayaphone pada periode yang dipilih{cabangSuffix}.</p>
         </div>
-        <div className="self-start lg:self-auto">
+        <div className="flex flex-col gap-2 self-start sm:flex-row sm:items-start lg:self-auto">
           <DateFilterBar currentFilterState={dateFilterState} onFilterStateChange={setDateFilterState} />
+          {isOwner ? <CabangFilter value={selectedCabangFilter} onChange={setSelectedCabangFilter} label="" className="min-w-[180px]" /> : null}
         </div>
       </header>
 
@@ -110,14 +120,36 @@ export default function DashboardPage(): JSX.Element {
         <ErrorState message={fetchErrorMessage} onRetry={loadDashboardData} />
       ) : dashboardStats ? (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <DashboardMetricCard label="Total Transaksi" value={dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")} description="Tercatat pada periode ini" />
-            <DashboardMetricCard label="Unit Terjual" value={totalTerjual.toLocaleString("id-ID")} description="Sesuai filter tanggal" />
+          {/* Omzet adalah satu-satunya hero solid di layar ini. */}
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.618fr)_minmax(260px,1fr)]">
+            <div>
+              <HeroCard
+                label="Total Omzet"
+                value={formatRupiahCompact(totalOmzet)}
+                description={`${formatRupiah(totalOmzet)} pada periode yang dipilih`}
+                mono
+                footer={
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-white/55">Transaksi</p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums text-white">{dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-white/55">Unit Terjual</p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums text-white">{totalTerjual.toLocaleString("id-ID")}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-white/55">Gross Profit</p>
+                      <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-white" title={formatRupiah(dashboardStats.keuangan.total_profit)}>{formatRupiahCompact(dashboardStats.keuangan.total_profit)}</p>
+                    </div>
+                  </div>
+                }
+              />
+            </div>
             <DashboardMetricCard label="Stok Tersedia" value={dashboardStats.unit.tersedia.toLocaleString("id-ID")} description="Siap untuk transaksi" />
-            <DashboardMetricCard label="Gross Profit" value={formatRupiah(dashboardStats.keuangan.total_profit)} description="Profit transaksi periode ini" mono />
           </div>
 
-          <section className="rounded-2xl border border-jp-border bg-jp-surface p-5 dark:border-jp-border-dark dark:bg-jp-surface-dark sm:p-6">
+          <section className="section-panel p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight text-jp-text dark:text-jp-text-dark">Penjualan harian</h2>
@@ -130,7 +162,7 @@ export default function DashboardPage(): JSX.Element {
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-2xl border border-jp-border bg-jp-surface dark:border-jp-border-dark dark:bg-jp-surface-dark">
+          <section className="table-wrap overflow-hidden">
             <div className="flex items-start justify-between gap-4 px-5 py-5 sm:px-6">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight text-jp-text dark:text-jp-text-dark">Transaksi terbaru</h2>
@@ -150,7 +182,7 @@ export default function DashboardPage(): JSX.Element {
                       <th className="px-5 py-3.5 font-medium">Item</th>
                       <th className="px-5 py-3.5 text-right font-medium">Harga</th>
                       <th className="px-5 py-3.5 text-right font-medium">Waktu</th>
-                      <th className="px-5 py-3.5 text-right font-medium sm:px-6">Status</th>
+                      <th className="px-5 py-3.5 text-right font-medium sm:px-6">Cabang</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -160,8 +192,8 @@ export default function DashboardPage(): JSX.Element {
                         <td className="whitespace-nowrap px-5 text-jp-text dark:text-jp-text-dark">{transaksiEntry.kasir}</td>
                         <td className="max-w-[240px] truncate px-5 text-jp-text dark:text-jp-text-dark">{transaksiEntry.unit_label}</td>
                         <td className="whitespace-nowrap px-5 text-right font-mono text-[12px] font-medium tabular-nums text-jp-text dark:text-jp-text-dark">{formatRupiah(transaksiEntry.harga_jual)}</td>
-                        <td className="whitespace-nowrap px-5 text-right text-[12px] text-jp-muted dark:text-jp-muted-dark">{formatDateTimeShort(transaksiEntry.waktu)}</td>
-                        <td className="whitespace-nowrap px-5 text-right sm:px-6"><span className="inline-flex rounded-full border border-jp-success/25 bg-jp-success/10 px-2 py-0.5 text-[10px] font-medium text-jp-success dark:text-jp-success-dark">Tercatat</span></td>
+                        <td className="whitespace-nowrap px-5 text-right text-[12px] text-jp-muted dark:text-jp-muted-dark">{formatDateTimeShort(transaksiEntry.waktu, resolveCabangTimezone(cabangTz, transaksiEntry.cabang))}</td>
+                        <td className="whitespace-nowrap px-5 text-right text-[12px] text-jp-muted dark:text-jp-muted-dark sm:px-6">{transaksiEntry.cabang}</td>
                       </tr>
                     ))}
                   </tbody>

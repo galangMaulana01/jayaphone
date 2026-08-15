@@ -110,6 +110,7 @@ export interface TransaksiCreatePayload {
   biaya_garansi?: number;
   customer_nama?: string;
   customer_kontak?: string;
+  customer_id?: string;
   poin_dipakai?: number;
   sparepart_items?: { sp_id: string; jumlah: number }[];
   foto_serah_terima?: string | null;
@@ -292,7 +293,7 @@ const cod = {
     requestJson<ApiEnvelope<CODRequest[]>>("GET", `/cod${buildQueryString(params)}`),
   detail: (codId: string) =>
     requestJson<ApiEnvelope<CODRequest>>("GET", `/cod/${codId}`),
-  kurirDashboard: (params?: { status?: string; type?: string }) =>
+  kurirDashboard: (params?: { status?: string; type?: string; limit?: number; skip?: number }) =>
     requestJson<ApiEnvelope<CODRequest[]>>("GET", `/cod/kurir/dashboard${buildQueryString(params)}`),
   kurirList: (params?: Record<string, string>) =>
     requestJson<ApiEnvelope<KurirListItem[]>>("GET", `/cod/kurir-list${buildQueryString(params)}`),

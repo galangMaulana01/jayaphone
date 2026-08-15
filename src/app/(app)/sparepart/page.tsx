@@ -227,17 +227,24 @@ export default function SparepartPage(): JSX.Element {
     } catch (e) { showToast(e instanceof Error ? e.message : "Konfirmasi terima gagal", "error"); }
   };
 
-  const tabs: { key: SparepartTab; label: string; count: number }[] = [
+  // Two contexts, not one flat row: "Stok" (what's on the shelf right now)
+  // vs "Request & Pembelian" (the request_sparepart lifecycle, one stage per
+  // tab). Same tabs/roles as before — teknisi/kc/owner see Request Sparepart,
+  // kasir sees the two procurement stages instead — only the grouping is new.
+  const stockTabs: { key: SparepartTab; label: string; count: number }[] = [
     { key: "tersedia", label: "Sparepart Tersedia", count: tersedia.length },
     { key: "sedang_dipakai", label: "Sparepart Sedang Dipakai", count: sedangDipakai.length },
     { key: "riwayat", label: "Riwayat Pemakaian", count: riwayat.length },
     { key: "untuk_dijual", label: "Sparepart Untuk Dijual", count: dijual.length },
+  ];
+  const requestTabs: { key: SparepartTab; label: string; count: number }[] = [
     ...(canSeeRequestTab ? [{ key: "request" as const, label: "Request Sparepart", count: requests.length }] : []),
     ...(isKasir ? [
       { key: "menunggu_pembelian" as const, label: "Menunggu Pembelian", count: menungguPembelian.length },
       { key: "menunggu_barang" as const, label: "Menunggu Barang", count: menungguBarang.length },
     ] : []),
   ];
+  const isStockTab = stockTabs.some((t) => t.key === tab);
 
   return (
     <div className="jp-page">
@@ -251,15 +258,30 @@ export default function SparepartPage(): JSX.Element {
           : (canManage && <button type="button" className="btn-primary" onClick={openCreate}>+ Tambah Sparepart</button>)}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="metric-card"><p className="label">Total Sparepart</p><p className="mt-1 jp-page-title">{totalSparepart}</p><p className="mt-1 text-[11px] text-jp-muted dark:text-jp-muted-dark">Semua sparepart</p></div>
-        <div className="metric-card"><p className="label">Sparepart Tersedia</p><p className="mt-1 jp-page-title text-jp-teal dark:text-jp-teal">{tersedia.length}</p><p className="mt-1 text-[11px] text-jp-muted dark:text-jp-muted-dark">Siap digunakan</p></div>
-        <div className="metric-card"><p className="label">Sedang Dipakai</p><p className="mt-1 jp-page-title">{sedangDipakai.length}</p><p className="mt-1 text-[11px] text-jp-muted dark:text-jp-muted-dark">Sedang digunakan di service</p></div>
-        <div className="metric-card"><p className="label">Untuk Dijual</p><p className="mt-1 jp-page-title">{dijual.length}</p><p className="mt-1 text-[11px] text-jp-muted dark:text-jp-muted-dark">Untuk penjualan ke customer</p></div>
-      </div>
+      {isStockTab && (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="metric-card"><p className="label">Total Sparepart</p><p className="mt-1 jp-page-title">{totalSparepart}</p><p className="mt-1 text-[11px] text-jp-muted dark:text-jp-muted-dark">Semua sparepart</p></div>
+          <div className="metric-card"><p className="label">Sparepart Tersedia</p><p className="mt-1 jp-page-title text-jp-teal dark:text-jp-teal">{tersedia.length}</p><p className="mt-1 text-[11px] text-jp-muted dark:text-jp-muted-dark">Siap digunakan</p></div>
+          <div className="metric-card"><p className="label">Sedang Dipakai</p><p className="mt-1 jp-page-title">{sedangDipakai.length}</p><p className="mt-1 text-[11px] text-jp-muted dark:text-jp-muted-dark">Sedang digunakan di service</p></div>
+          <div className="metric-card"><p className="label">Untuk Dijual</p><p className="mt-1 jp-page-title">{dijual.length}</p><p className="mt-1 text-[11px] text-jp-muted dark:text-jp-muted-dark">Untuk penjualan ke customer</p></div>
+        </div>
+      )}
 
-      <div className="segmented-control">
-        {tabs.map((t) => <button type="button" key={t.key} className={`filter-tab ${tab === t.key ? "filter-tab-active" : ""}`} onClick={() => setTab(t.key)}>{t.label} ({t.count})</button>)}
+      <div className="flex flex-wrap gap-5">
+        <div className="space-y-1.5">
+          <p className="label mb-0">Stok</p>
+          <div className="segmented-control">
+            {stockTabs.map((t) => <button type="button" key={t.key} className={`filter-tab ${tab === t.key ? "filter-tab-active" : ""}`} onClick={() => setTab(t.key)}>{t.label} ({t.count})</button>)}
+          </div>
+        </div>
+        {requestTabs.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="label mb-0">Request &amp; Pembelian</p>
+            <div className="segmented-control">
+              {requestTabs.map((t) => <button type="button" key={t.key} className={`filter-tab ${tab === t.key ? "filter-tab-active" : ""}`} onClick={() => setTab(t.key)}>{t.label} ({t.count})</button>)}
+            </div>
+          </div>
+        )}
       </div>
 
       {tab !== "sedang_dipakai" && tab !== "riwayat" && tab !== "request" && tab !== "menunggu_pembelian" && tab !== "menunggu_barang" && (

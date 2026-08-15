@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import type { DateFilterPreset, DateFilterState } from "@/lib/utils/dateFilter";
 import { Modal } from "./Modal";
 
@@ -14,6 +14,7 @@ const presetOptions: { key: DateFilterPreset; label: string }[] = [
   { key: "30d", label: "30 Hari" },
   { key: "90d", label: "3 Bulan" },
   { key: "1y", label: "1 Tahun" },
+  { key: "custom", label: "Custom" },
 ];
 
 export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateFilterBarProps): JSX.Element {
@@ -36,37 +37,34 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
     setIsCustomModalOpen(false);
   };
 
+  // Single-select dropdown, consistent with the Cabang/Status filters it sits
+  // next to on every page that uses this bar — a 5-pill row was the same
+  // "pick one of a handful" behavior as those two dropdowns, just wearing a
+  // different pattern. "Custom" opens the same date-range modal as before;
+  // since the <select> stays controlled by currentFilterState.preset (not
+  // local UI state), cancelling the modal without applying naturally leaves
+  // the dropdown showing whatever preset was actually active.
+  const handlePeriodChange = (event: ChangeEvent<HTMLSelectElement>): void => {
+    const nextPreset = event.target.value as DateFilterPreset;
+    if (nextPreset === "custom") {
+      setIsCustomModalOpen(true);
+      return;
+    }
+    handlePresetClick(nextPreset);
+  };
+
   return (
     <>
-      <div className="segmented-control">
-        {presetOptions.map((option) => {
-          const isActive = currentFilterState.preset === option.key;
-          const buttonClassName = isActive
-            ? "bg-jp-text text-white dark:bg-jp-text-dark dark:text-jp-text"
-            : "text-jp-muted hover:text-jp-text dark:text-jp-muted-dark dark:hover:text-jp-text-dark";
-          return (
-            <button
-              key={option.key}
-              type="button"
-              onClick={() => handlePresetClick(option.key)}
-              className={"min-h-9 rounded-full px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal " + buttonClassName}
-            >
-              {option.label}
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => setIsCustomModalOpen(true)}
-          className={"min-h-9 rounded-full px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal " + (
-            currentFilterState.preset === "custom"
-              ? "bg-jp-text text-white dark:bg-jp-text-dark dark:text-jp-text"
-              : "text-jp-muted hover:text-jp-text dark:text-jp-muted-dark dark:hover:text-jp-text-dark"
-          )}
-        >
-          Custom
-        </button>
-      </div>
+      <select
+        aria-label="Filter periode"
+        value={currentFilterState.preset}
+        onChange={handlePeriodChange}
+        className="field-control w-full text-xs sm:w-auto sm:min-w-[130px]"
+      >
+        {presetOptions.map((option) => (
+          <option key={option.key} value={option.key}>{option.label}</option>
+        ))}
+      </select>
 
       <Modal isOpen={isCustomModalOpen} onClose={() => setIsCustomModalOpen(false)} title="Pilih Rentang Tanggal" maxWidthClassName="max-w-md">
         <div className="space-y-4 py-2">

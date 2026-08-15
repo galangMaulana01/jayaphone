@@ -484,9 +484,15 @@ export default function ServiceListPage(): JSX.Element {
                 <p className="mb-2 text-xs font-semibold text-jp-text dark:text-jp-text-dark">Foto kondisi HP setelah dikerjakan (wajib sebelum Selesai)</p>
                 <ImageUploader id="svc-after" maxFiles={5} initialImages={afterPhotos} folder="jayaphone/service/after" onChange={setAfterPhotos} />
               </div>
-              <div className="flex gap-2">
-                <button type="button" className="btn-error flex-1" onClick={() => setDitolakConfirmOpen(true)}>Gagal</button>
-                <button type="button" disabled={busy} className="btn-success flex-1" onClick={() => void submitSelesai()}>{busy ? "Menyimpan..." : "Tandai Selesai"}</button>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <button type="button" className="btn-error" onClick={() => setDitolakConfirmOpen(true)}>Gagal</button>
+                  {/* Same requirement submitSelesai already guards on (afterPhotos.length) — this only
+                      surfaces it before the click instead of after, via a toast, so a teknisi never
+                      submits knowing it will fail. */}
+                  <button type="button" disabled={busy || !afterPhotos.length} className="btn-success flex-1" onClick={() => void submitSelesai()}>{busy ? "Menyimpan..." : "Tandai Selesai"}</button>
+                </div>
+                {!afterPhotos.length && <p className="text-[11px] text-jp-muted dark:text-jp-muted-dark">Upload minimal 1 foto AFTER di atas untuk mengaktifkan tombol Tandai Selesai.</p>}
               </div>
             </div>
           )}

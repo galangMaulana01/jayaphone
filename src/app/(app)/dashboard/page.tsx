@@ -182,7 +182,7 @@ export default function DashboardPage(): JSX.Element {
                       <th className="px-5 py-3.5 font-medium">Item</th>
                       <th className="px-5 py-3.5 text-right font-medium">Harga</th>
                       <th className="px-5 py-3.5 text-right font-medium">Waktu</th>
-                      <th className="px-5 py-3.5 text-right font-medium sm:px-6">Status</th>
+                      <th className="px-5 py-3.5 text-right font-medium sm:px-6">Cabang</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -193,7 +193,7 @@ export default function DashboardPage(): JSX.Element {
                         <td className="max-w-[240px] truncate px-5 text-jp-text dark:text-jp-text-dark">{transaksiEntry.unit_label}</td>
                         <td className="whitespace-nowrap px-5 text-right font-mono text-[12px] font-medium tabular-nums text-jp-text dark:text-jp-text-dark">{formatRupiah(transaksiEntry.harga_jual)}</td>
                         <td className="whitespace-nowrap px-5 text-right text-[12px] text-jp-muted dark:text-jp-muted-dark">{formatDateTimeShort(transaksiEntry.waktu, resolveCabangTimezone(cabangTz, transaksiEntry.cabang))}</td>
-                        <td className="whitespace-nowrap px-5 text-right sm:px-6"><span className="inline-flex rounded-full border border-jp-success/25 bg-jp-success/10 px-2 py-0.5 text-[10px] font-medium text-jp-success dark:text-jp-success-dark">Tercatat</span></td>
+                        <td className="whitespace-nowrap px-5 text-right text-[12px] text-jp-muted dark:text-jp-muted-dark sm:px-6">{transaksiEntry.cabang}</td>
                       </tr>
                     ))}
                   </tbody>

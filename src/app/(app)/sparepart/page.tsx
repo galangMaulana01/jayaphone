@@ -455,10 +455,17 @@ function SparepartPageInner(): JSX.Element {
           {requestsLoading ? <LoadingSkeleton numberOfRows={5} /> : requestsError ? <ErrorState message={requestsError} onRetry={reloadRequests} /> : (
             <div className="table-wrap overflow-x-auto rounded-jp-md">
               <table className="w-full text-xs">
-                <thead className="tbl-head border-b"><tr>{["Request", "Sparepart", "Jenis", "Jumlah", "Harga Diajukan/Disetujui", "Cabang", "Status", "Aksi"].map((h) => <th key={h} className={`px-5 py-3.5 text-left font-medium ${h === "Aksi" ? "tbl-action-col" : ""}`}>{h}</th>)}</tr></thead>
+                <thead className="tbl-head border-b"><tr>{["Foto", "Request", "Sparepart", "Jenis", "Jumlah", "Harga Diajukan/Disetujui", "Cabang", "Status", "Aksi"].map((h) => <th key={h} className={`px-5 py-3.5 text-left font-medium ${h === "Aksi" ? "tbl-action-col" : ""}`}>{h}</th>)}</tr></thead>
                 <tbody>
                   {requests.length ? requests.map((r) => (
                     <tr key={r.id} className="tbl-row">
+                      <td className="px-5 py-4">
+                        {r.unit_foto_snapshot ? (
+                          <img src={r.unit_foto_snapshot} alt={`Foto unit untuk ${r.req_id}`} className="h-10 w-10 rounded-jp-sm object-cover" />
+                        ) : (
+                          <span className="text-jp-muted dark:text-jp-muted-dark">{NOT_SET}</span>
+                        )}
+                      </td>
                       <td className="px-5 py-4 font-mono text-jp-muted dark:text-jp-muted-dark">{r.req_id}</td>
                       <td className="px-5 py-4">
                         <p className="font-medium">{r.nama_sp}</p>
@@ -476,7 +483,7 @@ function SparepartPageInner(): JSX.Element {
                         ) : <span className="text-jp-muted dark:text-jp-muted-dark">—</span>}
                       </td>
                     </tr>
-                  )) : <tr><td colSpan={8}><EmptyState message="Belum ada request sparepart" iconName="packageSvg" /></td></tr>}
+                  )) : <tr><td colSpan={9}><EmptyState message="Belum ada request sparepart" iconName="packageSvg" /></td></tr>}
                 </tbody>
               </table>
               {requests.length > 0 && (
@@ -608,6 +615,9 @@ function SparepartPageInner(): JSX.Element {
       {canApproveRequest && (
         <Modal isOpen={Boolean(selectedRequest)} onClose={() => setSelectedRequest(null)} title={selectedRequest ? `Proses ${selectedRequest.req_id}` : "Proses Request"}>
           <div className="space-y-3">
+            {selectedRequest?.unit_foto_snapshot && (
+              <img src={selectedRequest.unit_foto_snapshot} alt={`Foto unit untuk ${selectedRequest.req_id}`} className="h-32 w-full rounded-jp-sm object-cover" />
+            )}
             <p className="text-sm text-jp-muted dark:text-jp-muted-dark">{selectedRequest?.nama_sp} · {selectedRequest?.jumlah} unit · {selectedRequest?.jenis === "equipment" ? "Equipment" : "Repair"}{selectedRequest?.service_id ? ` · ${selectedRequest.service_id}` : ""}</p>
             {selectedRequest?.alasan && <p className="rounded-jp-sm bg-jp-surface-subtle p-3 text-xs text-jp-muted dark:bg-jp-surface-subtle-dark/60 dark:text-jp-muted-dark"><span className="font-medium text-jp-text dark:text-jp-text-dark">Alasan teknisi: </span>{selectedRequest.alasan}</p>}
             {selectedRequest?.product_link && (

@@ -375,6 +375,10 @@ export interface RequestSparepart {
   created_at?: string;
   updated_at?: string;
   product_link?: string | null;
+  /** Foto unit yang di-input kasir waktu Tambah Unit — snapshot diambil saat
+   * request dibuat, jadi kepala cabang/teknisi/kasir bisa lihat request ini
+   * buat HP yang mana tanpa buka tiket servisnya. */
+  unit_foto_snapshot?: string | null;
   /** Legacy (flow lama) — dipertahankan untuk data historis. */
   harga_jual?: number | null;
 }

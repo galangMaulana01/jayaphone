@@ -182,6 +182,12 @@ function ServiceListPageInner(): JSX.Element {
   // ── 4A: Pakai Sparepart dari Stok ────────────────────────────────────────
   const pickFromStock = async (sp: Sparepart) => {
     if (!active) return;
+    // Maksimal 1 jenis sparepart dari stok per tiket — kalau butuh jenis lain,
+    // batalkan (Batal) yang sudah dipakai dulu baru pilih yang baru.
+    if ((active.sparepart_items?.length ?? 0) > 0) {
+      showToast("Maksimal 1 jenis sparepart dari stok per tiket — batalkan yang sudah dipakai dulu untuk ganti", "error");
+      return;
+    }
     const input = window.prompt(`Jumlah ${sp.nama} yang dipakai:`, "1");
     if (input === null) return;
     const jumlah = Number(input);
@@ -506,7 +512,7 @@ function ServiceListPageInner(): JSX.Element {
                   </ul>
                 ) : <p className="text-xs text-jp-muted dark:text-jp-muted-dark">Belum ada sparepart digunakan.</p>}
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" className="btn-ghost" onClick={() => setStockModalOpen(true)}>+ Pakai dari Stok</button>
+                  <button type="button" className="btn-ghost" disabled={(active.sparepart_items?.length ?? 0) > 0} title={(active.sparepart_items?.length ?? 0) > 0 ? "Maksimal 1 jenis sparepart dari stok per tiket" : undefined} onClick={() => setStockModalOpen(true)}>+ Pakai dari Stok</button>
                   <button type="button" className="btn-ghost" onClick={openRequestForm}>+ Request Sparepart</button>
                 </div>
               </div>
@@ -557,6 +563,11 @@ function ServiceListPageInner(): JSX.Element {
       {/* ── Modal: Pakai Sparepart dari Stok (4A, juga dipakai dari in_progress) ── */}
       <Modal isOpen={stockModalOpen} onClose={() => setStockModalOpen(false)} title="Pilih Sparepart dari Stok" maxWidthClassName="max-w-2xl">
         <div className="space-y-3">
+          {(active?.sparepart_items?.length ?? 0) > 0 && (
+            <p className="rounded-jp-sm bg-jp-surface-subtle p-3 text-[11px] text-jp-muted dark:bg-jp-surface-subtle-dark/60 dark:text-jp-muted-dark">
+              Tiket ini sudah pakai <span className="font-medium text-jp-text dark:text-jp-text-dark">{active?.sparepart_items?.[0]?.nama}</span> — maksimal 1 jenis sparepart dari stok per tiket. Batalkan dulu di layar sebelumnya untuk ganti.
+            </p>
+          )}
           <input className="field-control" placeholder="Cari sparepart..." value={stokQuery} onChange={(e) => setStokQuery(e.target.value)} />
           {stokLoading ? <LoadingSkeleton numberOfRows={3} /> : (
             <div className="table-wrap overflow-x-auto rounded-jp-md">
@@ -568,7 +579,7 @@ function ServiceListPageInner(): JSX.Element {
                       <td className="px-4 py-2.5">{sp.nama}</td>
                       <td className={`px-4 py-2.5 font-mono ${sp.stok <= 0 ? "text-jp-danger dark:text-jp-danger-dark" : ""}`}>{sp.stok} {sp.satuan}</td>
                       <td className="px-4 py-2.5">{formatRupiah(sp.harga_beli)}</td>
-                      <td className="px-4 py-2.5"><button type="button" className="btn-ghost" disabled={sp.stok <= 0} onClick={() => void pickFromStock(sp)}>Pilih</button></td>
+                      <td className="px-4 py-2.5"><button type="button" className="btn-ghost" disabled={sp.stok <= 0 || (active?.sparepart_items?.length ?? 0) > 0} onClick={() => void pickFromStock(sp)}>Pilih</button></td>
                     </tr>
                   )) : <tr><td colSpan={4}><EmptyState message="Tidak ada sparepart yang cocok" iconName="wrenchSvg" /></td></tr>}
                 </tbody>

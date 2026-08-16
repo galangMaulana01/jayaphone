@@ -645,6 +645,12 @@ function SparepartPageInner(): JSX.Element {
             <p className="rounded-jp-sm bg-jp-surface-subtle p-3 text-xs text-jp-muted dark:bg-jp-surface-subtle-dark/60 dark:text-jp-muted-dark">
               Harga disetujui Kepala Cabang: <span className="font-medium text-jp-text dark:text-jp-text-dark">{formatRupiah(beliTarget?.harga_disetujui ?? 0)}</span> per satuan.
             </p>
+            {beliTarget?.product_link && (
+              <p className="text-xs">
+                <span className="font-medium text-jp-text dark:text-jp-text-dark">Link Produk: </span>
+                <a href={beliTarget.product_link} target="_blank" rel="noopener noreferrer" className="break-all text-jp-teal underline dark:text-jp-teal-dark">{beliTarget.product_link}</a>
+              </p>
+            )}
             <LabelledInput label="Supplier" required value={supplier} onChange={(e) => setSupplier(e.target.value)} />
             <LabelledInput label="Harga Beli Aktual (per satuan)" type="number" min={1} required value={hargaAktual} onChange={(e) => setHargaAktual(e.target.value)} />
             {Number(hargaAktual) > 0 && beliTarget?.harga_disetujui && (

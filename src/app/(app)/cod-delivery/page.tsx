@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense } from "react";
 import { Api } from "@/lib/api";
 import { CodStatusBadge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -8,10 +8,12 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useCabangTimezones, resolveCabangTimezone } from "@/contexts/CabangTzContext";
 import { useApiList } from "@/hooks/useApiList";
+import { useUrlParam } from "@/hooks/useUrlParam";
 import { formatDateTimeShort, NOT_SET } from "@/lib/utils/formatters";
 import type { CODRequest, CODStatus } from "@/lib/types";
 
-const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
+const STATUS_FILTER_VALUES = ["", "menunggu_kurir", "kurir_menuju_toko", "barang_sudah_diambil", "sedang_diantar", "terkirim", "gagal"] as const;
+const STATUS_FILTER_OPTIONS: { value: typeof STATUS_FILTER_VALUES[number]; label: string }[] = [
   { value: "", label: "Semua" },
   { value: "menunggu_kurir", label: "Menunggu Kurir" },
   { value: "kurir_menuju_toko", label: "Menuju Toko" },
@@ -32,8 +34,14 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function CodDeliveryPage(): JSX.Element {
+  return <Suspense fallback={null}><CodDeliveryPageInner /></Suspense>;
+}
+
+function CodDeliveryPageInner(): JSX.Element {
   const cabangTz = useCabangTimezones();
-  const [statusFilter, setStatusFilter] = useState("");
+  // Deep-link support: the sidebar's Delivery-status children (see nav.ts)
+  // can land here with ?status= already applied.
+  const [statusFilter, setStatusFilter] = useUrlParam("status", STATUS_FILTER_VALUES, "");
 
   // Read-only monitoring — creation already happens from Input Transaksi's
   // "Kirim via COD" checkbox, so this page has no create/edit actions, only
@@ -53,7 +61,7 @@ export default function CodDeliveryPage(): JSX.Element {
         </div>
       </div>
 
-      <div className="segmented-control">
+      <div className="segmented-control md:hidden">
         {STATUS_FILTER_OPTIONS.map((option) => (
           <button type="button" key={option.value || "all"} className={`filter-tab ${statusFilter === option.value ? "filter-tab-active" : ""}`} onClick={() => setStatusFilter(option.value)}>{option.label}</button>
         ))}

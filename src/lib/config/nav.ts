@@ -69,9 +69,11 @@ const ownerNavigation: NavigationEntry[] = [
   {
     label: "Stok", iconName: "stokSvg1",
     children: [
-      { key: "stok-manajemen", label: "Manajemen Stok",  href: "/stok" },
-      { key: "stok-transfer",  label: "Transfer Stok",   href: "/transfer-stok" },
+      { key: "stok-manajemen", label: "Manajemen Stok",   href: "/stok" },
+      { key: "stok-transfer",  label: "Transfer Stok",    href: "/transfer-stok" },
+      { key: "stok-pending",   label: "Transfer Pending", href: "/transfer-stok?filter=Pending" },
       { key: "stok-riwayat",   label: "Riwayat Transfer", href: "/transfer-stok?filter=Diterima" },
+      { key: "stok-ditolak",   label: "Transfer Ditolak", href: "/transfer-stok?filter=Ditolak" },
     ],
   },
   { pageKey: "transaksi",           label: "Transaksi",          iconName: "transaksiSvg" },
@@ -130,9 +132,11 @@ const kepalaCabangNavigation: NavigationEntry[] = [
   {
     label: "Stok", iconName: "stokSvg1",
     children: [
-      { key: "stok-manajemen", label: "Manajemen Stok",  href: "/stok" },
-      { key: "stok-transfer",  label: "Transfer Stok",   href: "/transfer-stok" },
+      { key: "stok-manajemen", label: "Manajemen Stok",   href: "/stok" },
+      { key: "stok-transfer",  label: "Transfer Stok",    href: "/transfer-stok" },
+      { key: "stok-pending",   label: "Transfer Pending", href: "/transfer-stok?filter=Pending" },
       { key: "stok-riwayat",   label: "Riwayat Transfer", href: "/transfer-stok?filter=Diterima" },
+      { key: "stok-ditolak",   label: "Transfer Ditolak", href: "/transfer-stok?filter=Ditolak" },
     ],
   },
   { pageKey: "transaksi",           label: "Transaksi",          iconName: "transaksiSvg" },
@@ -183,9 +187,22 @@ const kasirNavigation: NavigationEntry[] = [
   {
     label: "COD", iconName: "moneySvg",
     children: [
-      { key: "cod-beli",     label: "COD Beli",     href: "/cod-beli" },
-      { key: "cod-jual",     label: "COD Jual",     href: "/cod-jual" },
-      { key: "cod-delivery", label: "Delivery",     href: "/cod-delivery" },
+      { key: "cod-beli", label: "COD Beli", href: "/cod-beli" },
+      { key: "cod-jual", label: "COD Jual", href: "/cod-jual" },
+    ],
+  },
+  {
+    // Own group (not folded into "COD" above) because it has its own status
+    // sub-views — same pattern as Sparepart/Laporan's page+children groups.
+    pageKey: "cod-delivery", label: "Delivery", iconName: "moneySvg",
+    children: [
+      { key: "delivery-semua",     label: "Semua",           href: "/cod-delivery" },
+      { key: "delivery-menunggu",  label: "Menunggu Kurir",  href: "/cod-delivery?status=menunggu_kurir" },
+      { key: "delivery-menuju",    label: "Menuju Toko",     href: "/cod-delivery?status=kurir_menuju_toko" },
+      { key: "delivery-diambil",   label: "Barang Diambil",  href: "/cod-delivery?status=barang_sudah_diambil" },
+      { key: "delivery-diantar",   label: "Sedang Diantar",  href: "/cod-delivery?status=sedang_diantar" },
+      { key: "delivery-terkirim",  label: "Terkirim",        href: "/cod-delivery?status=terkirim" },
+      { key: "delivery-gagal",     label: "Gagal",           href: "/cod-delivery?status=gagal" },
     ],
   },
   {

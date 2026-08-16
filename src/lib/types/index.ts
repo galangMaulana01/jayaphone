@@ -185,6 +185,8 @@ export interface ServiceTicket {
   sparepart_items?: { sp_id: string; nama: string; jumlah: number; harga_modal: number; mulai_pakai?: string }[];
   /** Joined in at the route layer for GET /service (list) — for the "HP/IMEI" table column. */
   imei?: string;
+  /** Joined in at the route layer from the underlying unit — for the "Foto" column. */
+  unit_foto_url?: string | null;
 }
 
 /** Extra unit fields joined into GET /service/{id}/detail only (not on the

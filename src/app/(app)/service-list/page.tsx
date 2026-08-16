@@ -390,6 +390,9 @@ function ServiceListPageInner(): JSX.Element {
           {/* ── Step: Pilih HP (detail read-only) ── */}
           {step === "detail" && (
             <div className="section-panel space-y-4">
+              {active.unit_foto_url && (
+                <img src={active.unit_foto_url} alt={active.unit_label} className="h-48 w-full rounded-jp-sm bg-jp-surface-subtle object-contain dark:bg-jp-surface-subtle-dark" />
+              )}
               <p className="text-sm font-semibold text-jp-text dark:text-jp-text-dark">{active.unit_label}</p>
               <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
                 <div><p className="text-jp-muted dark:text-jp-muted-dark">Warna</p><p className="font-medium">{active.warna || NOT_SET}</p></div>

@@ -8,7 +8,8 @@
 // nav.ts (landingPageByRole.teknisi = "service-list"); the tiny fallback
 // below is defensive, not a real second UI to maintain.
 
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Api } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -22,11 +23,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useCabangTimezones, resolveCabangTimezone } from "@/contexts/CabangTzContext";
 import { useApiList } from "@/hooks/useApiList";
+import { useUrlParam } from "@/hooks/useUrlParam";
 import type {
   RequestSparepart, ServiceRiwayatItem, ServiceStatus, ServiceTicket, ServiceTicketDetail, Sparepart, UploadedImage,
 } from "@/lib/types";
 
 type Tab = "Antrian" | "Proses" | "Menunggu_Sparepart" | "Selesai" | "Ditolak" | "Riwayat";
+const TAB_KEYS: readonly Tab[] = ["Antrian", "Proses", "Menunggu_Sparepart", "Selesai", "Ditolak", "Riwayat"];
 const TABS: { key: Tab; label: string }[] = [
   { key: "Antrian", label: "Antrian" },
   { key: "Proses", label: "Proses" },
@@ -66,11 +69,19 @@ const REQUEST_STATUS_LABEL: Record<string, string> = {
 };
 
 export default function ServiceListPage(): JSX.Element {
+  return <Suspense fallback={null}><ServiceListPageInner /></Suspense>;
+}
+
+function ServiceListPageInner(): JSX.Element {
   const { user } = useAuth();
   const { showToast } = useToast();
   const cabangTz = useCabangTimezones();
   const isTeknisi = user?.role === "teknisi";
-  const [tab, setTab] = useState<Tab>("Antrian");
+  // Deep-link support: the sidebar's "Data Service" group children (see
+  // nav.ts) can land here with ?tab= already applied — the query param IS
+  // the state, so the sidebar and this page's own segmented control can't
+  // disagree about which tab is active.
+  const [tab, setTab] = useUrlParam<Tab>("tab", TAB_KEYS, "Antrian");
 
   const { items, loading, error, reload: load } = useApiList<ServiceTicket>(
     () => (tab === "Riwayat" ? Promise.resolve([]) : Api.service.list({ status: tab, limit: 100 }).then((r) => r.data ?? [])),
@@ -137,6 +148,17 @@ export default function ServiceListPage(): JSX.Element {
       setCatatanProses(""); setDitolakReason(""); setDitolakConfirmOpen(false);
     } catch (e) { showToast(e instanceof Error ? e.message : "Gagal memuat detail tiket", "error"); }
   };
+
+  // Deep-link from the "Sparepart Tersedia" bell notification (?open=<service_id>)
+  // — teknisi has no standalone Sparepart page to fall back to anymore, so
+  // clicking that notification must land directly on the ticket's wizard.
+  const searchParams = useSearchParams();
+  const openParam = searchParams.get("open");
+  useEffect(() => {
+    if (openParam) void openTicket(openParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when the deep-link param itself changes, not on every openTicket identity change.
+  }, [openParam]);
+
   const closeWizard = () => { if (!busy) setActive(null); };
   const refreshActive = async (): Promise<ServiceTicketDetail | null> => {
     if (!active) return null;
@@ -300,7 +322,12 @@ export default function ServiceListPage(): JSX.Element {
             <h1 className="jp-page-title">Data Service</h1>
             <p className="text-sm text-jp-muted dark:text-jp-muted-dark">Workspace teknisi untuk memproses tiket</p>
           </div>
-          <div className="segmented-control">
+          {/* Desktop relies on the sidebar's Data Service children (identical
+              tabs, see nav.ts) as the single navigation for this switch — this
+              row would be a pure duplicate there. Mobile keeps it: the sidebar
+              isn't visible without opening the drawer, so this is the only way
+              to switch tabs. */}
+          <div className="segmented-control md:hidden">
             {TABS.map((t) => <button type="button" key={t.key} className={`filter-tab ${tab === t.key ? "filter-tab-active" : ""}`} onClick={() => setTab(t.key)}>{t.label}</button>)}
           </div>
 

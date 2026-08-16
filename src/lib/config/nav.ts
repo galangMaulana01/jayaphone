@@ -98,6 +98,7 @@ const ownerNavigation: NavigationEntry[] = [
       { key: "sparepart-dipakai",   label: "Sedang Dipakai", href: "/sparepart?tab=sedang_dipakai" },
       { key: "sparepart-dijual",    label: "Untuk Dijual",   href: "/sparepart?tab=untuk_dijual" },
       { key: "sparepart-riwayat",   label: "Riwayat",        href: "/sparepart?tab=riwayat" },
+      { key: "sparepart-request",   label: "Request",        href: "/sparepart?tab=request" },
     ],
   },
   { pageKey: "karyawan",            label: "Karyawan",           iconName: "karyawanSvg" },
@@ -158,6 +159,7 @@ const kepalaCabangNavigation: NavigationEntry[] = [
       { key: "sparepart-dipakai",   label: "Sedang Dipakai", href: "/sparepart?tab=sedang_dipakai" },
       { key: "sparepart-dijual",    label: "Untuk Dijual",   href: "/sparepart?tab=untuk_dijual" },
       { key: "sparepart-riwayat",   label: "Riwayat",        href: "/sparepart?tab=riwayat" },
+      { key: "sparepart-request",   label: "Request",        href: "/sparepart?tab=request" },
     ],
   },
   { pageKey: "karyawan",            label: "Karyawan",           iconName: "karyawanSvg" },
@@ -200,12 +202,16 @@ const kasirNavigation: NavigationEntry[] = [
     ],
   },
   {
+    // Kasir has no "Request" child (approval is owner/kc's job) — instead
+    // the two procurement stages they own once a request is approved.
     pageKey: "sparepart", label: "Sparepart", iconName: "stokSvg2",
     children: [
-      { key: "sparepart-tersedia",  label: "Tersedia",       href: "/sparepart?tab=tersedia" },
-      { key: "sparepart-dipakai",   label: "Sedang Dipakai", href: "/sparepart?tab=sedang_dipakai" },
-      { key: "sparepart-dijual",    label: "Untuk Dijual",   href: "/sparepart?tab=untuk_dijual" },
-      { key: "sparepart-riwayat",   label: "Riwayat",        href: "/sparepart?tab=riwayat" },
+      { key: "sparepart-tersedia",  label: "Tersedia",           href: "/sparepart?tab=tersedia" },
+      { key: "sparepart-dipakai",   label: "Sedang Dipakai",     href: "/sparepart?tab=sedang_dipakai" },
+      { key: "sparepart-dijual",    label: "Untuk Dijual",       href: "/sparepart?tab=untuk_dijual" },
+      { key: "sparepart-riwayat",   label: "Riwayat",            href: "/sparepart?tab=riwayat" },
+      { key: "sparepart-pembelian", label: "Menunggu Pembelian", href: "/sparepart?tab=menunggu_pembelian" },
+      { key: "sparepart-barang",    label: "Menunggu Barang",    href: "/sparepart?tab=menunggu_barang" },
     ],
   },
   {
@@ -220,14 +226,21 @@ const kasirNavigation: NavigationEntry[] = [
 ];
 
 const teknisiNavigation: NavigationEntry[] = [
-  { pageKey: "service-list",        label: "Data Service",       iconName: "settingSvg" },
+  // No standalone "Sparepart" entry — teknisi picks stock or sends a
+  // request entirely inline from within a ticket's "Pilih Kebutuhan" step
+  // (service-list/page.tsx), including checking availability and seeing a
+  // request's status. A separate sidebar browse-page duplicated that flow
+  // and let a ticket-reserved (stok=0) part show up as if it were general
+  // browsable stock — removed per client feedback (Aug 2026).
   {
-    pageKey: "sparepart", label: "Sparepart", iconName: "stokSvg2",
+    pageKey: "service-list", label: "Data Service", iconName: "settingSvg",
     children: [
-      { key: "sparepart-tersedia",  label: "Tersedia",       href: "/sparepart?tab=tersedia" },
-      { key: "sparepart-dipakai",   label: "Sedang Dipakai", href: "/sparepart?tab=sedang_dipakai" },
-      { key: "sparepart-dijual",    label: "Untuk Dijual",   href: "/sparepart?tab=untuk_dijual" },
-      { key: "sparepart-riwayat",   label: "Riwayat",        href: "/sparepart?tab=riwayat" },
+      { key: "service-list-antrian",  label: "Antrian",           href: "/service-list?tab=Antrian" },
+      { key: "service-list-proses",   label: "Proses",            href: "/service-list?tab=Proses" },
+      { key: "service-list-menunggu", label: "Menunggu Sparepart", href: "/service-list?tab=Menunggu_Sparepart" },
+      { key: "service-list-selesai",  label: "Selesai",           href: "/service-list?tab=Selesai" },
+      { key: "service-list-ditolak",  label: "Ditolak",           href: "/service-list?tab=Ditolak" },
+      { key: "service-list-riwayat",  label: "Riwayat",           href: "/service-list?tab=Riwayat" },
     ],
   },
   { pageKey: "teknisi-log",         label: "Log Aktivitas",      iconName: "logSvg" },

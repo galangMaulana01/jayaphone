@@ -209,7 +209,10 @@ export function NotificationBell(): JSX.Element | null {
               body: requestEntry.service_id
                 ? `Untuk servis ${requestEntry.service_id}${requestEntry.unit_label ? ` · ${requestEntry.unit_label}` : ""}`
                 : `${requestEntry.jumlah} unit sudah masuk stok`,
-              targetPageKey: "sparepart",
+              // Teknisi has no standalone Sparepart page anymore — land back
+              // on their workspace, deep-linked into the exact ticket that's
+              // ready so "Gunakan Sparepart" is one click away.
+              targetPageKey: requestEntry.service_id ? `service-list?open=${requestEntry.service_id}` : "service-list",
             }, requestEntry.diterima_at);
           }
         }

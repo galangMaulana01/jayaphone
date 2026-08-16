@@ -291,7 +291,12 @@ function SparepartPageInner(): JSX.Element {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-5">
+      {/* Desktop relies on the sidebar's Sparepart children (identical tabs,
+          see nav.ts) as the single navigation for this switch — this row
+          would be a pure duplicate there. Mobile keeps it: the sidebar isn't
+          visible without opening the drawer, so this is the only way to
+          switch tabs. */}
+      <div className="flex flex-wrap gap-5 md:hidden">
         <div className="space-y-1.5">
           <p className="label mb-0">Stok</p>
           <div className="segmented-control">
@@ -605,6 +610,12 @@ function SparepartPageInner(): JSX.Element {
           <div className="space-y-3">
             <p className="text-sm text-jp-muted dark:text-jp-muted-dark">{selectedRequest?.nama_sp} · {selectedRequest?.jumlah} unit · {selectedRequest?.jenis === "equipment" ? "Equipment" : "Repair"}{selectedRequest?.service_id ? ` · ${selectedRequest.service_id}` : ""}</p>
             {selectedRequest?.alasan && <p className="rounded-jp-sm bg-jp-surface-subtle p-3 text-xs text-jp-muted dark:bg-jp-surface-subtle-dark/60 dark:text-jp-muted-dark"><span className="font-medium text-jp-text dark:text-jp-text-dark">Alasan teknisi: </span>{selectedRequest.alasan}</p>}
+            {selectedRequest?.product_link && (
+              <p className="text-xs">
+                <span className="font-medium text-jp-text dark:text-jp-text-dark">Link Produk: </span>
+                <a href={selectedRequest.product_link} target="_blank" rel="noopener noreferrer" className="break-all text-jp-teal underline dark:text-jp-teal-dark">{selectedRequest.product_link}</a>
+              </p>
+            )}
             <p className="text-[11px] text-jp-muted dark:text-jp-muted-dark">Harga diajukan teknisi: <span className="font-medium text-jp-text dark:text-jp-text-dark">{selectedRequest?.harga_diajukan ? formatRupiah(selectedRequest.harga_diajukan) : "-"}</span>. Menyetujui akan mengunci harga dan meneruskan ke Kasir untuk pembelian.</p>
             <LabelledInput label="Harga yang Disetujui (per satuan)" type="number" min={1} value={reqHargaDisetujui} onChange={(e) => setReqHargaDisetujui(e.target.value)} />
             <LabelledInput label="Estimasi Tiba" type="date" value={reqEstimasiTiba} onChange={(e) => setReqEstimasiTiba(e.target.value)} />

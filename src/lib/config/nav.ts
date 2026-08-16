@@ -181,7 +181,13 @@ const kepalaCabangNavigation: NavigationEntry[] = [
 ];
 
 const kasirNavigation: NavigationEntry[] = [
-  { pageKey: "stok-kasir",          label: "Cek Stok",           iconName: "stokSvg2" },
+  {
+    pageKey: "stok-kasir", label: "Cek Stok", iconName: "stokSvg2",
+    children: [
+      { key: "stok-kasir-tersedia", label: "Unit Tersedia",     href: "/stok-kasir" },
+      { key: "stok-kasir-service",  label: "Sedang Di-Service", href: "/stok-kasir?tab=Service" },
+    ],
+  },
   { pageKey: "input-transaksi",     label: "Input Transaksi",    iconName: "transaksiSvg2" },
   { pageKey: "tambah-unit",         label: "Tambah Unit",        iconName: "tambahSvg" },
   {

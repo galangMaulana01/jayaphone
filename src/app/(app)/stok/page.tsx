@@ -14,7 +14,7 @@ import { UnitStatusBadge } from "@/components/ui/Badge";
 import { UnitDetailModal } from "@/components/ui/UnitDetailModal";
 import { CabangFilter } from "@/components/ui/CabangFilter";
 import { useToast } from "@/contexts/ToastContext";
-import { useApiList } from "@/hooks/useApiList";
+import { usePaginatedApiList } from "@/hooks/usePaginatedApiList";
 import { formatRupiah, getStockAgeInfo, type StockAgeTone } from "@/lib/utils/formatters";
 import type { Unit } from "@/lib/types";
 
@@ -55,13 +55,19 @@ export default function StokPage(): JSX.Element {
   const {
     items: unitList,
     loading: isFetching,
+    loadingMore: isFetchingMore,
     error: fetchErrorMessage,
+    total: unitTotal,
+    hasMore: hasMoreUnits,
     reload: loadUnits,
-  } = useApiList<Unit>(
-    () => Api.units.list({
+    loadMore: loadMoreUnits,
+  } = usePaginatedApiList<Unit>(
+    (skip, limit) => Api.units.list({
       cabang: isOwner && selectedCabangFilter ? selectedCabangFilter : undefined,
       status: selectedStatusFilter || undefined,
-    }).then((response) => response.data),
+      skip,
+      limit,
+    }),
     [isOwner, selectedCabangFilter, selectedStatusFilter],
     "Gagal memuat daftar unit",
   );
@@ -139,6 +145,12 @@ export default function StokPage(): JSX.Element {
               <tbody>{displayedUnits.map((unit) => { const age = getStockAgeInfo(unit.tgl_masuk); return <tr key={unit.unit_id} className="h-14 border-b border-jp-border/80 last:border-0 hover:bg-jp-surface-subtle/70 dark:border-jp-border-dark dark:hover:bg-jp-surface-subtle-dark/60"><td className="whitespace-nowrap px-6 font-mono text-[12px] text-jp-muted dark:text-jp-muted-dark">{unit.unit_id}</td><td className="px-5"><p className="font-medium text-jp-text dark:text-jp-text-dark">{unit.merk} {unit.tipe}</p><p className="mt-0.5 text-[11px] text-jp-muted dark:text-jp-muted-dark">{unit.storage} · {unit.ram} · {unit.warna}</p></td><td className="px-5 font-mono text-[12px] text-jp-muted dark:text-jp-muted-dark">{unit.imei}</td><td className="px-5 text-jp-muted dark:text-jp-muted-dark">{unit.kondisi_hp}</td><td className="px-5 text-right font-mono text-[12px] font-medium text-jp-text dark:text-jp-text-dark">{formatRupiah(unit.harga_jual)}</td><td className="px-5 text-right"><UnitStatusBadge status={unit.status} /></td><td className={`whitespace-nowrap px-5 text-center text-[11px] font-medium ${STOCK_AGE_TONE_CLASSNAME[age.tone]}`}>{age.label}</td><td className="tbl-action-col px-6 text-right"><div className="flex items-center justify-end gap-1"><button type="button" className="btn-ghost" onClick={() => void openDetail(unit.unit_id)}>Detail</button>{canManage && unit.status === "Tersedia" && <ActionMenu ariaLabel={`Menu aksi ${unit.unit_id}`} items={[{ label: "Edit Harga", onClick: () => openEditPrice(unit) }, { label: "Hapus", onClick: () => void deleteUnit(unit), destructive: true }]} />}</div></td></tr>; })}</tbody>
             </table>
           </div>
+          {!searchInputValue.trim() && (
+            <div className="flex items-center justify-between gap-3 border-t border-jp-border px-6 py-3.5 text-[11px] text-jp-muted dark:border-jp-border-dark dark:text-jp-muted-dark">
+              <span>Menampilkan {unitList.length} dari {unitTotal} unit</span>
+              {hasMoreUnits && <button type="button" className="btn-ghost" disabled={isFetchingMore} onClick={() => void loadMoreUnits()}>{isFetchingMore ? "Memuat..." : "Muat Lebih Banyak"}</button>}
+            </div>
+          )}
         </section>
       )}
 

@@ -12,6 +12,7 @@ import { LabelledInput, LabelledSelect, LabelledTextarea } from "@/components/ui
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useApiList } from "@/hooks/useApiList";
+import { usePaginatedApiList } from "@/hooks/usePaginatedApiList";
 import { useUrlParam } from "@/hooks/useUrlParam";
 import { formatRupiah, formatDateTimeShort, NOT_SET } from "@/lib/utils/formatters";
 import { useCabangTimezones, resolveCabangTimezone } from "@/contexts/CabangTzContext";
@@ -122,11 +123,15 @@ function SparepartPageInner(): JSX.Element {
   // datanya tetap ada di tiket.
   const { items: riwayat, loading: riwayatLoading, error: riwayatError, reload: reloadRiwayat } =
     useApiList<SparepartInUseItem>(() => Api.sparepart.riwayat().then((r) => r.data ?? []), [], "Gagal memuat riwayat pemakaian sparepart");
-  const { items: requests, loading: requestsLoading, error: requestsError, reload: reloadRequests } =
-    useApiList<RequestSparepart>(
-      () => (canSeeRequestTab ? Api.requestSparepart.list({ status: reqStatusFilter || undefined }).then((r) => r.data ?? []) : Promise.resolve([])),
-      [canSeeRequestTab, reqStatusFilter], "Gagal memuat request sparepart",
-    );
+  const {
+    items: requests, loading: requestsLoading, loadingMore: requestsLoadingMore, error: requestsError,
+    total: requestsTotal, hasMore: requestsHasMore, reload: reloadRequests, loadMore: loadMoreRequests,
+  } = usePaginatedApiList<RequestSparepart>(
+    (skip, limit) => (canSeeRequestTab
+      ? Api.requestSparepart.list({ status: reqStatusFilter || undefined, skip, limit })
+      : Promise.resolve({ success: true as const, data: [], total: 0, skip: 0, limit })),
+    [canSeeRequestTab, reqStatusFilter], "Gagal memuat request sparepart",
+  );
   // Kasir-only continuation of the same request_sparepart lifecycle above.
   const { items: menungguPembelian, loading: menungguPembelianLoading, error: menungguPembelianError, reload: reloadMenungguPembelian } =
     useApiList<RequestSparepart>(
@@ -158,8 +163,13 @@ function SparepartPageInner(): JSX.Element {
   const visibleDijual = useMemo(() => dijual.filter((s) => `${s.nama} ${s.sp_id} ${s.kategori}`.toLowerCase().includes(query.toLowerCase())), [dijual, query]);
 
   const openCreate = () => { setName(""); setCat("Aksesoris"); setJenis("repair"); setBuy(""); setSell(""); setStock("1"); setFormOpen(true); };
+  // Shared between the Simpan button's disabled state and create()'s own
+  // guard, so an invalid form can't be submitted at all (previously Simpan
+  // stayed clickable regardless, and only harga_jual — not harga_beli/stok —
+  // was checked for a negative value before hitting the API).
+  const isCreateFormValid = Boolean(name.trim()) && Number(sell) > 0 && Number(buy) >= 0 && Number(stock) >= 0;
   const create = async () => {
-    if (!name.trim() || Number(sell) <= 0) { showToast("Nama dan harga jual wajib diisi", "error"); return; }
+    if (!isCreateFormValid) { showToast("Nama, harga jual, dan nilai non-negatif wajib diisi", "error"); return; }
     try {
       await Api.sparepart.create({ nama: name.trim(), kategori: cat, jenis, satuan: "pcs", harga_beli: Number(buy) || 0, harga_jual: Number(sell), stok: Number(stock) || 0, cabang: user?.cabang || "JYP" });
       showToast("Sparepart berhasil ditambahkan"); setFormOpen(false); await reloadAll();
@@ -252,7 +262,7 @@ function SparepartPageInner(): JSX.Element {
     { key: "untuk_dijual", label: "Sparepart Untuk Dijual", count: dijual.length },
   ];
   const requestTabs: { key: SparepartTab; label: string; count: number }[] = [
-    ...(canSeeRequestTab ? [{ key: "request" as const, label: "Request Sparepart", count: requests.length }] : []),
+    ...(canSeeRequestTab ? [{ key: "request" as const, label: "Request Sparepart", count: requestsTotal }] : []),
     ...(isKasir ? [
       { key: "menunggu_pembelian" as const, label: "Menunggu Pembelian", count: menungguPembelian.length },
       { key: "menunggu_barang" as const, label: "Menunggu Barang", count: menungguBarang.length },
@@ -464,6 +474,12 @@ function SparepartPageInner(): JSX.Element {
                   )) : <tr><td colSpan={8}><EmptyState message="Belum ada request sparepart" iconName="packageSvg" /></td></tr>}
                 </tbody>
               </table>
+              {requests.length > 0 && (
+                <div className="flex items-center justify-between gap-3 border-t border-jp-border px-5 py-3 text-[11px] text-jp-muted dark:border-jp-border-dark dark:text-jp-muted-dark">
+                  <span>Menampilkan {requests.length} dari {requestsTotal} request</span>
+                  {requestsHasMore && <button type="button" className="btn-ghost" disabled={requestsLoadingMore} onClick={() => void loadMoreRequests()}>{requestsLoadingMore ? "Memuat..." : "Muat Lebih Banyak"}</button>}
+                </div>
+              )}
             </div>
           )}
         </>
@@ -518,19 +534,19 @@ function SparepartPageInner(): JSX.Element {
       {canManage && (
         <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title="Tambah Sparepart">
           <div className="space-y-3">
-            <LabelledInput label="Nama" value={name} onChange={(e) => setName(e.target.value)} />
+            <LabelledInput label="Nama" required value={name} onChange={(e) => setName(e.target.value)} />
             <LabelledInput label="Kategori" value={cat} onChange={(e) => setCat(e.target.value)} />
             <LabelledSelect label="Jenis" value={jenis} onChange={(e) => setJenis(e.target.value as SparepartJenis)}>
               {JENIS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </LabelledSelect>
             <div className="grid grid-cols-2 gap-3">
-              <LabelledInput label="Harga Beli (Modal)" type="number" value={buy} onChange={(e) => setBuy(e.target.value)} />
-              <LabelledInput label="Harga Jual" type="number" value={sell} onChange={(e) => setSell(e.target.value)} />
+              <LabelledInput label="Harga Beli (Modal)" type="number" min={0} value={buy} onChange={(e) => setBuy(e.target.value)} />
+              <LabelledInput label="Harga Jual" type="number" min={0} required value={sell} onChange={(e) => setSell(e.target.value)} />
             </div>
             <LabelledInput label="Stok Awal" type="number" min={0} value={stock} onChange={(e) => setStock(e.target.value)} />
             <div className="flex gap-2">
               <button type="button" className="btn-ghost flex-1" onClick={() => setFormOpen(false)}>Batal</button>
-              <button type="button" className="btn-primary flex-1" onClick={() => void create()}>Simpan</button>
+              <button type="button" className="btn-primary flex-1" disabled={!isCreateFormValid} onClick={() => void create()}>Simpan</button>
             </div>
           </div>
         </Modal>

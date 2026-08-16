@@ -32,6 +32,14 @@ export interface ApiEnvelope<TData> {
   data: TData;
 }
 
+/** Envelope returned by list endpoints that support `skip`/`limit` paging —
+ * `total` is the full match count so the UI can tell whether more pages exist. */
+export interface PaginatedApiEnvelope<TData> extends ApiEnvelope<TData> {
+  total: number;
+  skip: number;
+  limit: number;
+}
+
 /** Login response payload — matches `TokenResponse` on the backend. */
 export interface LoginResponse {
   access_token: string;
@@ -263,6 +271,8 @@ export interface RequestSparepartNotifItem {
   jumlah: number;
   service_id?: string | null;
   unit_label?: string | null;
+  /** When the sparepart actually became ready — the real event time, not when the bell first polled it. */
+  diterima_at?: string | null;
 }
 
 // ─── Cabang ──────────────────────────────────────────────────────────────

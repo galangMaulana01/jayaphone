@@ -38,6 +38,8 @@ export default function KaryawanPage(): JSX.Element {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [form, setForm] = useState({ nama: "", username: "", jabatan: "Kasir", cabang: user?.cabang || "", gaji: "", password: "" });
 
   const { items, loading, error, reload: load } = useApiList<Karyawan>(
@@ -93,10 +95,17 @@ export default function KaryawanPage(): JSX.Element {
     void fetchStats(statsEmployee.id, nextFilter);
   };
 
+  const isResetPasswordValid = password.length >= 6 && password === confirmPassword;
+
   const reset = async () => {
-    if (!selected || password.length < 6) { showToast("Password minimal 6 karakter", "error"); return; }
-    try { await Api.karyawan.resetPassword(selected.id, { password }); showToast("Password berhasil direset"); setSelected(null); }
-    catch (e) { showToast(e instanceof Error ? e.message : "Reset password gagal", "error"); }
+    if (!selected) return;
+    if (password.length < 6) { showToast("Password minimal 6 karakter", "error"); return; }
+    if (password !== confirmPassword) { showToast("Konfirmasi password tidak cocok", "error"); return; }
+    try {
+      await Api.karyawan.resetPassword(selected.id, { password });
+      showToast("Password berhasil direset");
+      setSelected(null); setPassword(""); setConfirmPassword(""); setShowNewPassword(false);
+    } catch (e) { showToast(e instanceof Error ? e.message : "Reset password gagal", "error"); }
   };
 
   const fire = async (k: Karyawan) => {
@@ -134,7 +143,7 @@ export default function KaryawanPage(): JSX.Element {
               {(k.jabatan === "Kasir" || k.jabatan === "Teknisi") && <button className="btn-ghost mt-4 w-full" type="button" onClick={() => openStats(k)}>Detail Statistik</button>}
               {user?.role === "owner" && k.aktif && k.username !== user.username && (
                 <div className="mt-4 flex gap-2">
-                  <button className="btn-ghost flex-1" type="button" onClick={() => { setSelected(k); setPassword(""); }}>Reset PW</button>
+                  <button className="btn-ghost flex-1" type="button" onClick={() => { setSelected(k); setPassword(""); setConfirmPassword(""); setShowNewPassword(false); }}>Reset PW</button>
                   <button className="btn-error flex-1" type="button" onClick={() => void fire(k)}>Pecat</button>
                 </div>
               )}
@@ -161,8 +170,29 @@ export default function KaryawanPage(): JSX.Element {
       <Modal isOpen={selected !== null} onClose={() => setSelected(null)} title="Reset Password">
         <div className="space-y-3">
           <p className="text-sm">{selected?.nama} · @{selected?.username}</p>
-          <LabelledInput label="Password Baru" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-          <button className="btn-primary w-full" type="button" onClick={() => void reset()}>Reset Password</button>
+          <LabelledInput
+            label="Password Baru"
+            type={showNewPassword ? "text" : "password"}
+            autoComplete="new-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            helper="Minimal 6 karakter"
+          />
+          <LabelledInput
+            label="Konfirmasi Password Baru"
+            type={showNewPassword ? "text" : "password"}
+            autoComplete="new-password"
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            errorMessage={confirmPassword && password !== confirmPassword ? "Konfirmasi password tidak cocok" : undefined}
+          />
+          <label className="flex items-center gap-1.5 text-xs text-jp-muted dark:text-jp-muted-dark">
+            <input type="checkbox" className="h-3.5 w-3.5 accent-jp-teal" checked={showNewPassword} onChange={(e) => setShowNewPassword(e.target.checked)} />
+            Tampilkan password
+          </label>
+          <button className="btn-primary w-full" type="button" disabled={!isResetPasswordValid} onClick={() => void reset()}>Reset Password</button>
         </div>
       </Modal>
 

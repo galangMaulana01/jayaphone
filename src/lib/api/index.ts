@@ -12,6 +12,7 @@
 import { deleteUploadedImage, requestJson, uploadImageFile, uploadImageFiles } from "./client";
 import type {
   ApiEnvelope,
+  PaginatedApiEnvelope,
   ActivityLog,
   AuthenticatedUser,
   Cabang,
@@ -90,10 +91,11 @@ interface UnitsListParams {
   status?: string;
   q?: string;
   limit?: number;
+  skip?: number;
 }
 const units = {
   list: (params?: UnitsListParams) =>
-    requestJson<ApiEnvelope<Unit[]>>("GET", `/units${buildQueryString(params)}`),
+    requestJson<PaginatedApiEnvelope<Unit[]>>("GET", `/units${buildQueryString(params)}`),
   create: (body: Partial<Unit> & { sparepart_items?: { sp_id: string; jumlah: number; purchase_url?: string }[] }) =>
     requestJson<ApiEnvelope<Unit>>("POST", "/units", body),
   approveRepair: (unitId: string, body: { harga_jual: number }) =>
@@ -109,6 +111,7 @@ const units = {
 interface TransaksiListParams {
   cabang?: string;
   limit?: number;
+  skip?: number;
   date_from?: string;
   date_to?: string;
 }
@@ -127,7 +130,7 @@ export interface TransaksiCreatePayload {
 }
 const transaksi = {
   list: (params?: TransaksiListParams) =>
-    requestJson<ApiEnvelope<Transaksi[]>>("GET", `/transaksi${buildQueryString(params)}`),
+    requestJson<PaginatedApiEnvelope<Transaksi[]>>("GET", `/transaksi${buildQueryString(params)}`),
   create: (body: TransaksiCreatePayload) =>
     requestJson<ApiEnvelope<Transaksi>>("POST", "/transaksi", body),
   createSparepart: (body: { items: { sp_id: string; jumlah: number }[]; catatan?: string }) =>
@@ -159,13 +162,14 @@ const karyawan = {
 interface LogListParams {
   cabang?: string;
   limit?: number;
+  skip?: number;
   date_from?: string;
   date_to?: string;
   role_filter?: string;
 }
 const log = {
   list: (params?: LogListParams) =>
-    requestJson<ApiEnvelope<ActivityLog[]>>("GET", `/log${buildQueryString(params)}`),
+    requestJson<PaginatedApiEnvelope<ActivityLog[]>>("GET", `/log${buildQueryString(params)}`),
 };
 
 // ─── Service ─────────────────────────────────────────────────────────────
@@ -206,8 +210,8 @@ const service = {
 
 // ─── Customer ────────────────────────────────────────────────────────────
 const customer = {
-  list: (params?: { status?: string; q?: string }) =>
-    requestJson<ApiEnvelope<Customer[]>>("GET", `/customers${buildQueryString(params)}`),
+  list: (params?: { status?: string; q?: string; limit?: number; skip?: number }) =>
+    requestJson<PaginatedApiEnvelope<Customer[]>>("GET", `/customers${buildQueryString(params)}`),
   create: (body: { nama: string; kontak: string; cabang: string }) =>
     requestJson<ApiEnvelope<Customer>>("POST", "/customers", body),
   approve: (customerId: string) =>
@@ -252,8 +256,8 @@ const cabang = {
 
 // ─── Request Sparepart ───────────────────────────────────────────────────
 const requestSparepart = {
-  list: (params?: { status?: string }) =>
-    requestJson<ApiEnvelope<RequestSparepart[]>>("GET", `/request-sparepart${buildQueryString(params)}`),
+  list: (params?: { status?: string; limit?: number; skip?: number }) =>
+    requestJson<PaginatedApiEnvelope<RequestSparepart[]>>("GET", `/request-sparepart${buildQueryString(params)}`),
   create: (body: {
     tipe: string;
     jenis?: RequestSparepartJenis;

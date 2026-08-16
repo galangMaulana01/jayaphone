@@ -117,7 +117,7 @@ export function NotificationBell(): JSX.Element | null {
     window.localStorage.setItem(notifStorageKey(currentUsername), JSON.stringify(notificationEntries.slice(0, 30)));
   }, [notificationEntries, currentUsername]);
 
-  const enqueueNotification = useCallback((incomingEntry: Omit<NotificationEntry, "emittedAtMillis" | "isRead">): boolean => {
+  const enqueueNotification = useCallback((incomingEntry: Omit<NotificationEntry, "emittedAtMillis" | "isRead">, eventAtIso?: string | null): boolean => {
     if (!currentUsername) return false;
     if (seenIdsRef.current.has(incomingEntry.id)) return false;
     seenIdsRef.current.add(incomingEntry.id);
@@ -127,8 +127,16 @@ export function NotificationBell(): JSX.Element | null {
         JSON.stringify([...seenIdsRef.current].slice(0, 100)),
       );
     }
+    // Use the actual backend event time (when the ticket/transfer/sparepart
+    // request really happened), not "whenever this browser's poller first
+    // saw it" — otherwise a notification that's been sitting unactioned for
+    // days shows a misleadingly recent "3 jam lalu" the moment someone
+    // finally logs back in. Falls back to now() only if the source has no
+    // timestamp or it fails to parse.
+    const parsedEventAtMillis = eventAtIso ? new Date(eventAtIso).getTime() : NaN;
+    const emittedAtMillis = Number.isFinite(parsedEventAtMillis) ? parsedEventAtMillis : Date.now();
     setNotificationEntries((previous) => [
-      { ...incomingEntry, emittedAtMillis: Date.now(), isRead: false },
+      { ...incomingEntry, emittedAtMillis, isRead: false },
       ...previous,
     ]);
     return true;
@@ -153,7 +161,7 @@ export function NotificationBell(): JSX.Element | null {
             title: "Service Selesai — Butuh Approval",
             body: `${serviceTicket.unit_label || serviceTicket.unit_id} · ${serviceTicket.keluhan ?? ""}`,
             targetPageKey,
-          });
+          }, serviceTicket.updated_at || serviceTicket.created_at);
         }
       } catch {
         /* silent — polling must never disturb the UI */
@@ -174,7 +182,7 @@ export function NotificationBell(): JSX.Element | null {
               title: `Transfer Stok Masuk — ${transferEntry.transfer_id}`,
               body: `${transferEntry.jumlah} unit dari ${transferEntry.cabang_asal} menunggu persetujuan`,
               targetPageKey: "transfer-stok",
-            });
+            }, transferEntry.created_at);
           }
         }
       } catch {
@@ -202,7 +210,7 @@ export function NotificationBell(): JSX.Element | null {
                 ? `Untuk servis ${requestEntry.service_id}${requestEntry.unit_label ? ` · ${requestEntry.unit_label}` : ""}`
                 : `${requestEntry.jumlah} unit sudah masuk stok`,
               targetPageKey: "sparepart",
-            });
+            }, requestEntry.diterima_at);
           }
         }
       } catch {

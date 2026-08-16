@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Api } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -8,26 +8,21 @@ import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { UnitDetailModal } from "@/components/ui/UnitDetailModal";
 import { useToast } from "@/contexts/ToastContext";
 import { useApiList } from "@/hooks/useApiList";
-import { useUrlParam } from "@/hooks/useUrlParam";
 import { formatRupiah } from "@/lib/utils/formatters";
 import type { ServiceStatus, ServiceTicket, Unit } from "@/lib/types";
 
-const TAB_KEYS = ["Tersedia", "Service"] as const;
-type Tab = (typeof TAB_KEYS)[number];
-const TABS: { key: Tab; label: string }[] = [
-  { key: "Tersedia", label: "Unit Tersedia" },
-  { key: "Service", label: "Sedang Di-Service" },
-];
+type View = "Tersedia" | "Service";
 
-// Kasir-facing status labels/colors for the monitoring tab — deliberately NOT
-// the same as ServiceStatusBadge (used by owner/kc/teknisi views). Backend
-// "Selesai" means teknisi is done but a price hasn't been approved yet, so
-// from a kasir's stock-monitoring point of view the unit still isn't sellable
-// — labeling it "Menunggu Approval" (yellow, same tier as Menunggu Sparepart)
-// is truer than "Selesai" (which would read as ready-to-sell). "Approved" and
-// "Ditolak" are intentionally absent from this map: Approved has already
-// graduated to the "Unit Tersedia" tab, and Ditolak is resolved/historical —
-// keeping either here would just be noise for something kasir needs to watch.
+// Kasir-facing status labels/colors for the "Unit Dalam Service" filter —
+// deliberately NOT the same as ServiceStatusBadge (used by owner/kc/teknisi
+// views). Backend "Selesai" means teknisi is done but a price hasn't been
+// approved yet, so from a kasir's stock-monitoring point of view the unit
+// still isn't sellable — labeling it "Menunggu Approval" (yellow, same tier
+// as Menunggu Sparepart) is truer than "Selesai" (which would read as
+// ready-to-sell). "Approved" and "Ditolak" are intentionally absent from
+// this map: Approved has already graduated to the default Tersedia table,
+// and Ditolak is resolved/historical — keeping either here would just be
+// noise for something kasir needs to watch.
 const KASIR_MONITOR_STATUS: Partial<Record<ServiceStatus, { label: string; cls: string }>> = {
   Antrian: { label: "Menunggu Dikerjakan", cls: "badge-masuk" },
   Proses: { label: "Proses", cls: "badge-proses" },
@@ -36,30 +31,29 @@ const KASIR_MONITOR_STATUS: Partial<Record<ServiceStatus, { label: string; cls: 
 };
 
 export default function StokKasirPage(): JSX.Element {
-  return <Suspense fallback={null}><StokKasirPageInner /></Suspense>;
-}
-
-function StokKasirPageInner(): JSX.Element {
   const { showToast } = useToast();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Unit | null>(null);
-  // Deep-link support: the sidebar's "Sedang Di-Service" shortcut lands here
-  // with ?tab=Service applied — the query param IS the state, same pattern as
-  // every other page converted to sidebar-group navigation this round.
-  const [tab, setTab] = useUrlParam<Tab>("tab", TAB_KEYS, "Tersedia");
+  // Plain local toggle, not a sidebar-linked ?tab= param — the client wants
+  // this filter reachable only from an in-page button next to the search
+  // bar, not as a "Cek Stok" sidebar dropdown child (Aug 2026 feedback).
+  const [view, setView] = useState<View>("Tersedia");
 
   const { items, loading, error, reload: load } = useApiList<Unit>(
-    () => (tab === "Tersedia" ? Api.units.list({ status: "Tersedia" }).then((r) => r.data ?? []) : Promise.resolve([])),
-    [tab], "Gagal memuat stok kasir",
+    () => (view === "Tersedia" ? Api.units.list({ status: "Tersedia" }).then((r) => r.data ?? []) : Promise.resolve([])),
+    [view], "Gagal memuat stok kasir",
   );
   const visible = useMemo(() => items.filter((u) => `${u.merk} ${u.tipe} ${u.unit_id} ${u.imei}`.toLowerCase().includes(query.toLowerCase())), [items, query]);
 
   // No single backend status filter covers "still in service" — fetched
   // unfiltered (kasir's own cabang only, enforced server-side) and narrowed
-  // to the 4 in-flight statuses client-side via KASIR_MONITOR_STATUS.
+  // to the 4 in-flight statuses client-side via KASIR_MONITOR_STATUS. The
+  // Tersedia table above never mixes these in — it only ever asks the API
+  // for status=Tersedia units, so a unit still with a teknisi never appears
+  // there regardless of this toggle.
   const { items: serviceItems, loading: serviceLoading, error: serviceError, reload: reloadService } = useApiList<ServiceTicket>(
-    () => (tab === "Service" ? Api.service.list({ limit: 200 }).then((r) => r.data ?? []) : Promise.resolve([])),
-    [tab], "Gagal memuat data service",
+    () => (view === "Service" ? Api.service.list({ limit: 200 }).then((r) => r.data ?? []) : Promise.resolve([])),
+    [view], "Gagal memuat data service",
   );
   const visibleService = useMemo(
     () => serviceItems
@@ -75,21 +69,18 @@ function StokKasirPageInner(): JSX.Element {
       <div>
         <h1 className="jp-page-title">Stok Kasir</h1>
         <p className="text-sm text-jp-muted dark:text-jp-muted-dark">
-          {tab === "Tersedia" ? "Unit tersedia untuk transaksi penjualan" : "Unit yang masih di-service — pantau statusnya di sini"}
+          {view === "Tersedia" ? "Unit tersedia untuk transaksi penjualan" : "Unit yang masih di-service — pantau statusnya di sini"}
         </p>
       </div>
 
-      {/* Desktop relies on the sidebar's "Cek Stok" children (identical tabs,
-          see nav.ts) as the single navigation for this switch — this row
-          would be a pure duplicate there. Mobile keeps it since the sidebar
-          isn't visible without opening the drawer. */}
-      <div className="segmented-control md:hidden">
-        {TABS.map((t) => <button type="button" key={t.key} className={`filter-tab ${tab === t.key ? "filter-tab-active" : ""}`} onClick={() => setTab(t.key)}>{t.label}</button>)}
+      <div className="flex flex-wrap items-center gap-3">
+        <input className="field-control w-full max-w-xl" placeholder={view === "Tersedia" ? "Cari merk, tipe, ID, IMEI..." : "Cari HP, IMEI, teknisi..."} value={query} onChange={(e) => setQuery(e.target.value)} />
+        <button type="button" className={view === "Service" ? "btn-primary" : "btn-ghost"} onClick={() => setView(view === "Service" ? "Tersedia" : "Service")}>
+          {view === "Service" ? "Unit Tersedia" : "Unit Dalam Service"}
+        </button>
       </div>
 
-      <input className="field-control w-full max-w-xl" placeholder={tab === "Tersedia" ? "Cari merk, tipe, ID, IMEI..." : "Cari HP, IMEI, teknisi..."} value={query} onChange={(e) => setQuery(e.target.value)} />
-
-      {tab === "Tersedia" ? (
+      {view === "Tersedia" ? (
         loading ? <LoadingSkeleton numberOfRows={5} /> : error ? <ErrorState message={error} onRetry={load} /> : (
           <div className="table-wrap overflow-x-auto rounded-jp-md">
             <table className="w-full text-xs">

@@ -181,13 +181,12 @@ const kepalaCabangNavigation: NavigationEntry[] = [
 ];
 
 const kasirNavigation: NavigationEntry[] = [
-  {
-    pageKey: "stok-kasir", label: "Cek Stok", iconName: "stokSvg2",
-    children: [
-      { key: "stok-kasir-tersedia", label: "Unit Tersedia",     href: "/stok-kasir" },
-      { key: "stok-kasir-service",  label: "Sedang Di-Service", href: "/stok-kasir?tab=Service" },
-    ],
-  },
+  // Deliberately flat, unlike every other multi-view page this round — the
+  // client asked for the "Sedang Di-Service" view to stay an in-page filter
+  // button next to the search bar instead of a sidebar dropdown child (Aug
+  // 2026 feedback). Kept as the one accepted exception rather than forcing
+  // the sidebar-group pattern here too.
+  { pageKey: "stok-kasir",          label: "Cek Stok",           iconName: "stokSvg2" },
   { pageKey: "input-transaksi",     label: "Input Transaksi",    iconName: "transaksiSvg2" },
   { pageKey: "tambah-unit",         label: "Tambah Unit",        iconName: "tambahSvg" },
   {

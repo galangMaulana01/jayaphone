@@ -93,17 +93,24 @@ function LaporanPageInner(): JSX.Element {
   const poinDapat = k?.total_poin_dapat ?? 0;
   const biayaPoinDipakai = k?.biaya_poin_dipakai ?? poinDipakai * 1000;
 
+  // Voided transaksi (dibatalkan lewat COD nego gagal atau manual) tidak
+  // pernah benar-benar terjadi secara finansial — dashboard.stats sudah
+  // exclude ini dari total_revenue/profit di server, jadi tabel per-baris
+  // dan breakdown di halaman ini (yang masih narik dari Api.transaksi.list
+  // mentah) harus konsisten, bukan diam-diam ikut menghitungnya lagi.
+  const activeItems = useMemo(() => items.filter((t) => !t.dibatalkan_at), [items]);
+
   const cabangBreakdown = useMemo(() => {
     if (user?.role !== "owner") return [];
     const byCabang = new Map<string, { count: number; omzet: number }>();
-    items.forEach((t) => {
+    activeItems.forEach((t) => {
       const entry = byCabang.get(t.cabang) ?? { count: 0, omzet: 0 };
       entry.count += 1;
       entry.omzet += t.harga_jual || 0;
       byCabang.set(t.cabang, entry);
     });
     return Array.from(byCabang.entries()).map(([cabang, v]) => ({ cabang, ...v })).sort((a, b) => b.omzet - a.omzet);
-  }, [items, user?.role]);
+  }, [activeItems, user?.role]);
 
   const serviceStatusCounts = useMemo(() => {
     const counts: Record<string, number> = { Antrian: 0, Proses: 0, Selesai: 0, Approved: 0, Ditolak: 0 };
@@ -147,7 +154,7 @@ function LaporanPageInner(): JSX.Element {
           {tab === "penjualan" && (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="metric-card"><p className="label">Unit Terjual</p><p className="mt-1 jp-page-title">{items.length.toLocaleString("id-ID")}</p></div>
+                <div className="metric-card"><p className="label">Unit Terjual</p><p className="mt-1 jp-page-title">{activeItems.length.toLocaleString("id-ID")}</p></div>
                 <div className="metric-card"><p className="label">Total Omzet</p><p className="mt-1 jp-page-title font-mono">Rp {money(revenue)}</p></div>
               </div>
               {cabangBreakdown.length > 0 && (
@@ -162,7 +169,7 @@ function LaporanPageInner(): JSX.Element {
                 <table className="w-full text-xs">
                   <thead className="tbl-head"><tr>{["Unit", "Kasir", "Harga Jual", "Cabang", "Waktu"].map((h) => <th className="px-5 py-3 text-left" key={h}>{h}</th>)}</tr></thead>
                   <tbody>
-                    {items.length ? items.map((t) => (
+                    {activeItems.length ? activeItems.map((t) => (
                       <tr className="tbl-row" key={t.trx_id}>
                         <td className="px-5 py-4">{t.unit_label}</td>
                         <td className="px-5 py-4">{t.kasir}</td>
@@ -250,7 +257,7 @@ function LaporanPageInner(): JSX.Element {
                 <table className="w-full text-xs">
                   <thead className="tbl-head"><tr>{["TRX ID", "Unit", "Kasir", "Harga Jual", "Modal", "Profit", "Waktu"].map((h) => <th className="px-5 py-3 text-left" key={h}>{h}</th>)}</tr></thead>
                   <tbody>
-                    {items.length ? items.map((t) => (
+                    {activeItems.length ? activeItems.map((t) => (
                       <tr className="tbl-row" key={t.trx_id}>
                         <td className="px-5 py-4 font-mono text-jp-muted dark:text-jp-muted-dark">{t.trx_id}</td>
                         <td className="px-5 py-4">{t.unit_label}</td>

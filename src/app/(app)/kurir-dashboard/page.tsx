@@ -20,6 +20,7 @@ const EMPTY_UNIT: UnitDraft = { imei: "", imei2: "-", merk: "", tipe: "", storag
 export default function KurirDashboardPage(): JSX.Element {
   const { showToast } = useToast(); const cabangTz = useCabangTimezones(); const [selected, setSelected] = useState<CODRequest | null>(null); const [unit, setUnit] = useState<UnitDraft>(EMPTY_UNIT); const [foto, setFoto] = useState<string[]>([]); const [deal, setDeal] = useState("");
   const [deliveringItem, setDeliveringItem] = useState<CODRequest | null>(null); const [unitProof, setUnitProof] = useState<string[]>([]); const [customerProof, setCustomerProof] = useState<string[]>([]); const [confirmingDelivery, setConfirmingDelivery] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState<{ item: CODRequest; mode: "generic" | "beli" } | null>(null); const [rejectReason, setRejectReason] = useState(""); const [rejecting, setRejecting] = useState(false);
   const { items, loading, error, reload: load } = useApiList<CODRequest>(() => Api.cod.kurirDashboard({}).then((r) => r.data ?? []), [], "Gagal memuat dashboard kurir");
   const status = async (item: CODRequest, next: CODStatus, note?: string, fotoUrls?: string[]): Promise<void> => { try { await Api.cod.kurirUpdateStatus(item.cod_id, next, note, fotoUrls); showToast(`Status diperbarui: ${labels[next] || next}`); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Status gagal diperbarui", "error"); } };
   const accept = async (item: CODRequest): Promise<void> => { try { await Api.cod.kurirAccept(item.cod_id); showToast("COD diterima"); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Gagal menerima COD", "error"); } };
@@ -27,19 +28,23 @@ export default function KurirDashboardPage(): JSX.Element {
   // already assigned to me, not a still-unclaimed broadcast) or, for COD
   // beli, at kurir_menuju_lokasi (before meeting the seller). Reason is
   // optional here — the backend accepts `note` as optional on this path.
-  const reject = async (item: CODRequest): Promise<void> => {
-    const note = window.prompt("Alasan menolak tugas ini (opsional):");
-    if (note === null) return;
-    try { await Api.cod.kurirReject(item.cod_id, note.trim() || undefined); showToast("Tugas ditolak"); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Gagal menolak tugas", "error"); }
-  };
+  const openReject = (item: CODRequest): void => { setRejectTarget({ item, mode: "generic" }); setRejectReason(""); };
   // Dedicated reject-beli — required once the kurir has already met the
   // seller (sudah_bertemu_penjual); the backend rejects the generic path
   // here specifically because it has no field for a mandatory reason.
-  const rejectBeli = async (item: CODRequest): Promise<void> => {
-    const reason = window.prompt("Alasan menolak COD beli ini (wajib diisi):");
-    if (reason === null) return;
-    if (!reason.trim()) { showToast("Alasan wajib diisi", "error"); return; }
-    try { await Api.cod.kurirRejectBeli(item.cod_id, reason.trim()); showToast("COD beli ditolak"); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Gagal menolak COD beli", "error"); }
+  const openRejectBeli = (item: CODRequest): void => { setRejectTarget({ item, mode: "beli" }); setRejectReason(""); };
+  const confirmReject = async (): Promise<void> => {
+    if (!rejectTarget) return;
+    if (rejectTarget.mode === "beli" && !rejectReason.trim()) { showToast("Alasan wajib diisi", "error"); return; }
+    setRejecting(true);
+    try {
+      if (rejectTarget.mode === "beli") await Api.cod.kurirRejectBeli(rejectTarget.item.cod_id, rejectReason.trim());
+      else await Api.cod.kurirReject(rejectTarget.item.cod_id, rejectReason.trim() || undefined);
+      showToast("Tugas ditolak");
+      setRejectTarget(null);
+      await load();
+    } catch (e) { showToast(e instanceof Error ? e.message : "Gagal menolak tugas", "error"); }
+    finally { setRejecting(false); }
   };
   const validateUnitDraft = (): boolean => {
     if (!unit.imei || !unit.merk.trim() || !unit.tipe.trim()) { showToast("IMEI, merk, dan tipe wajib diisi", "error"); return false; }
@@ -67,7 +72,7 @@ export default function KurirDashboardPage(): JSX.Element {
     const phone = phoneOf(item);
     return phone ? <a href={waLink(phone)} target="_blank" rel="noopener noreferrer" className="btn-ghost" title="Hubungi via WhatsApp">WA</a> : null;
   };
-  const action = (item: CODRequest): JSX.Element => { if (item.status === "menunggu_kurir") return <>{item.kurir_id && <button type="button" className="btn-error mr-2" onClick={() => void reject(item)}>Tolak</button>}<button type="button" className="btn-primary" onClick={() => void accept(item)}>Accept</button></>; if (item.status === "diterima") return <button type="button" className="btn-primary" onClick={() => void status(item, item.type === "beli" ? "kurir_menuju_lokasi" : item.type === "delivery" ? "kurir_menuju_toko" : "barang_akan_dijemput")}>Mulai Tugas</button>; if (item.status === "barang_akan_dijemput" || item.status === "kurir_menuju_toko") return <button type="button" className="btn-primary" onClick={() => void status(item, "barang_sudah_diambil")}>Barang Sudah Diambil</button>; if (item.status === "kurir_menuju_lokasi") return <><button type="button" className="btn-error mr-2" onClick={() => void reject(item)}>Tolak</button><button type="button" className="btn-primary" onClick={() => void status(item, "sudah_bertemu_penjual")}>Sudah Bertemu</button></>; if (item.status === "sudah_bertemu_penjual") return <>{item.type === "beli" && <button type="button" className="btn-error mr-2" onClick={() => void rejectBeli(item)}>Tolak</button>}<button type="button" className="btn-primary" onClick={() => openUnit(item)}>{item.type === "beli" ? "Submit Data Beli" : "Input Stok"}</button></>; if (item.status === "barang_sudah_diambil" && item.type === "delivery") return <button type="button" className="btn-primary" onClick={() => void status(item, "sedang_diantar")}>Mulai Antar</button>; if (item.status === "sedang_diantar") return <><button type="button" className="btn-success mr-2" onClick={() => openDeliveryProof(item)}>Terkirim</button><button type="button" className="btn-error" onClick={() => void status(item, "gagal")}>Gagal</button></>; if (item.status === "barang_sudah_diambil" && item.type === "jual") return <button type="button" className="btn-primary" onClick={() => void status(item, "kurir_sedang_transaksi")}>Mulai Transaksi</button>; if (item.status === "kurir_sedang_transaksi") return <><button type="button" className="btn-success mr-2" onClick={() => void status(item, "transaksi_berhasil")}>Berhasil</button><button type="button" className="btn-error" onClick={() => void status(item, "gagal")}>Gagal</button></>; return <span className="text-jp-muted dark:text-jp-muted-dark">{labels[item.status] || item.status}</span>; };
+  const action = (item: CODRequest): JSX.Element => { if (item.status === "menunggu_kurir") return <>{item.kurir_id && <button type="button" className="btn-error mr-2" onClick={() => openReject(item)}>Tolak</button>}<button type="button" className="btn-primary" onClick={() => void accept(item)}>Accept</button></>; if (item.status === "diterima") return <button type="button" className="btn-primary" onClick={() => void status(item, item.type === "beli" ? "kurir_menuju_lokasi" : item.type === "delivery" ? "kurir_menuju_toko" : "barang_akan_dijemput")}>Mulai Tugas</button>; if (item.status === "barang_akan_dijemput" || item.status === "kurir_menuju_toko") return <button type="button" className="btn-primary" onClick={() => void status(item, "barang_sudah_diambil")}>Barang Sudah Diambil</button>; if (item.status === "kurir_menuju_lokasi") return <><button type="button" className="btn-error mr-2" onClick={() => openReject(item)}>Tolak</button><button type="button" className="btn-primary" onClick={() => void status(item, "sudah_bertemu_penjual")}>Sudah Bertemu</button></>; if (item.status === "sudah_bertemu_penjual") return <>{item.type === "beli" && <button type="button" className="btn-error mr-2" onClick={() => openRejectBeli(item)}>Tolak</button>}<button type="button" className="btn-primary" onClick={() => openUnit(item)}>{item.type === "beli" ? "Submit Data Beli" : "Input Stok"}</button></>; if (item.status === "barang_sudah_diambil" && item.type === "delivery") return <button type="button" className="btn-primary" onClick={() => void status(item, "sedang_diantar")}>Mulai Antar</button>; if (item.status === "sedang_diantar") return <><button type="button" className="btn-success mr-2" onClick={() => openDeliveryProof(item)}>Terkirim</button><button type="button" className="btn-error" onClick={() => void status(item, "gagal")}>Gagal</button></>; if (item.status === "barang_sudah_diambil" && item.type === "jual") return <button type="button" className="btn-primary" onClick={() => void status(item, "kurir_sedang_transaksi")}>Mulai Transaksi</button>; if (item.status === "kurir_sedang_transaksi") return <><button type="button" className="btn-success mr-2" onClick={() => void status(item, "transaksi_berhasil")}>Berhasil</button><button type="button" className="btn-error" onClick={() => void status(item, "gagal")}>Gagal</button></>; return <span className="text-jp-muted dark:text-jp-muted-dark">{labels[item.status] || item.status}</span>; };
   return <div className="jp-page"><div><h1 className="jp-page-title">Dashboard Kurir</h1><p className="text-sm text-jp-muted dark:text-jp-muted-dark">Kelola tugas COD beli, jual, dan delivery</p></div>{loading ? <LoadingSkeleton numberOfRows={5}/> : error ? <ErrorState message={error} onRetry={load}/> : <>
     {/* Mobile: stacked cards so Lokasi/Status never end up scrolled off-screen like the table does on a phone. */}
     <div className="md:hidden space-y-3">{items.length ? items.map((item) => <div key={item.cod_id} className="panel rounded-jp-md p-4 space-y-2"><div className="flex items-center justify-between"><span className="badge">{item.type}</span><span className="text-[10px] text-jp-muted dark:text-jp-muted-dark">{formatDateTimeShort(item.created_at, resolveCabangTimezone(cabangTz, item.cabang))}</span></div><p className="text-sm font-medium">{item.product_name || item.trx_id || item.items?.map((x) => x.nama).join(", ") || "COD"}</p><div className="flex items-center justify-between gap-2 text-xs"><span className="text-jp-muted dark:text-jp-muted-dark">{item.delivery_address || item.location || NOT_SET}</span><CodStatusBadge status={item.status}>{labels[item.status] || item.status}</CodStatusBadge></div><div className="flex flex-wrap gap-2 pt-1">{waButton(item)}{action(item)}</div></div>) : <EmptyState message="Belum ada tugas COD" iconName="truckSvg"/>}</div>
@@ -94,7 +99,7 @@ export default function KurirDashboardPage(): JSX.Element {
           <LabelledInput label="Battery (%)" type="number" min={0} max={100} value={unit.battery} onChange={(e) => update("battery", Number(e.target.value))}/>
         </div>
         <LabelledTextarea label="Catatan" rows={2} value={unit.catatan} onChange={(e) => update("catatan", e.target.value)} placeholder="Kondisi tambahan yang perlu dicatat"/>
-        <ImageUploader id="kurir-unit-foto" maxFiles={5} label="Foto Unit" folder="jayaphone/units/cod-beli" onChange={(images) => setFoto(images.map((image) => image.secure_url))}/>
+        <ImageUploader id="kurir-unit-foto" maxFiles={1} label="Foto Unit" folder="jayaphone/units/cod-beli" onChange={(images) => setFoto(images.map((image) => image.secure_url))}/>
         <button type="button" className="btn-primary w-full" onClick={() => void (selected?.type === "beli" ? submitBeli() : inputStok())}>{selected?.type === "beli" ? "Kirim untuk Approval" : "Simpan ke Stok"}</button>
       </div>
     </Modal>
@@ -104,6 +109,16 @@ export default function KurirDashboardPage(): JSX.Element {
         <ImageUploader id="delivery-proof-unit" maxFiles={1} required label="Foto Unit / HP yang Diserahkan" folder="jayaphone/cod/delivery-proof" onChange={(images) => setUnitProof(images.map((image) => image.secure_url))}/>
         <ImageUploader id="delivery-proof-customer" maxFiles={1} required label="Foto Bersama Customer" folder="jayaphone/cod/delivery-proof" onChange={(images) => setCustomerProof(images.map((image) => image.secure_url))}/>
         <button type="button" className="btn-success w-full" disabled={confirmingDelivery} onClick={() => void confirmDelivered()}>{confirmingDelivery ? "Menyimpan..." : "Konfirmasi Terkirim"}</button>
+      </div>
+    </Modal>
+    <Modal isOpen={Boolean(rejectTarget)} onClose={() => setRejectTarget(null)} title="Tolak Tugas">
+      <div className="space-y-4">
+        <p className="text-sm text-jp-muted dark:text-jp-muted-dark">{rejectTarget?.item.product_name || rejectTarget?.item.trx_id || "Tugas ini"} akan ditolak dan dilepas dari daftar Anda.</p>
+        <LabelledTextarea label="Alasan" required={rejectTarget?.mode === "beli"} rows={3} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder={rejectTarget?.mode === "beli" ? "Wajib diisi — contoh: harga deal tidak sesuai" : "Opsional"}/>
+        <div className="flex gap-2">
+          <button type="button" className="btn-ghost flex-1" onClick={() => setRejectTarget(null)}>Batal</button>
+          <button type="button" disabled={rejecting} className="btn-error flex-1" onClick={() => void confirmReject()}>{rejecting ? "Menyimpan..." : "Tolak Tugas"}</button>
+        </div>
       </div>
     </Modal>
   </div>;

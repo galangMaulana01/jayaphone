@@ -257,11 +257,11 @@ export function NotificationBell(): JSX.Element | null {
       }
     }
 
-    // Sparepart request yang baru diterima/direservasi — teknisi only. Cuma
-    // muncul selama beberapa jam setelah diterima (jendela sama dengan tab
-    // "Riwayat Pemakaian" di halaman Sparepart), jadi id-based dedup di
-    // enqueueNotification sudah cukup untuk mencegah notifikasi berulang
-    // tanpa perlu backend menandai "sudah dilihat".
+    // Sparepart request yang baru diterima/direservasi ATAU ditolak KC —
+    // teknisi only. Cuma muncul selama beberapa jam setelah event (jendela
+    // sama dengan tab "Riwayat Pemakaian" di halaman Sparepart), jadi
+    // id-based dedup di enqueueNotification sudah cukup untuk mencegah
+    // notifikasi berulang tanpa perlu backend menandai "sudah dilihat".
     if (role === "teknisi") {
       try {
         const countResponse = await Api.requestSparepart.notifCount();
@@ -269,18 +269,23 @@ export function NotificationBell(): JSX.Element | null {
         if (pendingCount > 0) {
           const pendingResponse = await Api.requestSparepart.notifPending();
           for (const requestEntry of pendingResponse.data) {
+            const ditolak = requestEntry.status === "Ditolak";
             enqueueNotification({
               id: requestEntry.req_id,
               variant: "info",
-              title: `Sparepart Tersedia — ${requestEntry.nama_sp}`,
-              body: requestEntry.service_id
-                ? `Untuk servis ${requestEntry.service_id}${requestEntry.unit_label ? ` · ${requestEntry.unit_label}` : ""}`
-                : `${requestEntry.jumlah} unit sudah masuk stok`,
+              title: ditolak ? `Request Ditolak — ${requestEntry.nama_sp}` : `Sparepart Tersedia — ${requestEntry.nama_sp}`,
+              body: ditolak
+                ? `Alasan: ${requestEntry.catatan_kc || "-"}`
+                : requestEntry.service_id
+                  ? `Untuk servis ${requestEntry.service_id}${requestEntry.unit_label ? ` · ${requestEntry.unit_label}` : ""}`
+                  : `${requestEntry.jumlah} unit sudah masuk stok`,
               // Teknisi has no standalone Sparepart page anymore — land back
-              // on their workspace, deep-linked into the exact ticket that's
-              // ready so "Gunakan Sparepart" is one click away.
+              // on their workspace, deep-linked into the exact ticket the
+              // request belongs to (ready ones get "Gunakan Sparepart" one
+              // click away; rejected ones land on the ticket where the
+              // rejection banner explains why).
               targetPageKey: requestEntry.service_id ? `service-list?open=${requestEntry.service_id}` : "service-list",
-            }, requestEntry.diterima_at);
+            }, requestEntry.event_at ?? requestEntry.diterima_at);
           }
         }
       } catch {

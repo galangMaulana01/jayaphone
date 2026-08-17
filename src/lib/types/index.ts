@@ -273,8 +273,13 @@ export interface RequestSparepartNotifItem {
   jumlah: number;
   service_id?: string | null;
   unit_label?: string | null;
+  status: string;
+  /** Alasan KC — hanya terisi kalau status Ditolak. */
+  catatan_kc?: string | null;
   /** When the sparepart actually became ready — the real event time, not when the bell first polled it. */
   diterima_at?: string | null;
+  /** Real event time buat status Ditolak juga (diterima_at kosong di situ). */
+  event_at?: string | null;
 }
 
 // ─── Cabang ──────────────────────────────────────────────────────────────

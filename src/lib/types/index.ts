@@ -448,6 +448,9 @@ export interface TransferStok {
   jumlah: number;
   status: TransferStokStatus;
   catatan?: string;
+  /** Catatan yang diisi cabang tujuan saat merespon (wajib kalau Ditolak) — sebelumnya direkam backend tapi tidak pernah ditampilkan di manapun. */
+  catatan_respon?: string;
+  direspon_oleh?: string;
   created_at: string;
   created_by: string;
 }

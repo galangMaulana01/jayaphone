@@ -158,6 +158,14 @@ export interface Transaksi {
   customer_kontak?: string;
   sp_items?: SparepartItemInTransaksi[] | null;
   foto_serah_terima?: string | null;
+  /** Dibatalkan — manual atau otomatis saat COD delivery nego gagal. */
+  dibatalkan_at?: string | null;
+  dibatalkan_oleh?: string | null;
+  dibatalkan_alasan?: string | null;
+  /** Diamandemen — harga akhir berubah setelah kurir closing nego di lokasi. */
+  harga_jual_asli?: number | null;
+  diamandemen_oleh?: string | null;
+  diamandemen_at?: string | null;
 }
 /** Slim variant used in the dashboard's recent-transactions list. */
 export type TransaksiSummary = Pick<Transaksi, "trx_id" | "unit_label" | "harga_jual" | "waktu" | "kasir" | "cabang">;

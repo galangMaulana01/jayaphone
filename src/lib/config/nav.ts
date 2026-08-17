@@ -190,21 +190,22 @@ const kasirNavigation: NavigationEntry[] = [
   { pageKey: "input-transaksi",     label: "Input Transaksi",    iconName: "transaksiSvg2" },
   { pageKey: "tambah-unit",         label: "Tambah Unit",        iconName: "tambahSvg" },
   {
-    // Buat Order Beli/Jual are creation-only pages now — Monitoring COD
-    // (below) merges what used to be 3 separate monitoring views (COD
-    // Beli's tab, COD Jual's tab, and the standalone "Delivery" group) into
-    // one table with a Tipe filter, per Aug 2026 client feedback that
-    // checking 3 places for "where's my order" was one too many. "Buat
-    // Order Jual" carries a "(Nego di Tempat)" suffix so it doesn't read as
-    // a duplicate of Input Transaksi's "Kirim via COD" checkbox — that one
-    // delivers an ALREADY-sold item; this one sends a kurir to negotiate a
-    // sale of an item not yet in inventory (see cod_service.py's jual vs
-    // delivery branches, genuinely different flows/state machines).
+    // "Buat Order Jual" used to be its own creation page here — superseded
+    // by Input Transaksi's "Kirim via COD" checkbox, which since gained a
+    // "Kurir tertentu (nego di tempat)" mode covering exactly what that page
+    // did (manual kurir assign, closes at a possibly-different price at the
+    // customer's door), but reusing Input Transaksi's real item picker
+    // instead of a free-text product field, and supporting multi-item.
+    // Historical type="jual" cod_requests still read fine in Monitoring COD
+    // below — nothing new is created that way going forward. Monitoring COD
+    // itself merges what used to be 3 separate monitoring views (COD Beli's
+    // tab, COD Jual's tab, and the standalone "Delivery" group) into one
+    // table with a Tipe filter, per Aug 2026 client feedback that checking
+    // 3 places for "where's my order" was one too many.
     label: "COD", iconName: "moneySvg",
     children: [
-      { key: "cod-beli",       label: "Buat Order Beli",             href: "/cod-beli" },
-      { key: "cod-jual",       label: "Buat Order Jual (Nego di Tempat)", href: "/cod-jual" },
-      { key: "cod-monitoring", label: "Monitoring COD",              href: "/cod-monitoring" },
+      { key: "cod-beli",       label: "Buat Order Beli", href: "/cod-beli" },
+      { key: "cod-monitoring", label: "Monitoring COD",  href: "/cod-monitoring" },
     ],
   },
   {
@@ -318,7 +319,6 @@ export const pageMetadataByKey: Record<string, PageMetadata> = {
   "tambah-unit":          { title: "Tambah Unit" },
   "customers":            { title: "Data Customer" },
   "cod-beli":             { title: "COD Beli" },
-  "cod-jual":             { title: "COD Jual (Nego di Tempat)" },
   "cod-monitoring":       { title: "Monitoring COD" },
   "service-list":         { title: "Data Service" },
   "teknisi-log":          { title: "Log Aktivitas" },

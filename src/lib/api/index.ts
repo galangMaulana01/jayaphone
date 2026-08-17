@@ -137,6 +137,8 @@ const transaksi = {
     requestJson<ApiEnvelope<Transaksi>>("POST", "/transaksi/sparepart", body),
   detail: (trxId: string) =>
     requestJson<ApiEnvelope<Transaksi & { margin_pct: number }>>("GET", `/transaksi/${trxId}/detail`),
+  void: (trxId: string, alasan: string) =>
+    requestJson<ApiEnvelope<Transaksi>>("PATCH", `/transaksi/${trxId}/void`, { alasan }),
 };
 
 // ─── Karyawan ────────────────────────────────────────────────────────────
@@ -365,8 +367,8 @@ const cod = {
    */
   kurirRejectBeli: (codId: string, reason: string) =>
     requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/reject-beli`, { reason }),
-  kurirUpdateStatus: (codId: string, status: CODStatus, note?: string, foto_urls?: string[]) =>
-    requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/status`, { status, note, foto_urls }),
+  kurirUpdateStatus: (codId: string, status: CODStatus, note?: string, foto_urls?: string[], deal_price?: number) =>
+    requestJson<ApiEnvelope<CODRequest>>("POST", `/cod/kurir/${codId}/status`, { status, note, foto_urls, deal_price }),
   kurirInputStok: (body: Partial<Unit> & { imei: string; merk: string; tipe: string }) =>
     requestJson<ApiEnvelope<{ unit_id: string }>>("POST", "/cod/kurir/input-stok", body),
   kurirSubmitBeli: (codId: string, body: { deal_price: number; unit_data: Partial<Unit> }) =>

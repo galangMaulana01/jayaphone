@@ -285,6 +285,16 @@ const requestSparepart = {
    * blocking terakhir tiketnya (baca: yang melepas tiket balik ke Proses). */
   gunakan: (reqId: string, body?: { estimasi_selesai?: string }) =>
     requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/gunakan`, body ?? {}),
+  /** Kasir/kepala cabang/owner lepas part yang sudah Diterima (ditahan untuk
+   * satu tiket) balik ke stok umum cabang — dipakai kalau tiketnya sudah
+   * tidak lagi bisa memakainya (mis. sudah Selesai/Ditolak lewat jalur lain). */
+  lepas: (reqId: string) =>
+    requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/lepas`, {}),
+  /** Kasir/kepala cabang/owner batalkan request yang sudah disetujui KC tapi
+   * belum dibeli/diterima (Menunggu_Pembelian atau Menunggu_Barang) — jenis
+   * equipment sebelumnya tidak punya jalur pembatalan sama sekali di titik ini. */
+  batal: (reqId: string, catatan: string) =>
+    requestJson<ApiEnvelope<RequestSparepart>>("PATCH", `/request-sparepart/${reqId}/batal`, { catatan }),
   notifCount: () =>
     requestJson<ApiEnvelope<{ count: number }>>("GET", "/request-sparepart/notif/count"),
   notifPending: () =>

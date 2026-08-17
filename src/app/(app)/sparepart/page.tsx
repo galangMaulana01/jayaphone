@@ -26,10 +26,10 @@ const JENIS_OPTIONS: { value: SparepartJenis; label: string }[] = [
   { value: "equipment", label: "Equipment (alat kerja teknisi)" },
 ];
 
-const REQUEST_STATUS_TABS = ["", "Pending", "Menunggu_Pembelian", "Menunggu_Barang", "Diterima", "Digunakan", "Ditolak"];
+const REQUEST_STATUS_TABS = ["", "Pending", "Menunggu_Pembelian", "Menunggu_Barang", "Diterima", "Digunakan", "Dilepas", "Ditolak"];
 const REQUEST_STATUS_LABEL: Record<string, string> = {
   Pending: "Pending", Menunggu_Pembelian: "Menunggu Pembelian", Menunggu_Barang: "Menunggu Barang",
-  Diterima: "Diterima", Digunakan: "Digunakan", Ditolak: "Ditolak",
+  Diterima: "Diterima", Digunakan: "Digunakan", Dilepas: "Dilepas ke Stok Umum", Ditolak: "Ditolak",
 };
 // Request jenis=repair (terkait tiket) hanya bisa dibuat dari dalam layar
 // "Pilih Kebutuhan" di Data Service — tab ini cuma untuk request
@@ -90,6 +90,11 @@ function SparepartPageInner(): JSX.Element {
   // lifecycle as the "Request Sparepart" tab above, one stage further along.
   const [beliTarget, setBeliTarget] = useState<RequestSparepart | null>(null);
   const [terimaTarget, setTerimaTarget] = useState<RequestSparepart | null>(null);
+  // Batalkan request yang sudah disetujui KC tapi belum dibeli/diterima —
+  // sebelum ini tidak ada jalur pembatalan sama sekali di titik ini, jadi
+  // request yang ternyata tidak lagi dibutuhkan nyangkut selamanya di sini.
+  const [cancelTarget, setCancelTarget] = useState<RequestSparepart | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
   const [supplier, setSupplier] = useState("");
   const [hargaAktual, setHargaAktual] = useState("");
   const [buktiUrl, setBuktiUrl] = useState("");
@@ -224,6 +229,20 @@ function SparepartPageInner(): JSX.Element {
     } catch (e) { showToast(e instanceof Error ? e.message : "Aksi request gagal", "error"); }
   };
 
+  // Part sudah "Diterima" (ditahan untuk satu tiket) tapi tiketnya sudah
+  // tidak lagi bisa memakainya (mis. keburu Selesai/Ditolak lewat jalur
+  // lain sebelum teknisi konfirmasi pakai) — sebelumnya tidak ada cara
+  // melepas part ini balik ke stok umum sama sekali, jadi nyangkut jadi
+  // stok mati permanen.
+  const releaseReservation = async (r: RequestSparepart) => {
+    if (!window.confirm(`Lepas ${r.nama_sp} x${r.jumlah} ke stok umum cabang?`)) return;
+    try {
+      await Api.requestSparepart.lepas(r.req_id);
+      showToast(`${r.nama_sp} dikembalikan ke stok umum`);
+      await reloadRequests();
+    } catch (e) { showToast(e instanceof Error ? e.message : "Gagal melepas reservasi", "error"); }
+  };
+
   const openBeli = (r: RequestSparepart) => {
     setBeliTarget(r); setSupplier(""); setHargaAktual(String(r.harga_disetujui ?? "")); setBuktiUrl("");
     setCatatanBeli(""); setBarangDiTangan(false); setTanggalTerimaBeli("");
@@ -241,6 +260,15 @@ function SparepartPageInner(): JSX.Element {
       showToast(barangDiTangan ? "Pembelian dicatat, barang langsung masuk inventory" : "Pembelian dicatat, menunggu barang sampai");
       setBeliTarget(null); reloadProcurement();
     } catch (e) { showToast(e instanceof Error ? e.message : "Catat pembelian gagal", "error"); }
+  };
+  const submitCancel = async () => {
+    if (!cancelTarget) return;
+    if (!cancelReason.trim()) { showToast("Alasan pembatalan wajib diisi", "error"); return; }
+    try {
+      await Api.requestSparepart.batal(cancelTarget.req_id, cancelReason.trim());
+      showToast(`${cancelTarget.nama_sp} dibatalkan`);
+      setCancelTarget(null); setCancelReason(""); reloadProcurement();
+    } catch (e) { showToast(e instanceof Error ? e.message : "Gagal membatalkan request", "error"); }
   };
   const submitTerima = async () => {
     if (!terimaTarget) return;
@@ -480,6 +508,8 @@ function SparepartPageInner(): JSX.Element {
                       <td className="tbl-action-col px-5 py-4">
                         {canApproveRequest && r.status === "Pending" ? (
                           <button type="button" className="btn-ghost" onClick={() => { setSelectedRequest(r); setReqEstimasiTiba(""); setReqCatatan(""); setReqHargaDisetujui(String(r.harga_diajukan ?? "")); }}>Proses</button>
+                        ) : canApproveRequest && r.status === "Diterima" && r.service_id ? (
+                          <button type="button" className="btn-ghost" title="Tiket sudah tidak butuh part ini — lepas balik ke stok umum" onClick={() => void releaseReservation(r)}>Lepas ke Stok Umum</button>
                         ) : <span className="text-jp-muted dark:text-jp-muted-dark">—</span>}
                       </td>
                     </tr>
@@ -511,7 +541,7 @@ function SparepartPageInner(): JSX.Element {
                     <td className="px-5 py-4">{r.jumlah}</td>
                     <td className="px-5 py-4 text-jp-muted dark:text-jp-muted-dark">{r.cabang}</td>
                     <td className="px-5 py-4">{formatRupiah(r.harga_disetujui ?? 0)}</td>
-                    <td className="tbl-action-col px-5 py-4"><button type="button" className="btn-primary" onClick={() => openBeli(r)}>Catat Pembelian</button></td>
+                    <td className="tbl-action-col px-5 py-4"><div className="flex gap-2"><button type="button" className="btn-primary" onClick={() => openBeli(r)}>Catat Pembelian</button><button type="button" className="btn-ghost" onClick={() => { setCancelTarget(r); setCancelReason(""); }}>Batal</button></div></td>
                   </tr>
                 )) : <tr><td colSpan={7}><EmptyState message="Tidak ada request menunggu pembelian" iconName="packageSvg" /></td></tr>}
               </tbody>
@@ -534,7 +564,7 @@ function SparepartPageInner(): JSX.Element {
                     <td className="px-5 py-4">{r.jumlah}</td>
                     <td className="px-5 py-4 text-jp-muted dark:text-jp-muted-dark">{r.cabang}</td>
                     <td className="px-5 py-4">{formatRupiah(r.harga_beli_aktual ?? 0)}</td>
-                    <td className="tbl-action-col px-5 py-4"><button type="button" className="btn-primary" onClick={() => { setTerimaTarget(r); setTanggalTerima(""); setCatatanTerima(""); }}>Barang Diterima</button></td>
+                    <td className="tbl-action-col px-5 py-4"><div className="flex gap-2"><button type="button" className="btn-primary" onClick={() => { setTerimaTarget(r); setTanggalTerima(""); setCatatanTerima(""); }}>Barang Diterima</button><button type="button" className="btn-ghost" onClick={() => { setCancelTarget(r); setCancelReason(""); }}>Batal</button></div></td>
                   </tr>
                 )) : <tr><td colSpan={7}><EmptyState message="Tidak ada request menunggu barang" iconName="packageSvg" /></td></tr>}
               </tbody>
@@ -684,6 +714,15 @@ function SparepartPageInner(): JSX.Element {
           </div>
         </Modal>
       )}
+
+      <Modal isOpen={cancelTarget !== null} onClose={() => { setCancelTarget(null); setCancelReason(""); }} title={cancelTarget ? `Batalkan ${cancelTarget.req_id}` : "Batalkan Request"}>
+        <div className="space-y-4">
+          <p className="font-medium">{cancelTarget?.nama_sp} · {cancelTarget?.jumlah} unit</p>
+          <p className="text-xs text-jp-muted dark:text-jp-muted-dark">Request akan ditandai Ditolak dan berhenti menunggu pembelian/barang.</p>
+          <LabelledTextarea label="Alasan Pembatalan" rows={3} value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
+          <button type="button" className="btn-error w-full" onClick={() => void submitCancel()}>Batalkan Request</button>
+        </div>
+      </Modal>
     </div>
   );
 }

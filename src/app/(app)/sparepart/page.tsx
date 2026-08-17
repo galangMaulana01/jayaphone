@@ -95,6 +95,11 @@ function SparepartPageInner(): JSX.Element {
   // request yang ternyata tidak lagi dibutuhkan nyangkut selamanya di sini.
   const [cancelTarget, setCancelTarget] = useState<RequestSparepart | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  // Detail read-only untuk catatan_kc/estimasi_tiba yang sudah tercatat di
+  // request ini — sebelumnya kedua field ini cuma write-only (diisi lewat
+  // modal "Proses"), KC/owner sendiri tidak bisa lihat lagi keputusannya
+  // begitu request lewat dari Pending.
+  const [viewingRequest, setViewingRequest] = useState<RequestSparepart | null>(null);
   const [supplier, setSupplier] = useState("");
   const [hargaAktual, setHargaAktual] = useState("");
   const [buktiUrl, setBuktiUrl] = useState("");
@@ -510,6 +515,8 @@ function SparepartPageInner(): JSX.Element {
                           <button type="button" className="btn-ghost" onClick={() => { setSelectedRequest(r); setReqEstimasiTiba(""); setReqCatatan(""); setReqHargaDisetujui(String(r.harga_diajukan ?? "")); }}>Proses</button>
                         ) : canApproveRequest && r.status === "Diterima" && r.service_id ? (
                           <button type="button" className="btn-ghost" title="Tiket sudah tidak butuh part ini — lepas balik ke stok umum" onClick={() => void releaseReservation(r)}>Lepas ke Stok Umum</button>
+                        ) : (r.catatan_kc || r.estimasi_tiba) ? (
+                          <button type="button" className="btn-ghost" onClick={() => setViewingRequest(r)}>Detail</button>
                         ) : <span className="text-jp-muted dark:text-jp-muted-dark">—</span>}
                       </td>
                     </tr>
@@ -721,6 +728,25 @@ function SparepartPageInner(): JSX.Element {
           <p className="text-xs text-jp-muted dark:text-jp-muted-dark">Request akan ditandai Ditolak dan berhenti menunggu pembelian/barang.</p>
           <LabelledTextarea label="Alasan Pembatalan" rows={3} value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
           <button type="button" className="btn-error w-full" onClick={() => void submitCancel()}>Batalkan Request</button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={viewingRequest !== null} onClose={() => setViewingRequest(null)} title={viewingRequest ? `Detail ${viewingRequest.req_id}` : "Detail Request"}>
+        <div className="space-y-4">
+          <p className="font-medium">{viewingRequest?.nama_sp} · {viewingRequest?.jumlah} unit</p>
+          <span className="badge badge-booking">{viewingRequest ? (REQUEST_STATUS_LABEL[viewingRequest.status] ?? viewingRequest.status) : ""}</span>
+          {viewingRequest?.estimasi_tiba && (
+            <div className="rounded-jp-sm bg-jp-surface-subtle p-3 text-xs dark:bg-jp-surface-subtle-dark/60">
+              <p className="mb-1 font-medium text-jp-text dark:text-jp-text-dark">Estimasi Tiba</p>
+              <p className="text-jp-muted dark:text-jp-muted-dark">{viewingRequest.estimasi_tiba}</p>
+            </div>
+          )}
+          {viewingRequest?.catatan_kc && (
+            <div className="rounded-jp-sm bg-jp-surface-subtle p-3 text-xs dark:bg-jp-surface-subtle-dark/60">
+              <p className="mb-1 font-medium text-jp-text dark:text-jp-text-dark">Catatan {viewingRequest.status === "Ditolak" ? "Penolakan" : "KC"}</p>
+              <p className="text-jp-muted dark:text-jp-muted-dark">{viewingRequest.catatan_kc}</p>
+            </div>
+          )}
         </div>
       </Modal>
     </div>

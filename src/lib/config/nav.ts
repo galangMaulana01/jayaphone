@@ -190,10 +190,17 @@ const kasirNavigation: NavigationEntry[] = [
   { pageKey: "input-transaksi",     label: "Input Transaksi",    iconName: "transaksiSvg2" },
   { pageKey: "tambah-unit",         label: "Tambah Unit",        iconName: "tambahSvg" },
   {
+    // Each creation page now also carries its own "monitoring" tab (see
+    // cod-beli/cod-jual page.tsx) so a kasir can check an order's progress
+    // after handing it off to a kurir — previously the only status view was
+    // Approval COD Beli (pending-approval only) or the owner/kc-only Monitor
+    // Kurir aggregate, so a kasir had nowhere to check "where's my order".
     label: "COD", iconName: "moneySvg",
     children: [
-      { key: "cod-beli", label: "COD Beli", href: "/cod-beli" },
-      { key: "cod-jual", label: "COD Jual", href: "/cod-jual" },
+      { key: "cod-beli",             label: "Buat Order Beli",   href: "/cod-beli" },
+      { key: "cod-beli-monitoring",  label: "Monitoring Beli",   href: "/cod-beli?tab=monitoring" },
+      { key: "cod-jual",             label: "Buat Order Jual",   href: "/cod-jual" },
+      { key: "cod-jual-monitoring",  label: "Monitoring Jual",   href: "/cod-jual?tab=monitoring" },
     ],
   },
   {

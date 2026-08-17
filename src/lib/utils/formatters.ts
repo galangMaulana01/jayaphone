@@ -12,6 +12,13 @@ export function formatRupiah(amount: number | null | undefined): string {
   return `Rp ${safeAmount.toLocaleString("id-ID")}`;
 }
 
+/** Builds a wa.me link from a local Indonesian number, normalizing a leading "0" to the "62" country code. */
+export function waLink(number: string): string {
+  const digits = number.replace(/\D/g, "");
+  const normalized = digits.startsWith("0") ? `62${digits.slice(1)}` : digits;
+  return `https://wa.me/${normalized}`;
+}
+
 /** Default branch timezone — used whenever a record's own branch timezone is unknown/unresolved yet. */
 export const DEFAULT_TIMEZONE = "Asia/Jakarta";
 

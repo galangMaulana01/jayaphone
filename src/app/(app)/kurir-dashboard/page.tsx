@@ -19,10 +19,10 @@ type UnitDraft = { imei: string; imei2: string; merk: string; tipe: string; stor
 const EMPTY_UNIT: UnitDraft = { imei: "", imei2: "-", merk: "", tipe: "", storage: "-", ram: "-", warna: "-", tipe_sim: "Single SIM", keamanan: "Tidak Ada", speaker: "Normal", lcd: "Original", battery: 100, kondisi_hp: "Mulus", kondisi: "BN", catatan: "" };
 export default function KurirDashboardPage(): JSX.Element {
   const { showToast } = useToast(); const cabangTz = useCabangTimezones(); const [selected, setSelected] = useState<CODRequest | null>(null); const [unit, setUnit] = useState<UnitDraft>(EMPTY_UNIT); const [foto, setFoto] = useState<string[]>([]); const [deal, setDeal] = useState("");
-  const [deliveringItem, setDeliveringItem] = useState<CODRequest | null>(null); const [unitProof, setUnitProof] = useState<string[]>([]); const [customerProof, setCustomerProof] = useState<string[]>([]); const [confirmingDelivery, setConfirmingDelivery] = useState(false);
+  const [deliveringItem, setDeliveringItem] = useState<CODRequest | null>(null); const [unitProof, setUnitProof] = useState<string[]>([]); const [customerProof, setCustomerProof] = useState<string[]>([]); const [confirmingDelivery, setConfirmingDelivery] = useState(false); const [dealPriceFinal, setDealPriceFinal] = useState("");
   const [rejectTarget, setRejectTarget] = useState<{ item: CODRequest; mode: "generic" | "beli" } | null>(null); const [rejectReason, setRejectReason] = useState(""); const [rejecting, setRejecting] = useState(false);
   const { items, loading, error, reload: load } = useApiList<CODRequest>(() => Api.cod.kurirDashboard({}).then((r) => r.data ?? []), [], "Gagal memuat dashboard kurir");
-  const status = async (item: CODRequest, next: CODStatus, note?: string, fotoUrls?: string[]): Promise<void> => { try { await Api.cod.kurirUpdateStatus(item.cod_id, next, note, fotoUrls); showToast(`Status diperbarui: ${labels[next] || next}`); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Status gagal diperbarui", "error"); } };
+  const status = async (item: CODRequest, next: CODStatus, note?: string, fotoUrls?: string[], dealPrice?: number): Promise<void> => { try { await Api.cod.kurirUpdateStatus(item.cod_id, next, note, fotoUrls, dealPrice); showToast(`Status diperbarui: ${labels[next] || next}`); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Status gagal diperbarui", "error"); } };
   const accept = async (item: CODRequest): Promise<void> => { try { await Api.cod.kurirAccept(item.cod_id); showToast("COD diterima"); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Gagal menerima COD", "error"); } };
   // Generic reject — valid while the job is still at menunggu_kurir (only if
   // already assigned to me, not a still-unclaimed broadcast) or, for COD
@@ -56,12 +56,12 @@ export default function KurirDashboardPage(): JSX.Element {
   const submitBeli = async (): Promise<void> => { if (!selected || !Number(deal)) { showToast("Harga deal wajib diisi", "error"); return; } if (!validateUnitDraft()) return; try { await Api.cod.kurirSubmitBeli(selected.cod_id, { deal_price: Number(deal), unit_data: { ...unit, foto_url: foto[0] } }); showToast("Data COD beli dikirim untuk approval"); setSelected(null); await load(); } catch (e) { showToast(e instanceof Error ? e.message : "Submit COD beli gagal", "error"); } };
   const openUnit = (item: CODRequest): void => { setSelected(item); setDeal(String(item.offer_price || "")); setFoto([]); setUnit(EMPTY_UNIT); };
   const update = (key: keyof UnitDraft, value: string | number): void => setUnit((old) => ({ ...old, [key]: value }));
-  const openDeliveryProof = (item: CODRequest): void => { setDeliveringItem(item); setUnitProof([]); setCustomerProof([]); };
+  const openDeliveryProof = (item: CODRequest): void => { setDeliveringItem(item); setUnitProof([]); setCustomerProof([]); setDealPriceFinal(""); };
   const confirmDelivered = async (): Promise<void> => {
     if (!deliveringItem) return;
     if (!unitProof.length || !customerProof.length) { showToast("Foto unit dan foto bersama customer wajib diupload", "error"); return; }
     setConfirmingDelivery(true);
-    try { await status(deliveringItem, "terkirim", undefined, [unitProof[0], customerProof[0]]); setDeliveringItem(null); }
+    try { await status(deliveringItem, "terkirim", undefined, [unitProof[0], customerProof[0]], dealPriceFinal ? Number(dealPriceFinal) : undefined); setDeliveringItem(null); }
     finally { setConfirmingDelivery(false); }
   };
   // Seller's number for beli, customer's for jual/delivery — whichever the
@@ -108,6 +108,7 @@ export default function KurirDashboardPage(): JSX.Element {
         <p className="text-[11px] text-jp-muted dark:text-jp-muted-dark">Foto bukti serah terima wajib diupload sebelum delivery ditandai selesai.</p>
         <ImageUploader id="delivery-proof-unit" maxFiles={1} required label="Foto Unit / HP yang Diserahkan" folder="jayaphone/cod/delivery-proof" onChange={(images) => setUnitProof(images.map((image) => image.secure_url))}/>
         <ImageUploader id="delivery-proof-customer" maxFiles={1} required label="Foto Bersama Customer" folder="jayaphone/cod/delivery-proof" onChange={(images) => setCustomerProof(images.map((image) => image.secure_url))}/>
+        <LabelledInput label="Harga Deal Akhir (Rp)" type="number" min={0} value={dealPriceFinal} onChange={(e) => setDealPriceFinal(e.target.value)} helper="Isi hanya kalau nego di lokasi ketemu harga beda dari yang tercatat. Kosongkan kalau sesuai."/>
         <button type="button" className="btn-success w-full" disabled={confirmingDelivery} onClick={() => void confirmDelivered()}>{confirmingDelivery ? "Menyimpan..." : "Konfirmasi Terkirim"}</button>
       </div>
     </Modal>

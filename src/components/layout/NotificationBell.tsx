@@ -190,6 +190,73 @@ export function NotificationBell(): JSX.Element | null {
       }
     }
 
+    // Pending COD Beli approval — kasir only (Approval COD has no nav entry
+    // for owner/kepala_cabang, even though the backend technically allows
+    // them too — was previously a completely silent queue with no bell/badge
+    // anywhere, only discoverable by opening the page).
+    if (role === "kasir") {
+      try {
+        const response = await Api.cod.list({ type: "beli", status: "menunggu_approval_kasir" });
+        for (const codEntry of response.data ?? []) {
+          enqueueNotification({
+            id: codEntry.cod_id,
+            variant: "approval",
+            title: "COD Beli Menunggu Approval",
+            body: `${codEntry.product_name || codEntry.cod_id} · kurir ${codEntry.kurir_name || "-"}`,
+            targetPageKey: "approval-cod",
+          }, codEntry.updated_at || codEntry.created_at);
+        }
+      } catch {
+        /* silent */
+      }
+    }
+
+    // Customer baru menunggu verifikasi — hanya kepala_cabang/owner, karena
+    // hanya mereka yang backend-nya izinkan approve/reject (kasir bisa lihat
+    // daftarnya tapi tidak bisa memutuskan). Was previously silent — the
+    // Api.customer.pendingCount() method existed but nothing ever called it.
+    if (role === "kepala_cabang" || role === "owner") {
+      try {
+        const countResponse = await Api.customer.pendingCount();
+        const pendingCustomerCount = countResponse.data?.count ?? 0;
+        if (pendingCustomerCount > 0) {
+          const listResponse = await Api.customer.list({ status: "Pending", limit: 50 });
+          for (const customerEntry of listResponse.data ?? []) {
+            enqueueNotification({
+              id: customerEntry.id,
+              variant: "approval",
+              title: "Customer Baru Menunggu Verifikasi",
+              body: `${customerEntry.nama} · ${customerEntry.kontak}`,
+              targetPageKey: "customers?status=Pending",
+            }, customerEntry.created_at);
+          }
+        }
+      } catch {
+        /* silent */
+      }
+    }
+
+    // Request sparepart menunggu approval harga — kepala_cabang/owner. Teknisi
+    // already gets a "sparepart ready" notification below once a request is
+    // Diterima; this is the earlier step nobody was notified about — the KC
+    // who must approve the price had no zero-click discovery at all before.
+    if (role === "kepala_cabang" || role === "owner") {
+      try {
+        const response = await Api.requestSparepart.list({ status: "Pending" });
+        for (const requestEntry of response.data ?? []) {
+          enqueueNotification({
+            id: requestEntry.req_id,
+            variant: "approval",
+            title: "Request Sparepart Menunggu Approval",
+            body: `${requestEntry.nama_sp} x${requestEntry.jumlah}` + (requestEntry.service_id ? ` · servis ${requestEntry.service_id}` : ""),
+            targetPageKey: "sparepart?tab=request",
+          }, requestEntry.created_at);
+        }
+      } catch {
+        /* silent */
+      }
+    }
+
     // Sparepart request yang baru diterima/direservasi — teknisi only. Cuma
     // muncul selama beberapa jam setelah diterima (jendela sama dengan tab
     // "Riwayat Pemakaian" di halaman Sparepart), jadi id-based dedup di

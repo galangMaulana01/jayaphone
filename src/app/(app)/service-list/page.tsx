@@ -136,6 +136,11 @@ function ServiceListPageInner(): JSX.Element {
   );
   const readyRequest = myRequests.find((r) => r.status === "Diterima");
   const pendingRequests = myRequests.filter((r) => !["Diterima", "Digunakan", "Ditolak"].includes(r.status));
+  // Ditolak biasanya melepas tiket ini dari Menunggu_Sparepart seketika
+  // (lihat _clear_menunggu_sparepart_if_unblocked di backend), jadi banner
+  // ini sengaja dirender di luar blok per-step supaya alasan KC tetap
+  // kelihatan berapa pun step tiketnya sekarang berpindah ke.
+  const rejectedRequests = myRequests.filter((r) => r.status === "Ditolak");
 
   const openTicket = async (serviceId: string) => {
     try {
@@ -393,6 +398,14 @@ function ServiceListPageInner(): JSX.Element {
             </div>
           </div>
 
+          {rejectedRequests.map((r) => (
+            <div key={r.req_id} className="rounded-jp-sm bg-jp-danger-soft p-3 text-xs dark:bg-jp-surface-subtle-dark/60">
+              <div className="flex justify-between"><span className="badge badge-sold">Request Ditolak</span><span className="font-mono text-jp-muted dark:text-jp-muted-dark">{r.req_id}</span></div>
+              <p className="mt-2"><span className="font-medium">{r.nama_sp}</span> x{r.jumlah}</p>
+              <p className="mt-1 text-jp-muted dark:text-jp-muted-dark"><span className="font-medium text-jp-text dark:text-jp-text-dark">Alasan: </span>{r.catatan_kc || "-"}</p>
+            </div>
+          ))}
+
           {/* ── Step: Pilih HP (detail read-only) ── */}
           {step === "detail" && (
             <div className="section-panel space-y-4">
@@ -486,6 +499,8 @@ function ServiceListPageInner(): JSX.Element {
                       <div className="flex justify-between"><span className="font-medium">{r.nama_sp}</span><span className="font-mono text-jp-muted dark:text-jp-muted-dark">{r.req_id}</span></div>
                       <p className="mt-1 text-jp-muted dark:text-jp-muted-dark">Jumlah: {r.jumlah} pcs</p>
                       <p className="mt-1 text-jp-muted dark:text-jp-muted-dark">Status: <span className="font-medium text-jp-text dark:text-jp-text-dark">{REQUEST_STATUS_LABEL[r.status] ?? r.status}</span></p>
+                      {r.estimasi_tiba && <p className="mt-1 text-jp-muted dark:text-jp-muted-dark">Estimasi tiba: <span className="font-medium text-jp-text dark:text-jp-text-dark">{r.estimasi_tiba}</span></p>}
+                      {r.catatan_kc && <p className="mt-1 text-jp-muted dark:text-jp-muted-dark">Catatan KC: <span className="text-jp-text dark:text-jp-text-dark">{r.catatan_kc}</span></p>}
                     </div>
                   ))}
                 </>

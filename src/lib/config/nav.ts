@@ -190,31 +190,21 @@ const kasirNavigation: NavigationEntry[] = [
   { pageKey: "input-transaksi",     label: "Input Transaksi",    iconName: "transaksiSvg2" },
   { pageKey: "tambah-unit",         label: "Tambah Unit",        iconName: "tambahSvg" },
   {
-    // Each creation page now also carries its own "monitoring" tab (see
-    // cod-beli/cod-jual page.tsx) so a kasir can check an order's progress
-    // after handing it off to a kurir — previously the only status view was
-    // Approval COD Beli (pending-approval only) or the owner/kc-only Monitor
-    // Kurir aggregate, so a kasir had nowhere to check "where's my order".
+    // Buat Order Beli/Jual are creation-only pages now — Monitoring COD
+    // (below) merges what used to be 3 separate monitoring views (COD
+    // Beli's tab, COD Jual's tab, and the standalone "Delivery" group) into
+    // one table with a Tipe filter, per Aug 2026 client feedback that
+    // checking 3 places for "where's my order" was one too many. "Buat
+    // Order Jual" carries a "(Nego di Tempat)" suffix so it doesn't read as
+    // a duplicate of Input Transaksi's "Kirim via COD" checkbox — that one
+    // delivers an ALREADY-sold item; this one sends a kurir to negotiate a
+    // sale of an item not yet in inventory (see cod_service.py's jual vs
+    // delivery branches, genuinely different flows/state machines).
     label: "COD", iconName: "moneySvg",
     children: [
-      { key: "cod-beli",             label: "Buat Order Beli",   href: "/cod-beli" },
-      { key: "cod-beli-monitoring",  label: "Monitoring Beli",   href: "/cod-beli?tab=monitoring" },
-      { key: "cod-jual",             label: "Buat Order Jual",   href: "/cod-jual" },
-      { key: "cod-jual-monitoring",  label: "Monitoring Jual",   href: "/cod-jual?tab=monitoring" },
-    ],
-  },
-  {
-    // Own group (not folded into "COD" above) because it has its own status
-    // sub-views — same pattern as Sparepart/Laporan's page+children groups.
-    pageKey: "cod-delivery", label: "Delivery", iconName: "moneySvg",
-    children: [
-      { key: "delivery-semua",     label: "Semua",           href: "/cod-delivery" },
-      { key: "delivery-menunggu",  label: "Menunggu Kurir",  href: "/cod-delivery?status=menunggu_kurir" },
-      { key: "delivery-menuju",    label: "Menuju Toko",     href: "/cod-delivery?status=kurir_menuju_toko" },
-      { key: "delivery-diambil",   label: "Barang Diambil",  href: "/cod-delivery?status=barang_sudah_diambil" },
-      { key: "delivery-diantar",   label: "Sedang Diantar",  href: "/cod-delivery?status=sedang_diantar" },
-      { key: "delivery-terkirim",  label: "Terkirim",        href: "/cod-delivery?status=terkirim" },
-      { key: "delivery-gagal",     label: "Gagal",           href: "/cod-delivery?status=gagal" },
+      { key: "cod-beli",       label: "Buat Order Beli",             href: "/cod-beli" },
+      { key: "cod-jual",       label: "Buat Order Jual (Nego di Tempat)", href: "/cod-jual" },
+      { key: "cod-monitoring", label: "Monitoring COD",              href: "/cod-monitoring" },
     ],
   },
   {
@@ -328,8 +318,8 @@ export const pageMetadataByKey: Record<string, PageMetadata> = {
   "tambah-unit":          { title: "Tambah Unit" },
   "customers":            { title: "Data Customer" },
   "cod-beli":             { title: "COD Beli" },
-  "cod-jual":             { title: "COD Jual" },
-  "cod-delivery":         { title: "Delivery" },
+  "cod-jual":             { title: "COD Jual (Nego di Tempat)" },
+  "cod-monitoring":       { title: "Monitoring COD" },
   "service-list":         { title: "Data Service" },
   "teknisi-log":          { title: "Log Aktivitas" },
   "influencer-dashboard": { title: "Dashboard Influencer" },

@@ -2,6 +2,8 @@
 // in the legacy app (`errorState(message, retryFn)`). The React port takes
 // an optional retry callback instead of a stringified function name.
 
+import { Button } from "./Button";
+
 interface ErrorStateProps {
   message: string;
   onRetry?: () => void;
@@ -37,11 +39,7 @@ export function ErrorState({ message, onRetry }: ErrorStateProps): JSX.Element {
         </p>
       )}
       {!isTimeout && <div className="mb-4" />}
-      {onRetry && (
-        <button type="button" onClick={onRetry} className="btn-secondary text-xs">
-          Coba lagi
-        </button>
-      )}
+      {onRetry && <Button variant="secondary" size="sm" onClick={onRetry}>Coba lagi</Button>}
     </div>
   );
 }

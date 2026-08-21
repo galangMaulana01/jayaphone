@@ -326,8 +326,9 @@
 /* Dashboard commerce workspace — an original interpretation of the supplied
    dark, high-density finance references. Scoped so operational routes retain
    Jayaphone's existing light system. */
-.dashboard-workspace {
-  --dashboard-accent: #ff5a1f;
+.app-workspace {
+  --workspace-accent: #ff5a1f;
+  --dashboard-accent: var(--workspace-accent);
   --dashboard-ink: #f8f7f5;
   --dashboard-muted: #aaa9a6;
   --dashboard-panel: #1c1c1d;
@@ -335,24 +336,58 @@
   background: #111112 !important;
   color: var(--dashboard-ink);
 }
-.dashboard-workspace > aside,
-.dashboard-workspace .bg-jp-surface,
-.dashboard-workspace header { background: #151516 !important; border-color: #303032 !important; }
-.dashboard-workspace .bg-jp-app,
-.dashboard-workspace main { background: #111112 !important; }
-.dashboard-workspace .text-jp-text,
-.dashboard-workspace .text-jp-text-dark { color: var(--dashboard-ink) !important; }
-.dashboard-workspace .text-jp-muted,
-.dashboard-workspace .text-jp-muted-dark { color: var(--dashboard-muted) !important; }
-.dashboard-workspace .border-jp-border { border-color: #303032 !important; }
-.dashboard-workspace .nav-link.active,
-.dashboard-workspace .nav-link[class*="bg-jp-text"] { background: var(--dashboard-accent) !important; color: white !important; }
-.dashboard-workspace .nav-link:hover,
-.dashboard-workspace button:hover { background-color: #29292a; }
-.dashboard-workspace .field-control,
-.dashboard-workspace select { border-color: #3b3b3d; background: #242425; color: var(--dashboard-ink); }
-.dashboard-workspace .btn-secondary { border-color: #3b3b3d; background: #242425; color: var(--dashboard-ink); }
-.dashboard-workspace .btn-primary { background: var(--dashboard-accent); color: white; }
+.app-workspace > aside,
+.app-workspace .bg-jp-surface,
+.app-workspace header { background: #151516 !important; border-color: #303032 !important; }
+.app-workspace .bg-jp-app,
+.app-workspace main { background: #111112 !important; }
+.app-workspace .text-jp-text,
+.app-workspace .text-jp-text-dark { color: var(--dashboard-ink) !important; }
+.app-workspace .text-jp-muted,
+.app-workspace .text-jp-muted-dark { color: var(--dashboard-muted) !important; }
+.app-workspace .border-jp-border { border-color: #303032 !important; }
+.app-workspace .nav-link.active,
+.app-workspace .nav-link[class*="bg-jp-text"] { background: var(--dashboard-accent) !important; color: white !important; }
+.app-workspace .nav-link:hover,
+.app-workspace button:hover { background-color: #29292a; }
+.app-workspace .field-control,
+.app-workspace select { border-color: #3b3b3d; background: #242425; color: var(--dashboard-ink); }
+/* Universal action hierarchy: every existing .btn call site shares one tactile,
+   accessible treatment without requiring a route-by-route conversion. */
+.app-workspace .btn { min-height: 44px; border-radius: 10px; font-weight: 650; }
+.app-workspace .btn-primary { border: 1px solid var(--workspace-accent); background: var(--workspace-accent); color: white; }
+.app-workspace .btn-primary:hover { border-color: #ff7040; background: #ff7040; }
+.app-workspace .btn-secondary { border-color: #3b3b3d; background: #242425; color: var(--dashboard-ink); }
+.app-workspace .btn-secondary:hover { border-color: #545456; background: #303032; }
+.app-workspace .btn-ghost { color: var(--dashboard-muted); }
+.app-workspace .btn-ghost:hover { background: #29292a; color: var(--dashboard-ink); }
+.app-workspace .btn-success { background: var(--workspace-accent); color: white; }
+.app-workspace .btn-error { border-color: #6f3533; background: #32201f; color: #ffaaa4; }
+.app-workspace .btn-error:hover { background: #492624; }
+/* Existing pages already compose these primitives, so the workspace skin reaches
+   inventory, service, reports, COD, and settings without touching their data/UI logic. */
+.app-workspace .section-panel,
+.app-workspace .table-wrap,
+.app-workspace .panel,
+.app-workspace .card,
+.app-workspace .list-card,
+.app-workspace .svc-card,
+.app-workspace .log-list { border-color: #343436; background: #1c1c1d; }
+.app-workspace .metric-card,
+.app-workspace .subtle-panel,
+.app-workspace .form-section,
+.app-workspace .jp-toolbar { background: #202021; color: var(--dashboard-ink); }
+.app-workspace .tbl-head { background: #202021; color: var(--dashboard-muted); }
+.app-workspace .tbl-row { border-color: #303032; }
+.app-workspace .tbl-row:hover { background: #29292a; }
+.app-workspace .tbl-action-col { border-color: #343436; background: #1c1c1d; }
+.app-workspace .badge { border-color: #414143; background: #29292a; color: #dddcd9; }
+.app-workspace .badge-tersedia,
+.app-workspace .badge-selesai,
+.app-workspace .badge-diambil { border-color: #704330; background: #35221d; color: #ffab87; }
+.app-workspace .badge-booking,
+.app-workspace .badge-masuk { border-color: #665435; background: #332d20; color: #e8ca80; }
+.app-workspace .badge-sold { border-color: #6f3533; background: #32201f; color: #ffaaa4; }
 
 .jp-dashboard { max-width: 1280px; color: var(--dashboard-ink); }
 .jp-dashboard-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }

@@ -3,6 +3,7 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import type { DateFilterPreset, DateFilterState } from "@/lib/utils/dateFilter";
 import { Modal } from "./Modal";
+import { Button } from "./Button";
 
 interface DateFilterBarProps {
   currentFilterState: DateFilterState;
@@ -91,8 +92,8 @@ export function DateFilterBar({ currentFilterState, onFilterStateChange }: DateF
         </div>
         {draftStartDate && draftEndDate && draftStartDate > draftEndDate ? <p className="text-xs text-jp-danger">Tanggal mulai harus sebelum tanggal akhir.</p> : null}
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
-          <button type="button" onClick={() => setIsCustomModalOpen(false)} className="btn-ghost flex-1">Batal</button>
-          <button type="button" onClick={handleApplyCustom} className="btn-primary flex-1" disabled={!draftStartDate || !draftEndDate || draftStartDate > draftEndDate}>Terapkan Filter</button>
+          <Button variant="ghost" onClick={() => setIsCustomModalOpen(false)} fullWidth>Batal</Button>
+          <Button onClick={handleApplyCustom} fullWidth disabled={!draftStartDate || !draftEndDate || draftStartDate > draftEndDate}>Terapkan Filter</Button>
         </div>
       </Modal>
     </>

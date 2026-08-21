@@ -21,10 +21,10 @@ describe("dashboard visual direction", () => {
     expect(chartSource).toContain("#ff5a1f");
   });
 
-  it("scopes the dark dashboard shell without changing other routes", () => {
-    expect(appLayoutSource).toContain("dashboard-workspace");
-    expect(globalStyles).toContain(".dashboard-workspace");
-    expect(globalStyles).toContain("--dashboard-accent: #ff5a1f");
+  it("inherits the application-wide workspace shell", () => {
+    expect(appLayoutSource).toContain("app-workspace");
+    expect(globalStyles).toContain(".app-workspace");
+    expect(globalStyles).toContain("--workspace-accent: #ff5a1f");
     expect(globalStyles).toContain(".jp-dashboard-overview");
   });
 });

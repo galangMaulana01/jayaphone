@@ -8,7 +8,6 @@ import { useCabangTimezones, resolveCabangTimezone } from "@/contexts/CabangTzCo
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { HeroCard } from "@/components/ui/HeroCard";
 import { CabangFilter } from "@/components/ui/CabangFilter";
 import { DateFilterBar } from "@/components/ui/DateFilterBar";
 import { createDefaultDateFilter, toApiQueryParams } from "@/lib/utils/dateFilter";
@@ -17,25 +16,22 @@ import type { DashboardStats, DashboardTrend, DashboardTrendPoint } from "@/lib/
 
 const DashboardTrendChart = dynamic(
   () => import("./_components/DashboardTrendChart").then((module) => module.DashboardTrendChart),
-  {
-    ssr: false,
-    loading: () => <div className="h-64 animate-pulse rounded-jp-sm bg-jp-surface-subtle dark:bg-jp-surface-subtle-dark md:h-72" />,
-  },
+  { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-[18px] bg-white/10 md:h-72" /> },
 );
 
 interface DashboardMetricCardProps {
   label: string;
   value: string | number;
   description: string;
-  mono?: boolean;
+  accent?: boolean;
 }
 
-function DashboardMetricCard({ label, value, description, mono = false }: DashboardMetricCardProps): JSX.Element {
+function DashboardMetricCard({ label, value, description, accent = false }: DashboardMetricCardProps): JSX.Element {
   return (
-    <section className="metric-card">
-      <p className="text-[11px] font-medium text-jp-muted dark:text-jp-muted-dark">{label}</p>
-      <p className={"mt-3 text-2xl font-semibold tracking-tight text-jp-text dark:text-jp-text-dark " + (mono ? "font-mono text-xl tabular-nums" : "tabular-nums")}>{value}</p>
-      <p className="mt-2 text-[11px] text-jp-muted dark:text-jp-muted-dark">{description}</p>
+    <section className={"jp-dashboard-metric " + (accent ? "jp-dashboard-metric-accent" : "")}>
+      <p>{label}</p>
+      <strong className="tabular-nums">{value}</strong>
+      <span>{description}</span>
     </section>
   );
 }
@@ -46,12 +42,7 @@ function normaliseTrendPoints(trendResponse: DashboardTrend): DashboardTrendPoin
   const revenue = Array.isArray(trendResponse.revenue) ? trendResponse.revenue : [];
   const profit = Array.isArray(trendResponse.profit) ? trendResponse.profit : [];
   const jumlah = Array.isArray(trendResponse.jumlah) ? trendResponse.jumlah : [];
-  return labels.map((tanggal, index) => ({
-    tanggal,
-    omzet: revenue[index] ?? 0,
-    profit: profit[index] ?? 0,
-    jumlah: jumlah[index] ?? 0,
-  }));
+  return labels.map((tanggal, index) => ({ tanggal, omzet: revenue[index] ?? 0, profit: profit[index] ?? 0, jumlah: jumlah[index] ?? 0 }));
 }
 
 export default function DashboardPage(): JSX.Element {
@@ -60,10 +51,9 @@ export default function DashboardPage(): JSX.Element {
   const [dateFilterState, setDateFilterState] = useState(createDefaultDateFilter);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [dashboardTrend, setDashboardTrend] = useState<DashboardTrendPoint[] | null>(null);
-  const [isFetching, setIsFetching] = useState<boolean>(true);
-  const [fetchErrorMessage, setFetchErrorMessage] = useState<string>("");
-  const [selectedCabangFilter, setSelectedCabangFilter] = useState<string>("");
-
+  const [isFetching, setIsFetching] = useState(true);
+  const [fetchErrorMessage, setFetchErrorMessage] = useState("");
+  const [selectedCabangFilter, setSelectedCabangFilter] = useState("");
   const isOwner = currentUser?.role === "owner";
   const filterQueryParams = useMemo(
     () => ({ ...toApiQueryParams(dateFilterState), cabang: isOwner && selectedCabangFilter ? selectedCabangFilter : undefined }),
@@ -74,131 +64,73 @@ export default function DashboardPage(): JSX.Element {
     setIsFetching(true);
     setFetchErrorMessage("");
     try {
-      const [statsResult, trendResult] = await Promise.allSettled([
-        Api.dashboard.stats(filterQueryParams),
-        Api.dashboard.trend(filterQueryParams),
-      ]);
-      if (statsResult.status === "rejected") {
-        const message = statsResult.reason instanceof ApiError ? statsResult.reason.message : "Gagal memuat dashboard";
-        throw new Error(message);
-      }
+      const [statsResult, trendResult] = await Promise.allSettled([Api.dashboard.stats(filterQueryParams), Api.dashboard.trend(filterQueryParams)]);
+      if (statsResult.status === "rejected") throw new Error(statsResult.reason instanceof ApiError ? statsResult.reason.message : "Gagal memuat dashboard");
       setDashboardStats(statsResult.value.data);
       setDashboardTrend(trendResult.status === "fulfilled" ? normaliseTrendPoints(trendResult.value.data) : null);
     } catch (loadError) {
-      const message = loadError instanceof Error ? loadError.message : "Gagal memuat dashboard";
-      setFetchErrorMessage(message);
+      setFetchErrorMessage(loadError instanceof Error ? loadError.message : "Gagal memuat dashboard");
     } finally {
       setIsFetching(false);
     }
   }, [filterQueryParams]);
 
-  useEffect(() => {
-    void loadDashboardData();
-  }, [loadDashboardData]);
+  useEffect(() => { void loadDashboardData(); }, [loadDashboardData]);
 
-  const cabangSuffix = currentUser?.role === "kepala_cabang" ? " — Cabang " + currentUser.cabang : "";
   const totalTerjual = dashboardStats?.unit.terjual ?? dashboardStats?.unit.sold ?? 0;
   const totalOmzet = dashboardStats?.keuangan.total_omzet ?? dashboardStats?.keuangan.total_revenue ?? 0;
   const recentTransaksi = dashboardStats?.recent_transaksi ?? [];
 
   return (
-    <div className="jp-page">
-      <header className="jp-page-header">
+    <div className="jp-page jp-dashboard">
+      <header className="jp-dashboard-header">
         <div>
-          <h1 className="jp-page-title">Dashboard</h1>
-          <p className="mt-2 text-sm text-jp-muted dark:text-jp-muted-dark">Kondisi operasional Jayaphone pada periode yang dipilih{cabangSuffix}.</p>
+          <p className="jp-dashboard-eyebrow">JAYAPHONE · {currentUser?.cabang || "SEMUA CABANG"}</p>
+          <h1>Ringkasan penjualan</h1>
+          <p>Awasi omzet, ketersediaan unit, dan transaksi terbaru dalam satu ruang kerja.</p>
         </div>
-        <div className="flex flex-col gap-2 self-start sm:flex-row sm:items-start lg:self-auto">
+        <div className="jp-dashboard-filters">
           <DateFilterBar currentFilterState={dateFilterState} onFilterStateChange={setDateFilterState} />
           {isOwner ? <CabangFilter value={selectedCabangFilter} onChange={setSelectedCabangFilter} label="" className="min-w-[180px]" /> : null}
         </div>
       </header>
 
-      {isFetching ? (
-        <LoadingSkeleton numberOfRows={6} />
-      ) : fetchErrorMessage ? (
-        <ErrorState message={fetchErrorMessage} onRetry={loadDashboardData} />
-      ) : dashboardStats ? (
+      {isFetching ? <LoadingSkeleton numberOfRows={6} /> : fetchErrorMessage ? <ErrorState message={fetchErrorMessage} onRetry={loadDashboardData} /> : dashboardStats ? (
         <>
-          {/* Omzet adalah satu-satunya hero solid di layar ini. */}
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.618fr)_minmax(260px,1fr)]">
-            <div>
-              <HeroCard
-                label="Total Omzet"
-                value={formatRupiahCompact(totalOmzet)}
-                description={`${formatRupiah(totalOmzet)} pada periode yang dipilih`}
-                mono
-                footer={
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.14em] text-white/55">Transaksi</p>
-                      <p className="mt-1 text-lg font-semibold tabular-nums text-white">{dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.14em] text-white/55">Unit Terjual</p>
-                      <p className="mt-1 text-lg font-semibold tabular-nums text-white">{totalTerjual.toLocaleString("id-ID")}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.14em] text-white/55">Gross Profit</p>
-                      <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-white" title={formatRupiah(dashboardStats.keuangan.total_profit)}>{formatRupiahCompact(dashboardStats.keuangan.total_profit)}</p>
-                    </div>
-                  </div>
-                }
-              />
-            </div>
-            <DashboardMetricCard label="Stok Tersedia" value={dashboardStats.unit.tersedia.toLocaleString("id-ID")} description="Siap untuk transaksi" />
-          </div>
-
-          <section className="section-panel p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight text-jp-text dark:text-jp-text-dark">Penjualan harian</h2>
-                <p className="mt-1 text-sm text-jp-muted dark:text-jp-muted-dark">Pergerakan omzet pada periode yang dipilih.</p>
-              </div>
-              <div className="font-mono text-xs text-jp-muted dark:text-jp-muted-dark">Omzet: {formatRupiah(totalOmzet)}</div>
-            </div>
-            <div className="mt-6">
-              <DashboardTrendChart points={dashboardTrend ?? []} />
-            </div>
+          <section className="jp-dashboard-overview" aria-label="Ringkasan operasional">
+            <article className="jp-dashboard-balance">
+              <div className="jp-dashboard-card-top"><span className="jp-dashboard-icon" aria-hidden="true">Rp</span><button type="button" aria-label="Detail omzet">•••</button></div>
+              <p>Total omzet</p>
+              <strong className="tabular-nums">{formatRupiahCompact(totalOmzet)}</strong>
+              <span>{formatRupiah(totalOmzet)} pada periode terpilih</span>
+              <div className="jp-dashboard-card-footer"><span>Ringkasan penjualan</span><span aria-hidden="true">→</span></div>
+            </article>
+            <DashboardMetricCard label="Transaksi" value={dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")} description="Tercatat pada periode ini" />
+            <DashboardMetricCard label="Unit terjual" value={totalTerjual.toLocaleString("id-ID")} description="Unit berhasil terjual" />
+            <DashboardMetricCard label="Gross profit" value={formatRupiahCompact(dashboardStats.keuangan.total_profit)} description="Laba kotor terhitung" accent />
           </section>
 
-          <section className="table-wrap overflow-hidden">
-            <div className="flex items-start justify-between gap-4 px-5 py-5 sm:px-6">
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight text-jp-text dark:text-jp-text-dark">Transaksi terbaru</h2>
-                <p className="mt-1 text-sm text-jp-muted dark:text-jp-muted-dark">Lima transaksi terakhir pada periode ini.</p>
+          <section className="jp-dashboard-content-grid">
+            <article className="jp-dashboard-wallet">
+              <div className="jp-dashboard-section-heading"><div><h2>Stok per kategori</h2><p>Persediaan yang siap diproses oleh tim.</p></div><a href="/stok">Lihat stok <span aria-hidden="true">→</span></a></div>
+              <div className="jp-dashboard-stock-grid">
+                <div><span>Stok tersedia</span><strong className="tabular-nums">{dashboardStats.unit.tersedia.toLocaleString("id-ID")}</strong><small>Unit siap jual</small></div>
+                <div><span>Unit terjual</span><strong className="tabular-nums">{totalTerjual.toLocaleString("id-ID")}</strong><small>Periode ini</small></div>
+                <div><span>Perputaran</span><strong className="tabular-nums">{dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")}</strong><small>Total transaksi</small></div>
               </div>
-              <p className="font-mono text-xs text-jp-muted dark:text-jp-muted-dark">{recentTransaksi.length} data</p>
-            </div>
-            {recentTransaksi.length === 0 ? (
-              <div className="border-t border-jp-border dark:border-jp-border-dark"><EmptyState message="Belum ada transaksi pada periode ini" iconName="transaksiSvg" /></div>
-            ) : (
-              <div className="overflow-x-auto border-t border-jp-border dark:border-jp-border-dark">
-                <table className="w-full min-w-[760px] text-[13px]">
-                  <thead className="text-left text-[11px] font-medium text-jp-muted dark:text-jp-muted-dark">
-                    <tr>
-                      <th className="px-5 py-3.5 font-medium sm:px-6">ID Transaksi</th>
-                      <th className="px-5 py-3.5 font-medium">Kasir</th>
-                      <th className="px-5 py-3.5 font-medium">Item</th>
-                      <th className="px-5 py-3.5 text-right font-medium">Harga</th>
-                      <th className="px-5 py-3.5 text-right font-medium">Waktu</th>
-                      <th className="px-5 py-3.5 text-right font-medium sm:px-6">Cabang</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentTransaksi.map((transaksiEntry) => (
-                      <tr key={transaksiEntry.trx_id} className="h-14 border-t border-jp-border/80 transition-colors hover:bg-jp-surface-subtle/70 dark:border-jp-border-dark dark:hover:bg-jp-surface-subtle-dark/60">
-                        <td className="whitespace-nowrap px-5 font-mono text-[12px] text-jp-muted dark:text-jp-muted-dark sm:px-6">{transaksiEntry.trx_id}</td>
-                        <td className="whitespace-nowrap px-5 text-jp-text dark:text-jp-text-dark">{transaksiEntry.kasir}</td>
-                        <td className="max-w-[240px] truncate px-5 text-jp-text dark:text-jp-text-dark">{transaksiEntry.unit_label}</td>
-                        <td className="whitespace-nowrap px-5 text-right font-mono text-[12px] font-medium tabular-nums text-jp-text dark:text-jp-text-dark">{formatRupiah(transaksiEntry.harga_jual)}</td>
-                        <td className="whitespace-nowrap px-5 text-right text-[12px] text-jp-muted dark:text-jp-muted-dark">{formatDateTimeShort(transaksiEntry.waktu, resolveCabangTimezone(cabangTz, transaksiEntry.cabang))}</td>
-                        <td className="whitespace-nowrap px-5 text-right text-[12px] text-jp-muted dark:text-jp-muted-dark sm:px-6">{transaksiEntry.cabang}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            </article>
+
+            <article className="jp-dashboard-cashflow">
+              <div className="jp-dashboard-section-heading"><div><h2>Cash flow</h2><p>Pergerakan omzet pada periode yang dipilih.</p></div><span className="jp-dashboard-period">Periode aktif</span></div>
+              <strong className="jp-dashboard-cash-value tabular-nums">{formatRupiahCompact(totalOmzet)}</strong>
+              <div className="jp-dashboard-chart"><DashboardTrendChart points={dashboardTrend ?? []} accent /></div>
+            </article>
+          </section>
+
+          <section className="jp-dashboard-table" aria-labelledby="recent-activity-heading">
+            <div className="jp-dashboard-table-heading"><div><h2 id="recent-activity-heading">Aktivitas terbaru</h2><p>Transaksi terakhir pada periode aktif.</p></div><span>{recentTransaksi.length} data</span></div>
+            {recentTransaksi.length === 0 ? <EmptyState message="Belum ada transaksi pada periode ini" iconName="transaksiSvg" /> : (
+              <div className="overflow-x-auto"><table className="w-full min-w-[760px]"><thead><tr><th>Order ID</th><th>Aktivitas</th><th>Kasir</th><th className="text-right">Nominal</th><th className="text-right">Waktu</th></tr></thead><tbody>{recentTransaksi.map((entry) => <tr key={entry.trx_id}><td className="font-mono">{entry.trx_id}</td><td>{entry.unit_label}</td><td>{entry.kasir}</td><td className="text-right font-mono">{formatRupiah(entry.harga_jual)}</td><td className="text-right">{formatDateTimeShort(entry.waktu, resolveCabangTimezone(cabangTz, entry.cabang))}</td></tr>)}</tbody></table></div>
             )}
           </section>
         </>

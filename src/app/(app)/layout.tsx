@@ -40,10 +40,11 @@ export default function AuthenticatedAppLayout({ children }: { children: ReactNo
   }
 
   const currentPageKey = currentPathname.replace(/^\//, "").split("/")[0] || "";
+  const isDashboardRoute = currentPageKey === "dashboard";
   const isCurrentPageAllowed = currentPageKey === "" || isPageAllowedForRole(currentUser.role, currentPageKey);
 
   return (
-    <div className="flex min-h-screen bg-jp-app dark:bg-jp-app-dark">
+    <div className={"flex min-h-screen bg-jp-app dark:bg-jp-app-dark " + (isDashboardRoute ? "dashboard-workspace" : "")}>
       <aside className="sticky top-0 hidden h-screen w-[232px] shrink-0 border-r border-jp-border md:flex md:flex-col dark:border-jp-border-dark">
         <Sidebar />
       </aside>

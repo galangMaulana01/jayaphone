@@ -13,11 +13,13 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip)
 
 interface DashboardTrendChartProps {
   points: DashboardTrendPoint[];
+  /** The commerce dashboard uses its warm visual accent; other consumers retain teal. */
+  accent?: boolean;
 }
 
-export function DashboardTrendChart({ points }: DashboardTrendChartProps): JSX.Element {
+export function DashboardTrendChart({ points, accent = false }: DashboardTrendChartProps): JSX.Element {
   const { currentTheme } = useTheme();
-  const lineColor = currentTheme === "dark" ? "#5FC9BE" : "#0B6F68";
+  const lineColor = accent ? "#ff5a1f" : (currentTheme === "dark" ? "#5FC9BE" : "#0B6F68");
 
   const chartData = useMemo<ChartData<"line">>(() => ({
     labels: points.map((point) => point.tanggal),

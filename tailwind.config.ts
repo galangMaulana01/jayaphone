@@ -32,6 +32,7 @@ const tailwindConfig: Config = {
           border: "#E7EAE7",
           "border-strong": "#D4D8D5",
           "border-dark": "#2A2A2E",
+          action: "#FF5A1F",
           teal: "rgb(var(--jp-teal) / <alpha-value>)",
           "teal-dark": "#5FC9BE",
           "teal-hover": "#095C57",

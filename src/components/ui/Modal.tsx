@@ -97,7 +97,7 @@ export function Modal({
               <button
                 type="button"
                 onClick={onClose}
-                className="-mr-1 -mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-jp-sm text-jp-muted transition-colors hover:bg-jp-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
+                className="-mr-1 -mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-jp-sm text-jp-muted transition-colors hover:bg-jp-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5a1f] dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
                 aria-label="Tutup modal"
               >
                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

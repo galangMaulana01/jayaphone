@@ -88,7 +88,7 @@ export function ActionMenu({ items, ariaLabel = "Menu aksi lainnya" }: ActionMen
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-label={ariaLabel}
-        className="flex h-8 w-8 items-center justify-center rounded-jp-sm text-jp-muted transition-colors hover:bg-jp-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
+        className="flex h-8 w-8 items-center justify-center rounded-jp-sm text-[#aaa9a6] transition-colors hover:bg-[#29292a] hover:text-[#f8f7f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5a1f]"
       >
         <span aria-hidden="true" className="text-base font-bold leading-none">&#8943;</span>
       </button>
@@ -99,7 +99,7 @@ export function ActionMenu({ items, ariaLabel = "Menu aksi lainnya" }: ActionMen
               ref={menuRef}
               role="menu"
               style={{ position: "fixed", top: position.top, left: position.left, width: MENU_WIDTH }}
-              className="z-50 overflow-hidden rounded-jp-sm border border-jp-border bg-jp-surface p-1 shadow-jp-overlay dark:border-jp-border-dark dark:bg-jp-surface-dark"
+              className="z-50 overflow-hidden rounded-jp-sm border border-[#343436] bg-[#1c1c1d] p-1 text-[#f8f7f5] shadow-jp-overlay"
             >
               {items.map((item) => (
                 <button

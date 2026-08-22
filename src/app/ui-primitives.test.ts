@@ -9,10 +9,11 @@ function sourceOrEmpty(path: URL): string {
 }
 
 describe("universal action primitives", () => {
-  it("exports a typed button with all semantic variants and loading support", () => {
+  it("exports a typed button with only primary, secondary, and ghost variants", () => {
     const source = sourceOrEmpty(buttonSourcePath);
     expect(source).toContain("export type ButtonVariant");
-    expect(source).toContain('"primary" | "secondary" | "ghost" | "success" | "danger" | "warning"');
+    expect(source).toContain('"primary" | "secondary" | "ghost"');
+    expect(source).not.toMatch(/"success"|"danger"|"warning"/);
     expect(source).toContain("isLoading");
     expect(source).toContain("aria-busy");
   });

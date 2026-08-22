@@ -1,14 +1,14 @@
 "use client";
 
-// Theme (light/dark) provider — persists preference to localStorage and
-// toggles the `dark` class on <html> so Tailwind's dark: variants apply.
-// Mirrors the legacy `initTheme()` / `toggleTheme()` from index.html.bak.
+// The authenticated product has one deliberate charcoal workspace. Keep this
+// context for existing consumers, but do not restore a local light preference
+// that would create a hybrid workspace after the visible switch was removed.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 type Theme = "light" | "dark";
-const THEME_STORAGE_KEY = "jyp_theme";
+const FIXED_WORKSPACE_THEME: Theme = "dark";
 
 interface ThemeContextValue {
   currentTheme: Theme;
@@ -17,34 +17,23 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function readInitialTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
-  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-function applyThemeToDocument(themeValue: Theme): void {
+function applyThemeToDocument(): void {
   if (typeof document === "undefined") return;
-  document.documentElement.classList.toggle("dark", themeValue === "dark");
+  document.documentElement.classList.add("dark");
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }): JSX.Element {
-  const [currentTheme, setCurrentTheme] = useState<Theme>("dark");
+  const [currentTheme] = useState<Theme>(FIXED_WORKSPACE_THEME);
 
   useEffect(() => {
-    const initial = readInitialTheme();
-    setCurrentTheme(initial);
-    applyThemeToDocument(initial);
+    applyThemeToDocument();
   }, []);
 
+  // Retained for compatibility with existing consumers. The workspace no
+  // longer exposes a user-facing theme switch, so this intentionally keeps
+  // the presentation fixed instead of persisting another palette.
   const toggleTheme = useCallback((): void => {
-    setCurrentTheme((previousTheme) => {
-      const nextTheme: Theme = previousTheme === "dark" ? "light" : "dark";
-      applyThemeToDocument(nextTheme);
-      if (typeof window !== "undefined") window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
-      return nextTheme;
-    });
+    applyThemeToDocument();
   }, []);
 
   const contextValue = useMemo<ThemeContextValue>(

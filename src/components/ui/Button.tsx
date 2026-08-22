@@ -1,15 +1,12 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "success" | "danger" | "warning";
+export type ButtonVariant = "primary" | "secondary" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const variantClassName: Record<ButtonVariant, string> = {
   primary: "btn-primary",
   secondary: "btn-secondary",
   ghost: "btn-ghost",
-  success: "btn-success",
-  danger: "btn-error",
-  warning: "btn-warning",
 };
 
 const sizeClassName: Record<ButtonSize, string> = {

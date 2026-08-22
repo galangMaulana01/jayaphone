@@ -12,20 +12,17 @@
   .btn {
     @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-jp-sm px-4
            text-[13px] font-semibold transition-colors duration-150
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-action
            focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .btn-primary {
-    @apply btn bg-jp-text text-white hover:bg-jp-text-soft
-           dark:bg-jp-text-dark dark:text-jp-text dark:hover:bg-white;
+    @apply btn bg-jp-action text-white hover:bg-[#e84b16];
   }
 
   .btn-secondary {
-    @apply btn border border-jp-border bg-jp-surface-subtle text-jp-text-soft
-           hover:border-jp-border-strong hover:bg-jp-border
-           dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark
-           dark:hover:bg-jp-border-dark;
+    @apply btn border border-jp-border-strong bg-white text-jp-text
+           hover:border-jp-text-soft hover:bg-jp-surface-subtle;
   }
 
   .btn-ghost {
@@ -33,20 +30,6 @@
            dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark dark:hover:text-jp-text-dark;
   }
 
-  .btn-success {
-    @apply btn bg-jp-teal text-white hover:bg-jp-teal-hover
-           dark:bg-jp-teal-dark dark:text-jp-text dark:hover:bg-jp-teal;
-  }
-
-  .btn-error {
-    @apply btn border border-jp-danger/20 bg-jp-danger-soft text-jp-danger hover:border-jp-danger/35
-           dark:border-jp-danger-dark/25 dark:bg-jp-danger/15 dark:text-jp-danger-dark;
-  }
-
-  .btn-warning {
-    @apply btn border border-jp-warning/20 bg-jp-warning-soft text-jp-warning
-           dark:border-jp-warning-dark/25 dark:bg-jp-warning/15 dark:text-jp-warning-dark;
-  }
 
   .label {
     @apply mb-2 block text-xs font-medium text-jp-text-soft dark:text-jp-muted-dark;
@@ -55,7 +38,7 @@
   .field-control {
     @apply min-h-11 w-full rounded-jp-sm border border-jp-border bg-jp-surface-subtle
            px-3.5 py-2 text-sm text-jp-text outline-none placeholder:text-jp-faint
-           focus:border-jp-teal focus:ring-0 disabled:cursor-not-allowed disabled:opacity-65
+           focus:border-jp-action focus:ring-0 disabled:cursor-not-allowed disabled:opacity-65
            dark:border-jp-border-dark dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark dark:placeholder:text-jp-muted-dark;
   }
 
@@ -288,12 +271,12 @@
   }
 
   ::selection {
-    @apply bg-jp-teal-soft text-jp-text dark:bg-jp-teal-soft-dark dark:text-jp-text-dark;
+    @apply bg-jp-action/20 text-jp-text dark:text-jp-text-dark;
   }
 
   input[type="checkbox"],
   input[type="radio"] {
-    accent-color: rgb(var(--jp-teal));
+    accent-color: #FF5A1F;
   }
 
   table {
@@ -348,22 +331,27 @@
 .app-workspace .border-jp-border { border-color: #303032 !important; }
 .app-workspace .nav-link.active,
 .app-workspace .nav-link[class*="bg-jp-text"] { background: var(--dashboard-accent) !important; color: white !important; }
-.app-workspace .nav-link:hover,
-.app-workspace button:hover { background-color: #29292a; }
+.app-workspace .nav-link:hover { background-color: #29292a; }
 .app-workspace .field-control,
 .app-workspace select { border-color: #3b3b3d; background: #242425; color: var(--dashboard-ink); }
+.app-workspace .field-control:focus,
+.app-workspace select:focus { border-color: var(--workspace-accent); outline: 2px solid rgb(255 90 31 / .35); outline-offset: 2px; }
 /* Universal action hierarchy: every existing .btn call site shares one tactile,
    accessible treatment without requiring a route-by-route conversion. */
 .app-workspace .btn { min-height: 44px; border-radius: 10px; font-weight: 650; }
 .app-workspace .btn-primary { border: 1px solid var(--workspace-accent); background: var(--workspace-accent); color: white; }
 .app-workspace .btn-primary:hover { border-color: #ff7040; background: #ff7040; }
-.app-workspace .btn-secondary { border-color: #3b3b3d; background: #242425; color: var(--dashboard-ink); }
-.app-workspace .btn-secondary:hover { border-color: #545456; background: #303032; }
-.app-workspace .btn-ghost { color: var(--dashboard-muted); }
+.app-workspace .btn-secondary,
+.app-workspace .btn-success,
+.app-workspace .btn-error,
+.app-workspace .btn-warning { border-color: #e1e0dd; background: #f8f7f5; color: #111112; }
+.app-workspace .btn-secondary:hover,
+.app-workspace .btn-success:hover,
+.app-workspace .btn-error:hover,
+.app-workspace .btn-warning:hover { border-color: white; background: white; }
+.app-workspace .btn-ghost { background: transparent; color: var(--dashboard-muted); }
 .app-workspace .btn-ghost:hover { background: #29292a; color: var(--dashboard-ink); }
-.app-workspace .btn-success { background: var(--workspace-accent); color: white; }
-.app-workspace .btn-error { border-color: #6f3533; background: #32201f; color: #ffaaa4; }
-.app-workspace .btn-error:hover { background: #492624; }
+/* Old semantic action class names are neutral secondary aliases in the workspace. */
 /* Existing pages already compose these primitives, so the workspace skin reaches
    inventory, service, reports, COD, and settings without touching their data/UI logic. */
 .app-workspace .section-panel,

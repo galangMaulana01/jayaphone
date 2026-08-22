@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { BarElement, CategoryScale, Chart as ChartJS, LinearScale, Tooltip } from "chart.js";
 import type { ChartData, ChartOptions } from "chart.js";
 import { Bar } from "react-chartjs-2";
-import { useTheme } from "@/contexts/ThemeContext";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatRupiahCompact } from "@/lib/utils/formatters";
 
@@ -19,25 +18,22 @@ interface KaryawanStatsChartProps {
  * `_loadKarStats` (index.html:2352-2394): omzet per day for Kasir, service
  * selesai per day for Teknisi. */
 export function KaryawanStatsChart({ trend, isKasir }: KaryawanStatsChartProps): JSX.Element {
-  const { currentTheme } = useTheme();
-  const accentColor = currentTheme === "dark" ? "#5FC9BE" : "#0B6F68";
-
   const chartData = useMemo<ChartData<"bar">>(() => ({
     labels: trend.map((point) => point.tanggal.slice(5)),
     datasets: [{
       label: isKasir ? "Omzet" : "Service selesai",
       data: trend.map((point) => (isKasir ? point.omzet ?? 0 : point.selesai ?? 0)),
-      backgroundColor: accentColor,
+      backgroundColor: "#FF5A1F",
       borderWidth: 0,
       borderRadius: 4,
       maxBarThickness: 40,
     }],
-  }), [accentColor, isKasir, trend]);
+  }), [isKasir, trend]);
 
   const chartOptions = useMemo<ChartOptions<"bar">>(() => {
-    const mutedColor = currentTheme === "dark" ? "#A1A1AA" : "#6F706F";
-    const gridColor = currentTheme === "dark" ? "rgba(161, 161, 170, 0.14)" : "rgba(111, 112, 111, 0.12)";
-    const tooltipBackground = currentTheme === "dark" ? "#141416" : "#161618";
+    const mutedColor = "#A1A1AA";
+    const gridColor = "rgba(161, 161, 170, 0.14)";
+    const tooltipBackground = "#141416";
 
     return {
       responsive: true,
@@ -65,7 +61,7 @@ export function KaryawanStatsChart({ trend, isKasir }: KaryawanStatsChartProps):
         },
       },
     };
-  }, [currentTheme, isKasir]);
+  }, [isKasir]);
 
   if (trend.length === 0) {
     return <EmptyState message="Belum ada data dalam periode ini" iconName="chartSvg" />;

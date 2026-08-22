@@ -124,8 +124,8 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-jp-surface text-jp-text dark:bg-jp-surface-dark dark:text-jp-text-dark">
-      <div className="flex h-[72px] items-center justify-between border-b border-jp-border px-4 dark:border-jp-border-dark">
+    <div className="flex h-full min-h-0 flex-col bg-[#1d2026] text-slate-100">
+      <div className="flex h-14 items-center justify-between border-b border-[#2a2f37] px-4">
         {/*
          * Ini web pribadi — user sudah tahu app-nya apa, jadi kita drop
          * label "Jayaphone" dari header sidebar. Sisakan hanya
@@ -133,7 +133,7 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
          */}
         <div className="flex min-w-0 items-center gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] font-medium text-jp-muted dark:text-jp-muted-dark">Cabang aktif</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">Cabang aktif</p>
             <p className="truncate text-sm font-semibold tracking-[-0.01em]">{currentUser.cabang || NOT_SET}</p>
           </div>
         </div>
@@ -141,7 +141,7 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
           <button
             type="button"
             onClick={onCloseMobileDrawer}
-            className="flex h-11 w-11 items-center justify-center rounded-jp-sm text-jp-muted transition-colors hover:bg-jp-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark"
+            className="flex h-10 w-10 items-center justify-center rounded-jp-sm text-slate-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5a1f]"
             aria-label="Tutup menu"
           >
             <span aria-hidden="true" className="text-xl leading-none">×</span>
@@ -149,9 +149,9 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
         ) : null}
       </div>
 
-      <nav aria-label="Menu utama" className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
+      <nav aria-label="Menu utama" className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         <p className="sr-only">Navigasi</p>
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           {menuEntries.map((menuEntry) => {
             const hasOwnPage = Boolean(menuEntry.pageKey);
             const pagePath = hasOwnPage ? "/" + menuEntry.pageKey : null;
@@ -159,17 +159,15 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
             const badgeCount = menuEntry.pageKey ? badgeCountByPageKey[menuEntry.pageKey] ?? 0 : 0;
 
             if (!menuEntry.children) {
-              // v2 §5 — active item is a rounded-full pill (bukan highlight
-              // kotak biasa), matching the Payflow-style sidebar reference.
               const linkClassName = isOwnPageActive
-                ? "bg-jp-text text-white dark:bg-jp-text-dark dark:text-jp-text"
-                : "text-jp-muted hover:bg-jp-surface-subtle hover:text-jp-text dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark dark:hover:text-jp-text-dark";
+                ? "bg-[#ff5a1f] text-white shadow-[0_6px_18px_rgba(255,90,31,0.22)] ring-1 ring-[#ff5a1f]/35"
+                : "text-slate-400 hover:bg-white/5 hover:text-white";
               return (
                 <Link
                   key={menuEntry.label}
                   href={pagePath as string}
                   onClick={onNavigateFromMobile}
-                  className={"nav-link min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal " + linkClassName}
+                  className={"nav-link min-h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5a1f] " + linkClassName}
                 >
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center text-current">
                     <Icon name={menuEntry.iconName} className="h-[18px] w-[18px]" />
@@ -191,12 +189,12 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
             const activeChildKey = findActiveChildKey(menuEntry.children, currentPathname, currentSearch);
             const isGroupActive = isOwnPageActive || activeChildKey !== null;
             const groupRowClassName = isGroupActive && !isExpanded
-              ? "bg-jp-text text-white dark:bg-jp-text-dark dark:text-jp-text"
-              : "text-jp-muted hover:bg-jp-surface-subtle hover:text-jp-text dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark dark:hover:text-jp-text-dark";
+              ? "bg-[#ff5a1f] text-white shadow-[0_6px_18px_rgba(255,90,31,0.22)] ring-1 ring-[#ff5a1f]/35"
+              : "text-slate-400 hover:bg-white/5 hover:text-white";
 
             return (
               <div key={menuEntry.label}>
-                <div className={"nav-link min-h-11 " + groupRowClassName}>
+                <div className={"nav-link min-h-10 " + groupRowClassName}>
                   {hasOwnPage ? (
                     <Link
                       href={pagePath as string}
@@ -225,7 +223,7 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
                     onClick={() => toggleGroup(menuEntry.label)}
                     aria-expanded={isExpanded}
                     aria-label={isExpanded ? `Tutup grup ${menuEntry.label}` : `Buka grup ${menuEntry.label}`}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-jp-sm text-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-jp-sm text-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5a1f]"
                   >
                     <svg
                       viewBox="0 0 20 20"
@@ -239,18 +237,18 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
                 </div>
 
                 {isExpanded && (
-                  <div className="mt-1 space-y-1 border-l border-jp-border pl-4 dark:border-jp-border-dark">
+                  <div className="mt-1 space-y-1 border-l border-white/10 pl-4">
                     {menuEntry.children.map((child) => {
                       const isChildActive = activeChildKey === child.key;
                       const childClassName = isChildActive
-                        ? "bg-jp-surface-subtle text-jp-text font-medium dark:bg-jp-surface-subtle-dark dark:text-jp-text-dark"
-                        : "text-jp-muted hover:bg-jp-surface-subtle hover:text-jp-text dark:text-jp-muted-dark dark:hover:bg-jp-surface-subtle-dark dark:hover:text-jp-text-dark";
+                        ? "bg-[#ff5a1f]/15 text-[#ff8a61] font-semibold"
+                        : "text-slate-400 hover:bg-white/5 hover:text-white";
                       return (
                         <Link
                           key={child.key}
                           href={child.href}
                           onClick={onNavigateFromMobile}
-                          className={"flex min-h-9 items-center rounded-jp-sm px-3 py-2 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jp-teal " + childClassName}
+                          className={"flex min-h-9 items-center rounded-jp-sm px-3 py-2 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5a1f] " + childClassName}
                         >
                           <span className="truncate">{child.label}</span>
                         </Link>
@@ -264,12 +262,12 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
         </div>
       </nav>
 
-      <div className="border-t border-jp-border p-4 dark:border-jp-border-dark">
+      <div className="border-t border-[#2a2f37] p-4">
         <div className="flex items-center gap-3">
           <UserAvatar fotoProfileUrl={currentUser.foto_profil_url} altText={currentUser.name} sizeClassName="h-9 w-9" />
           <div className="min-w-0">
             <p className="truncate text-[12px] font-semibold">{currentUser.name}</p>
-            <p className="truncate text-[11px] text-jp-muted dark:text-jp-muted-dark">{currentUser.role.replace(/_/g, " ")}</p>
+            <p className="truncate text-[11px] text-slate-400">{currentUser.role.replace(/_/g, " ")}</p>
           </div>
         </div>
       </div>

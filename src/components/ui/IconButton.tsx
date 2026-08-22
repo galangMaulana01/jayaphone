@@ -5,9 +5,6 @@ const variantClassName: Record<ButtonVariant, string> = {
   primary: "btn-primary",
   secondary: "btn-secondary",
   ghost: "btn-ghost",
-  success: "btn-success",
-  danger: "btn-error",
-  warning: "btn-warning",
 };
 
 interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {

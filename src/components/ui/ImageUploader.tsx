@@ -196,7 +196,7 @@ export function ImageUploader({
               <a href={image.secure_url} target="_blank" rel="noreferrer">
                 <img src={image.secure_url} alt={`${label} ${index + 1}`} className="h-20 w-full object-cover" />
               </a>
-              <button type="button" aria-label={`Hapus foto ${index + 1}`} className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-jp-xs bg-jp-danger text-sm text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100" onClick={() => void removeImage(index)}>
+              <button type="button" aria-label={`Hapus foto ${index + 1}`} className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-jp-xs bg-[#ff5a1f] text-sm text-white opacity-100 transition-opacity hover:bg-[#ff7040] sm:opacity-0 sm:group-hover:opacity-100" onClick={() => void removeImage(index)}>
                 ×
               </button>
             </div>

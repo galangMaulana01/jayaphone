@@ -119,7 +119,8 @@ export default function StokPage(): JSX.Element {
         </div>
         <div className="flex flex-wrap gap-2">
           {isKepalaCabang ? <Link href="/transfer-stok" className="btn-secondary">Transfer stok</Link> : null}
-          {!isOwner ? <Link href="/tambah-unit" className="btn-primary">Tambah unit</Link> : null}
+          {/* STATELESS_KC_TAMBAH_UNIT_GUARD: KC has no permitted /tambah-unit route; stock intake stays with kasir. */}
+          {currentUser?.role === "kasir" ? <Link href="/tambah-unit" className="btn-primary">Tambah unit</Link> : null}
         </div>
       </header>
 

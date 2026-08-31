@@ -69,37 +69,14 @@ const ownerNavigation: NavigationEntry[] = [
   {
     label: "Stok", iconName: "stokSvg1",
     children: [
-      { key: "stok-manajemen", label: "Manajemen Stok",  href: "/stok" },
-      { key: "stok-transfer",  label: "Transfer Stok",   href: "/transfer-stok" },
-      { key: "stok-riwayat",   label: "Riwayat Transfer", href: "/transfer-stok?filter=Diterima" },
+      { key: "stok-manajemen", label: "Manajemen Stok", href: "/stok" },
+      { key: "stok-transfer", label: "Transfer Stok", href: "/transfer-stok" },
     ],
   },
   { pageKey: "transaksi",           label: "Transaksi",          iconName: "transaksiSvg" },
-  {
-    pageKey: "laporan", label: "Laporan", iconName: "laporanSvg",
-    children: [
-      { key: "laporan-penjualan", label: "Penjualan", href: "/laporan?tab=penjualan" },
-      { key: "laporan-sparepart", label: "Sparepart", href: "/laporan?tab=sparepart" },
-      { key: "laporan-service",   label: "Service",   href: "/laporan?tab=service" },
-      { key: "laporan-keuangan",  label: "Keuangan",  href: "/laporan?tab=keuangan" },
-    ],
-  },
-  {
-    pageKey: "service", label: "Data Service", iconName: "settingSvg",
-    children: [
-      { key: "service-semua",   label: "Semua Data Service",   href: "/service" },
-      { key: "service-riwayat", label: "Riwayat Persetujuan",  href: "/service?status=Approved" },
-    ],
-  },
-  {
-    pageKey: "sparepart", label: "Sparepart", iconName: "stokSvg2",
-    children: [
-      { key: "sparepart-tersedia",  label: "Tersedia",       href: "/sparepart?tab=tersedia" },
-      { key: "sparepart-dipakai",   label: "Sedang Dipakai", href: "/sparepart?tab=sedang_dipakai" },
-      { key: "sparepart-dijual",    label: "Untuk Dijual",   href: "/sparepart?tab=untuk_dijual" },
-      { key: "sparepart-riwayat",   label: "Riwayat",        href: "/sparepart?tab=riwayat" },
-    ],
-  },
+  { pageKey: "laporan", label: "Laporan", iconName: "laporanSvg" },
+  { pageKey: "service", label: "Data Service", iconName: "settingSvg" },
+  { pageKey: "sparepart", label: "Stok Sparepart", iconName: "stokSvg2" },
   { pageKey: "karyawan",            label: "Karyawan",           iconName: "karyawanSvg" },
   { pageKey: "cabang",              label: "Manajemen Cabang",   iconName: "stokSvg2" },
   { pageKey: "log",                 label: "Log Aktivitas",      iconName: "logSvg" },
@@ -109,18 +86,12 @@ const ownerNavigation: NavigationEntry[] = [
     // role keeps it as a flat item instead of a one-child group (see below).
     label: "Monitor", iconName: "dashboardSvg",
     children: [
+      { key: "monitor-service", label: "Monitor Service", href: "/monitor-service" },
       { key: "monitor-influencer", label: "Monitor Influencer", href: "/influencer-monitor" },
       { key: "monitor-kurir",      label: "Monitor Kurir",      href: "/kurir-monitoring" },
     ],
   },
-  {
-    pageKey: "customers", label: "Data Customer", iconName: "clientSvg",
-    children: [
-      { key: "customer-daftar",     label: "Daftar Customer", href: "/customers" },
-      { key: "customer-verifikasi", label: "Verifikasi",      href: "/customers?status=Pending" },
-      { key: "customer-poin",       label: "Poin Customer",   href: "/customers?sort=poin" },
-    ],
-  },
+  { pageKey: "customers", label: "Data Customer", iconName: "clientSvg" },
   { pageKey: "settings",            label: "Pengaturan",         iconName: "settingSvg" },
 ];
 
@@ -129,48 +100,18 @@ const kepalaCabangNavigation: NavigationEntry[] = [
   {
     label: "Stok", iconName: "stokSvg1",
     children: [
-      { key: "stok-manajemen", label: "Manajemen Stok",  href: "/stok" },
-      { key: "stok-transfer",  label: "Transfer Stok",   href: "/transfer-stok" },
-      { key: "stok-riwayat",   label: "Riwayat Transfer", href: "/transfer-stok?filter=Diterima" },
+      { key: "stok-manajemen", label: "Manajemen Stok", href: "/stok" },
+      { key: "stok-transfer", label: "Transfer Stok", href: "/transfer-stok" },
     ],
   },
   { pageKey: "transaksi",           label: "Transaksi",          iconName: "transaksiSvg" },
-  {
-    pageKey: "laporan", label: "Laporan", iconName: "laporanSvg",
-    children: [
-      { key: "laporan-penjualan", label: "Penjualan", href: "/laporan?tab=penjualan" },
-      { key: "laporan-sparepart", label: "Sparepart", href: "/laporan?tab=sparepart" },
-      { key: "laporan-service",   label: "Service",   href: "/laporan?tab=service" },
-      { key: "laporan-keuangan",  label: "Keuangan",  href: "/laporan?tab=keuangan" },
-    ],
-  },
-  {
-    pageKey: "service", label: "Data Service", iconName: "settingSvg",
-    children: [
-      { key: "service-semua",   label: "Semua Data Service",   href: "/service" },
-      { key: "service-riwayat", label: "Riwayat Persetujuan",  href: "/service?status=Approved" },
-    ],
-  },
-  {
-    pageKey: "sparepart", label: "Sparepart", iconName: "stokSvg2",
-    children: [
-      { key: "sparepart-tersedia",  label: "Tersedia",       href: "/sparepart?tab=tersedia" },
-      { key: "sparepart-dipakai",   label: "Sedang Dipakai", href: "/sparepart?tab=sedang_dipakai" },
-      { key: "sparepart-dijual",    label: "Untuk Dijual",   href: "/sparepart?tab=untuk_dijual" },
-      { key: "sparepart-riwayat",   label: "Riwayat",        href: "/sparepart?tab=riwayat" },
-    ],
-  },
+  { pageKey: "laporan", label: "Laporan", iconName: "laporanSvg" },
+  { pageKey: "service", label: "Data Service", iconName: "settingSvg" },
+  { pageKey: "sparepart", label: "Stok Sparepart", iconName: "stokSvg2" },
   { pageKey: "karyawan",            label: "Karyawan",           iconName: "karyawanSvg" },
   { pageKey: "log",                 label: "Log Aktivitas",      iconName: "logSvg" },
   { pageKey: "kurir-monitoring",    label: "Monitor Kurir",      iconName: "dashboardSvg" },
-  {
-    pageKey: "customers", label: "Data Customer", iconName: "clientSvg",
-    children: [
-      { key: "customer-daftar",     label: "Daftar Customer", href: "/customers" },
-      { key: "customer-verifikasi", label: "Verifikasi",      href: "/customers?status=Pending" },
-      { key: "customer-poin",       label: "Poin Customer",   href: "/customers?sort=poin" },
-    ],
-  },
+  { pageKey: "customers", label: "Data Customer", iconName: "clientSvg" },
   { pageKey: "settings",            label: "Pengaturan",         iconName: "settingSvg" },
 ];
 
@@ -208,14 +149,7 @@ const kasirNavigation: NavigationEntry[] = [
       { key: "sparepart-riwayat",   label: "Riwayat",        href: "/sparepart?tab=riwayat" },
     ],
   },
-  {
-    pageKey: "customers", label: "Data Customer", iconName: "clientSvg",
-    children: [
-      { key: "customer-daftar",     label: "Daftar Customer", href: "/customers" },
-      { key: "customer-verifikasi", label: "Verifikasi",      href: "/customers?status=Pending" },
-      { key: "customer-poin",       label: "Poin Customer",   href: "/customers?sort=poin" },
-    ],
-  },
+  { pageKey: "customers", label: "Data Customer", iconName: "clientSvg" },
   { pageKey: "settings",            label: "Pengaturan",         iconName: "settingSvg" },
 ];
 
@@ -295,6 +229,7 @@ export const pageMetadataByKey: Record<string, PageMetadata> = {
   "influencer-videos":    { title: "Video Saya" },
   "influencer-log":       { title: "Log Aktivitas" },
   "influencer-monitor":   { title: "Monitor Influencer" },
+  "monitor-service":      { title: "Monitor Service" },
   "kurir-dashboard":      { title: "Dashboard COD" },
   "kurir-log":            { title: "Log Aktivitas Kurir" },
   "kurir-monitoring":     { title: "Monitor Kurir" },

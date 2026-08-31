@@ -179,6 +179,7 @@ const influencerNavigation: NavigationEntry[] = [
 
 const kurirNavigation: NavigationEntry[] = [
   { pageKey: "kurir-dashboard",     label: "Dashboard COD",      iconName: "dashboardSvg" },
+  { pageKey: "kurir-history",       label: "Riwayat COD",        iconName: "transaksiSvg" },
   { pageKey: "kurir-log",           label: "Log Aktivitas",      iconName: "logSvg" },
   { pageKey: "settings",            label: "Pengaturan",         iconName: "settingSvg" },
 ];
@@ -233,6 +234,7 @@ export const pageMetadataByKey: Record<string, PageMetadata> = {
   "influencer-monitor":   { title: "Monitor Influencer" },
   "monitor-service":      { title: "Monitor Service" },
   "kurir-dashboard":      { title: "Dashboard COD" },
+  "kurir-history":        { title: "Riwayat COD" },
   "kurir-log":            { title: "Log Aktivitas Kurir" },
   "kurir-monitoring":     { title: "Monitor Kurir" },
   "settings":             { title: "Pengaturan" },

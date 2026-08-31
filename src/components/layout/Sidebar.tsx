@@ -124,8 +124,8 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#1d2026] text-slate-100">
-      <div className="flex h-14 items-center justify-between border-b border-[#2a2f37] px-4">
+    <div className="flex h-full min-h-0 flex-col bg-white text-[#162D68]">
+      <div className="flex h-14 items-center justify-between border-b border-[#E3E8F7] px-4">
         {/*
          * Ini web pribadi — user sudah tahu app-nya apa, jadi kita drop
          * label "Jayaphone" dari header sidebar. Sisakan hanya
@@ -141,7 +141,7 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
           <button
             type="button"
             onClick={onCloseMobileDrawer}
-            className="flex h-10 w-10 items-center justify-center rounded-jp-sm text-slate-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5a1f]"
+            className="flex h-10 w-10 items-center justify-center rounded-jp-sm text-[#91A3D1] transition-colors hover:bg-[#F5F6FF] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5a1f]"
             aria-label="Tutup menu"
           >
             <span aria-hidden="true" className="text-xl leading-none">×</span>
@@ -160,8 +160,8 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
 
             if (!menuEntry.children) {
               const linkClassName = isOwnPageActive
-                ? "bg-[#ff5a1f] text-white shadow-[0_6px_18px_rgba(255,90,31,0.22)] ring-1 ring-[#ff5a1f]/35"
-                : "text-slate-400 hover:bg-white/5 hover:text-white";
+                ? "bg-[#EEF0FF] text-[#4F46E5] shadow-none ring-0"
+                : "text-[#91A3D1] hover:bg-[#F5F6FF] hover:text-white";
               return (
                 <Link
                   key={menuEntry.label}
@@ -189,8 +189,8 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
             const activeChildKey = findActiveChildKey(menuEntry.children, currentPathname, currentSearch);
             const isGroupActive = isOwnPageActive || activeChildKey !== null;
             const groupRowClassName = isGroupActive && !isExpanded
-              ? "bg-[#ff5a1f] text-white shadow-[0_6px_18px_rgba(255,90,31,0.22)] ring-1 ring-[#ff5a1f]/35"
-              : "text-slate-400 hover:bg-white/5 hover:text-white";
+              ? "bg-[#EEF0FF] text-[#4F46E5] shadow-none ring-0"
+              : "text-[#91A3D1] hover:bg-[#F5F6FF] hover:text-white";
 
             return (
               <div key={menuEntry.label}>
@@ -242,7 +242,7 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
                       const isChildActive = activeChildKey === child.key;
                       const childClassName = isChildActive
                         ? "bg-[#ff5a1f]/15 text-[#ff8a61] font-semibold"
-                        : "text-slate-400 hover:bg-white/5 hover:text-white";
+                        : "text-[#91A3D1] hover:bg-[#F5F6FF] hover:text-white";
                       return (
                         <Link
                           key={child.key}
@@ -262,12 +262,12 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
         </div>
       </nav>
 
-      <div className="border-t border-[#2a2f37] p-4">
+      <div className="border-t border-[#E3E8F7] p-4">
         <div className="flex items-center gap-3">
           <UserAvatar fotoProfileUrl={currentUser.foto_profil_url} altText={currentUser.name} sizeClassName="h-9 w-9" />
           <div className="min-w-0">
             <p className="truncate text-[12px] font-semibold">{currentUser.name}</p>
-            <p className="truncate text-[11px] text-slate-400">{currentUser.role.replace(/_/g, " ")}</p>
+            <p className="truncate text-[11px] text-[#91A3D1]">{currentUser.role.replace(/_/g, " ")}</p>
           </div>
         </div>
       </div>

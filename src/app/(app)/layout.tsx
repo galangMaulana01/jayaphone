@@ -43,8 +43,8 @@ export default function AuthenticatedAppLayout({ children }: { children: ReactNo
   const isCurrentPageAllowed = currentPageKey === "" || isPageAllowedForRole(currentUser.role, currentPageKey);
 
   return (
-    <div className="app-workspace flex min-h-screen bg-[#17191d] text-slate-100">
-      <aside className="sticky top-0 hidden h-screen w-[232px] shrink-0 border-r border-[#2a2f37] md:flex md:flex-col">
+    <div className="app-workspace flex min-h-screen bg-[#F5F7FC] text-[#162D68]">
+      <aside className="sticky top-0 hidden h-screen w-[260px] shrink-0 border-r border-[#E3E8F7] md:flex md:flex-col">
         <Sidebar />
       </aside>
 

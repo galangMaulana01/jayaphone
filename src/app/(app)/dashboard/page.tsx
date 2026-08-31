@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Api, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,27 +13,35 @@ import { CabangFilter } from "@/components/ui/CabangFilter";
 import { DateFilterBar } from "@/components/ui/DateFilterBar";
 import { createDefaultDateFilter, toApiQueryParams } from "@/lib/utils/dateFilter";
 import { formatDateTimeShort, formatRupiah, formatRupiahCompact } from "@/lib/utils/formatters";
-import type { DashboardStats, DashboardTrend, DashboardTrendPoint } from "@/lib/types";
+import type { DashboardStats, DashboardTrend, DashboardTrendPoint, Transaksi } from "@/lib/types";
 
 const DashboardTrendChart = dynamic(
   () => import("./_components/DashboardTrendChart").then((module) => module.DashboardTrendChart),
-  { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-[18px] bg-white/10 md:h-72" /> },
+  { ssr: false, loading: () => <div className="h-56 animate-pulse rounded-2xl bg-[#F0F1FF] md:h-64" /> },
 );
 
-interface DashboardMetricCardProps {
-  label: string;
-  value: string | number;
-  description: string;
-  accent?: boolean;
+type MetricIcon = "money" | "receipt" | "phone" | "profit" | "box" | "star";
+
+function MetricIconGlyph({ icon }: { icon: MetricIcon }): JSX.Element {
+  const pathByIcon: Record<MetricIcon, string> = {
+    money: "M4 7.5h16v9H4zM8 12h.01M16 12h.01",
+    receipt: "M7 3h10v18l-2.5-1.5L12 21l-2.5-1.5L7 21zM10 8h4M10 12h4M10 16h2",
+    phone: "M9 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2 15h2",
+    profit: "M4 19V9m5 10V5m5 14v-7m5 7V3M3 8l5-4 5 5 7-7",
+    box: "m4 7 8-4 8 4-8 4-8-4Zm0 0v10l8 4 8-4V7m-8 4v10",
+    star: "m12 3 2.7 5.5 6 .9-4.35 4.25 1.03 6L12 16.6l-5.38 2.8 1.03-6L3.3 9.4l6-.9z",
+  };
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={pathByIcon[icon]} /></svg>;
 }
 
-function DashboardMetricCard({ label, value, description, accent = false }: DashboardMetricCardProps): JSX.Element {
+function DashboardMetricCard({ label, value, description, icon }: { label: string; value: string | number; description: string; icon: MetricIcon }): JSX.Element {
   return (
-    <section className={"jp-dashboard-metric " + (accent ? "jp-dashboard-metric-accent" : "")}>
+    <article className="owner-kc-metric">
+      <div className="owner-kc-metric-icon"><MetricIconGlyph icon={icon} /></div>
       <p>{label}</p>
       <strong className="tabular-nums">{value}</strong>
       <span>{description}</span>
-    </section>
+    </article>
   );
 }
 
@@ -51,6 +60,7 @@ export default function DashboardPage(): JSX.Element {
   const [dateFilterState, setDateFilterState] = useState(createDefaultDateFilter);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [dashboardTrend, setDashboardTrend] = useState<DashboardTrendPoint[] | null>(null);
+  const [periodTransactions, setPeriodTransactions] = useState<Transaksi[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [fetchErrorMessage, setFetchErrorMessage] = useState("");
   const [selectedCabangFilter, setSelectedCabangFilter] = useState("");
@@ -64,10 +74,15 @@ export default function DashboardPage(): JSX.Element {
     setIsFetching(true);
     setFetchErrorMessage("");
     try {
-      const [statsResult, trendResult] = await Promise.allSettled([Api.dashboard.stats(filterQueryParams), Api.dashboard.trend(filterQueryParams)]);
+      const [statsResult, trendResult, transactionsResult] = await Promise.allSettled([
+        Api.dashboard.stats(filterQueryParams),
+        Api.dashboard.trend(filterQueryParams),
+        Api.transaksi.list({ ...filterQueryParams, limit: 100 }),
+      ]);
       if (statsResult.status === "rejected") throw new Error(statsResult.reason instanceof ApiError ? statsResult.reason.message : "Gagal memuat dashboard");
       setDashboardStats(statsResult.value.data);
       setDashboardTrend(trendResult.status === "fulfilled" ? normaliseTrendPoints(trendResult.value.data) : null);
+      setPeriodTransactions(transactionsResult.status === "fulfilled" ? transactionsResult.value.data : []);
     } catch (loadError) {
       setFetchErrorMessage(loadError instanceof Error ? loadError.message : "Gagal memuat dashboard");
     } finally {
@@ -80,58 +95,64 @@ export default function DashboardPage(): JSX.Element {
   const totalTerjual = dashboardStats?.unit.terjual ?? dashboardStats?.unit.sold ?? 0;
   const totalOmzet = dashboardStats?.keuangan.total_omzet ?? dashboardStats?.keuangan.total_revenue ?? 0;
   const recentTransaksi = dashboardStats?.recent_transaksi ?? [];
+  const branchPerformance = useMemo(() => {
+    const totals = new Map<string, { count: number; omzet: number }>();
+    periodTransactions.forEach((transaction) => {
+      const item = totals.get(transaction.cabang) ?? { count: 0, omzet: 0 };
+      item.count += 1;
+      item.omzet += transaction.harga_jual;
+      totals.set(transaction.cabang, item);
+    });
+    return [...totals.entries()].sort(([, left], [, right]) => right.omzet - left.omzet).slice(0, 3);
+  }, [periodTransactions]);
 
   return (
-    <div className="jp-page jp-dashboard">
-      <header className="jp-dashboard-header">
+    <div className="jp-page owner-kc-dashboard">
+      <header className="owner-kc-dashboard-header">
         <div>
-          <p className="jp-dashboard-eyebrow">JAYAPHONE · {currentUser?.cabang || "SEMUA CABANG"}</p>
-          <h1>Ringkasan penjualan</h1>
-          <p>Awasi omzet, ketersediaan unit, dan transaksi terbaru dalam satu ruang kerja.</p>
+          <h1>Dashboard</h1>
+          <p>Kondisi operasional Jayaphone pada periode yang dipilih.</p>
         </div>
-        <div className="jp-dashboard-filters">
+        <div className="owner-kc-dashboard-filters">
           <DateFilterBar currentFilterState={dateFilterState} onFilterStateChange={setDateFilterState} />
-          {isOwner ? <CabangFilter value={selectedCabangFilter} onChange={setSelectedCabangFilter} label="" className="min-w-[180px]" /> : null}
+          {isOwner ? <CabangFilter value={selectedCabangFilter} onChange={setSelectedCabangFilter} label="" className="min-w-[168px]" /> : null}
         </div>
       </header>
 
       {isFetching ? <LoadingSkeleton numberOfRows={6} /> : fetchErrorMessage ? <ErrorState message={fetchErrorMessage} onRetry={loadDashboardData} /> : dashboardStats ? (
         <>
-          <section className="jp-dashboard-overview" aria-label="Ringkasan operasional">
-            <article className="jp-dashboard-balance">
-              <div className="jp-dashboard-card-top"><span className="jp-dashboard-icon" aria-hidden="true">Rp</span><button type="button" aria-label="Detail omzet">•••</button></div>
-              <p>Total omzet</p>
-              <strong className="tabular-nums">{formatRupiahCompact(totalOmzet)}</strong>
-              <span>{formatRupiah(totalOmzet)} pada periode terpilih</span>
-              <div className="jp-dashboard-card-footer"><span>Ringkasan penjualan</span><span aria-hidden="true">→</span></div>
-            </article>
-            <DashboardMetricCard label="Transaksi" value={dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")} description="Tercatat pada periode ini" />
-            <DashboardMetricCard label="Unit terjual" value={totalTerjual.toLocaleString("id-ID")} description="Unit berhasil terjual" />
-            <DashboardMetricCard label="Gross profit" value={formatRupiahCompact(dashboardStats.keuangan.total_profit)} description="Laba kotor terhitung" accent />
+          <section className="owner-kc-metric-grid" aria-label="Ringkasan operasional">
+            <DashboardMetricCard label="Total Omzet" value={formatRupiahCompact(totalOmzet)} description={totalOmzet > 0 ? `${formatRupiah(totalOmzet)} pada periode ini` : "Belum ada omzet pada periode ini"} icon="money" />
+            <DashboardMetricCard label="Transaksi" value={dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")} description="Transaksi pada periode ini" icon="receipt" />
+            <DashboardMetricCard label="Unit Terjual" value={totalTerjual.toLocaleString("id-ID")} description={isOwner ? "Unit dari seluruh cabang" : "Unit di cabang Anda"} icon="phone" />
+            <DashboardMetricCard label="Gross Profit" value={formatRupiahCompact(dashboardStats.keuangan.total_profit)} description="Margin sehat periode ini" icon="profit" />
+            <DashboardMetricCard label="Stok Tersedia" value={dashboardStats.unit.tersedia.toLocaleString("id-ID")} description={isOwner ? "Siap dijual di seluruh cabang" : "Siap dijual di cabang Anda"} icon="box" />
+            <DashboardMetricCard label="Poin Customer" value={(dashboardStats.keuangan.total_poin_dapat ?? 0).toLocaleString("id-ID")} description="Total poin pelanggan periode ini" icon="star" />
           </section>
 
-          <section className="jp-dashboard-content-grid">
-            <article className="jp-dashboard-wallet">
-              <div className="jp-dashboard-section-heading"><div><h2>Stok per kategori</h2><p>Persediaan yang siap diproses oleh tim.</p></div><a href="/stok">Lihat stok <span aria-hidden="true">→</span></a></div>
-              <div className="jp-dashboard-stock-grid">
-                <div><span>Stok tersedia</span><strong className="tabular-nums">{dashboardStats.unit.tersedia.toLocaleString("id-ID")}</strong><small>Unit siap jual</small></div>
-                <div><span>Unit terjual</span><strong className="tabular-nums">{totalTerjual.toLocaleString("id-ID")}</strong><small>Periode ini</small></div>
-                <div><span>Perputaran</span><strong className="tabular-nums">{dashboardStats.keuangan.total_transaksi.toLocaleString("id-ID")}</strong><small>Total transaksi</small></div>
+          <section className="owner-kc-trend-card" aria-labelledby="sales-trend-heading">
+            <div className="owner-kc-panel-heading">
+              <div><h2 id="sales-trend-heading">Penjualan harian</h2><p>Pergerakan omzet pada periode yang dipilih.</p></div>
+              <p className="owner-kc-trend-total">Omzet: <strong className="tabular-nums">{formatRupiah(totalOmzet)}</strong></p>
+            </div>
+            <DashboardTrendChart points={dashboardTrend ?? []} />
+          </section>
+
+          <section className="owner-kc-bottom-grid">
+            <section className="owner-kc-table-card" aria-labelledby="recent-activity-heading">
+              <div className="owner-kc-panel-heading">
+                <div><h2 id="recent-activity-heading">Transaksi terbaru</h2><p>Aktivitas transaksi terbaru {isOwner ? "dari semua cabang." : "di cabang aktif."}</p></div>
+                <Link href="/transaksi">Lihat semua</Link>
               </div>
-            </article>
+              {recentTransaksi.length === 0 ? <EmptyState message="Belum ada transaksi pada periode ini" iconName="transaksiSvg" /> : (
+                <div className="overflow-x-auto"><table className="owner-kc-table min-w-[690px]"><thead><tr><th>ID Transaksi</th><th>Kasir</th><th>Item</th><th>Total</th><th>Waktu</th><th>Cabang</th></tr></thead><tbody>{recentTransaksi.slice(0, 3).map((entry) => <tr key={entry.trx_id}><td className="font-mono">{entry.trx_id}</td><td>{entry.kasir}</td><td>{entry.unit_label}</td><td className="font-semibold tabular-nums">{formatRupiah(entry.harga_jual)}</td><td>{formatDateTimeShort(entry.waktu, resolveCabangTimezone(cabangTz, entry.cabang))}</td><td>{entry.cabang}</td></tr>)}</tbody></table></div>
+              )}
+            </section>
 
-            <article className="jp-dashboard-cashflow">
-              <div className="jp-dashboard-section-heading"><div><h2>Cash flow</h2><p>Pergerakan omzet pada periode yang dipilih.</p></div><span className="jp-dashboard-period">Periode aktif</span></div>
-              <strong className="jp-dashboard-cash-value tabular-nums">{formatRupiahCompact(totalOmzet)}</strong>
-              <div className="jp-dashboard-chart"><DashboardTrendChart points={dashboardTrend ?? []} accent /></div>
-            </article>
-          </section>
-
-          <section className="jp-dashboard-table" aria-labelledby="recent-activity-heading">
-            <div className="jp-dashboard-table-heading"><div><h2 id="recent-activity-heading">Aktivitas terbaru</h2><p>Transaksi terakhir pada periode aktif.</p></div><span>{recentTransaksi.length} data</span></div>
-            {recentTransaksi.length === 0 ? <EmptyState message="Belum ada transaksi pada periode ini" iconName="transaksiSvg" /> : (
-              <div className="overflow-x-auto"><table className="w-full min-w-[760px]"><thead><tr><th>Order ID</th><th>Aktivitas</th><th>Kasir</th><th className="text-right">Nominal</th><th className="text-right">Waktu</th></tr></thead><tbody>{recentTransaksi.map((entry) => <tr key={entry.trx_id}><td className="font-mono">{entry.trx_id}</td><td>{entry.unit_label}</td><td>{entry.kasir}</td><td className="text-right font-mono">{formatRupiah(entry.harga_jual)}</td><td className="text-right">{formatDateTimeShort(entry.waktu, resolveCabangTimezone(cabangTz, entry.cabang))}</td></tr>)}</tbody></table></div>
-            )}
+            <aside className="owner-kc-branch-card" aria-labelledby="branch-performance-heading">
+              <div className="owner-kc-panel-heading"><div><h2 id="branch-performance-heading">Performa cabang</h2><p>Omzet dari cabang aktif.</p></div><MetricIconGlyph icon="receipt" /></div>
+              {branchPerformance.length ? <div className="owner-kc-branch-list">{branchPerformance.map(([branchCode, performance]) => <div key={branchCode}><span>{branchCode}</span><p><strong>{branchCode}</strong><small>{performance.count} transaksi</small></p><b className="tabular-nums">{formatRupiahCompact(performance.omzet)}</b></div>)}</div> : <EmptyState message="Belum ada transaksi cabang" iconName="chartSvg" />}
+            </aside>
           </section>
         </>
       ) : null}

@@ -296,9 +296,12 @@ export default function ServiceListPage(): JSX.Element {
     <div className="jp-page">
       {!active ? (
         <>
-          <div>
-            <h1 className="jp-page-title">Data Service</h1>
-            <p className="text-sm text-jp-muted dark:text-jp-muted-dark">Workspace teknisi untuk memproses tiket</p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h1 className="jp-page-title">Data Service</h1>
+              <p className="text-sm text-jp-muted dark:text-jp-muted-dark">Kelola tiket service dan proses perbaikan unit cabang IDN.</p>
+            </div>
+            <button type="button" className="btn-ghost shrink-0" onClick={() => void load()}>Muat Ulang</button>
           </div>
           <div className="segmented-control">
             {TABS.map((t) => <button type="button" key={t.key} className={`filter-tab ${tab === t.key ? "filter-tab-active" : ""}`} onClick={() => setTab(t.key)}>{t.label}</button>)}
@@ -328,21 +331,23 @@ export default function ServiceListPage(): JSX.Element {
             loading ? <LoadingSkeleton numberOfRows={5} /> : error ? <ErrorState message={error} onRetry={load} /> : (
               <div className="table-wrap overflow-x-auto rounded-jp-md">
                 <table className="w-full text-xs">
-                  <thead className="tbl-head border-b"><tr>{["No. Service", "HP/IMEI", "Keluhan", "Masuk", "Aksi"].map((h) => <th key={h} className={`px-5 py-3.5 text-left font-medium ${h === "Aksi" ? "tbl-action-col" : ""}`}>{h}</th>)}</tr></thead>
+                  <thead className="tbl-head border-b"><tr>{["No. Service", "Unit", "Customer", "Status", "Keluhan", "Masuk", "Aksi"].map((h) => <th key={h} className={`px-5 py-3.5 text-left font-medium ${h === "Aksi" ? "tbl-action-col" : ""}`}>{h}</th>)}</tr></thead>
                   <tbody>
                     {items.length ? items.map((s) => (
                       <tr key={s.service_id} className="tbl-row">
                         <td className="px-5 py-4 font-mono text-jp-muted dark:text-jp-muted-dark">{s.service_id}</td>
                         <td className="px-5 py-4"><p className="font-medium">{s.unit_label}</p><p className="font-mono text-[10px] text-jp-muted dark:text-jp-muted-dark">{s.imei || NOT_SET}</p></td>
-                        <td className="px-5 py-4">{s.keluhan}</td>
+                        <td className="px-5 py-4">{s.nama_customer || NOT_SET}</td>
+                        <td className="px-5 py-4"><ServiceStatusBadge status={s.status} /></td>
+                        <td className="px-5 py-4 text-jp-muted dark:text-jp-muted-dark">{s.keluhan || NOT_SET}</td>
                         <td className="px-5 py-4 text-jp-muted dark:text-jp-muted-dark">{formatDateTimeShort(s.created_at, resolveCabangTimezone(cabangTz, s.cabang))}</td>
                         <td className="tbl-action-col px-5 py-4">
                           <button type="button" className={tab === "Antrian" ? "btn-primary" : "btn-ghost"} onClick={() => void openTicket(s.service_id)}>
-                            {tab === "Antrian" ? "Proses" : tab === "Selesai" || tab === "Ditolak" ? "Lihat" : "Lanjutkan"}
+                            Buka Workflow
                           </button>
                         </td>
                       </tr>
-                    )) : <tr><td colSpan={5}><EmptyState message="Tidak ada tiket service" iconName="wrenchSvg" /></td></tr>}
+                    )) : <tr><td colSpan={7}><EmptyState message="Tidak ada tiket service" iconName="wrenchSvg" /></td></tr>}
                   </tbody>
                 </table>
               </div>

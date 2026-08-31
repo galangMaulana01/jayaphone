@@ -44,7 +44,7 @@ export default function AuthenticatedAppLayout({ children }: { children: ReactNo
 
   return (
     <div className="app-workspace flex min-h-screen bg-[#F5F7FC] text-[#162D68]">
-      <aside className="sticky top-0 hidden h-screen w-[260px] shrink-0 border-r border-[#E3E8F7] md:flex md:flex-col">
+      <aside className="sticky top-0 flex h-screen w-20 shrink-0 border-r border-[#E3E8F7] md:w-[260px] md:flex-col max-md:[&_.sidebar-wordmark]:hidden max-md:[&_.sidebar-user-copy]:hidden max-md:[&_.nav-label]:hidden max-md:[&_.nav-link]:justify-center max-md:[&_.nav-link]:px-0 max-md:[&_.nav-link>button:last-child]:hidden max-md:[&_.nav-link>span]:flex-none">
         <Sidebar />
       </aside>
 

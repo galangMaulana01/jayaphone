@@ -125,28 +125,11 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-white text-[#162D68]">
-      <div className="flex h-14 items-center justify-between border-b border-[#E3E8F7] px-4">
-        {/*
-         * Ini web pribadi — user sudah tahu app-nya apa, jadi kita drop
-         * label "Jayaphone" dari header sidebar. Sisakan hanya
-         * identitas cabang yang benar-benar informatif per session.
-         */}
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">Cabang aktif</p>
-            <p className="truncate text-sm font-semibold tracking-[-0.01em]">{currentUser.cabang || NOT_SET}</p>
-          </div>
+      <div className="flex h-20 items-center border-b border-[#E3E8F7] px-6">
+        <div className="flex items-center gap-3">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#4F46E5] text-sm font-bold text-white shadow-lg shadow-indigo-200">J</span>
+          <div className="sidebar-wordmark"><p className="text-base font-extrabold tracking-[-0.04em] text-[#162D68]">JAYAPHONE</p><p className="text-[10px] font-bold tracking-[.14em] text-[#91A3D1]">{currentUser.role.replace(/_/g, " ").toUpperCase()} PORTAL</p></div>
         </div>
-        {onCloseMobileDrawer ? (
-          <button
-            type="button"
-            onClick={onCloseMobileDrawer}
-            className="flex h-10 w-10 items-center justify-center rounded-jp-sm text-[#91A3D1] transition-colors hover:bg-[#F5F6FF] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5a1f]"
-            aria-label="Tutup menu"
-          >
-            <span aria-hidden="true" className="text-xl leading-none">×</span>
-          </button>
-        ) : null}
       </div>
 
       <nav aria-label="Menu utama" className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
@@ -172,7 +155,7 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center text-current">
                     <Icon name={menuEntry.iconName} className="h-[18px] w-[18px]" />
                   </span>
-                  <span className="min-w-0 flex-1 truncate">{menuEntry.label}</span>
+                  <span className="nav-label min-w-0 flex-1 truncate">{menuEntry.label}</span>
                   {badgeCount > 0 && (
                     <span
                       className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-jp-danger px-1.5 text-[10px] font-semibold text-white"
@@ -215,7 +198,7 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center text-current">
                         <Icon name={menuEntry.iconName} className="h-[18px] w-[18px]" />
                       </span>
-                      <span className="min-w-0 flex-1 truncate">{menuEntry.label}</span>
+                      <span className="nav-label min-w-0 flex-1 truncate">{menuEntry.label}</span>
                     </button>
                   )}
                   <button
@@ -247,10 +230,11 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
                         <Link
                           key={child.key}
                           href={child.href}
+                          aria-label={child.label}
                           onClick={onNavigateFromMobile}
                           className={"flex min-h-9 items-center rounded-jp-sm px-3 py-2 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5a1f] " + childClassName}
                         >
-                          <span className="truncate">{child.label}</span>
+                          <span className="nav-label truncate">{child.label}</span>
                         </Link>
                       );
                     })}
@@ -265,10 +249,10 @@ function SidebarInner({ onNavigateFromMobile, onCloseMobileDrawer }: SidebarProp
       <div className="border-t border-[#E3E8F7] p-4">
         <div className="flex items-center gap-3">
           <UserAvatar fotoProfileUrl={currentUser.foto_profil_url} altText={currentUser.name} sizeClassName="h-9 w-9" />
-          <div className="min-w-0">
+          <span className="sidebar-user-copy min-w-0">
             <p className="truncate text-[12px] font-semibold">{currentUser.name}</p>
             <p className="truncate text-[11px] text-[#91A3D1]">{currentUser.role.replace(/_/g, " ")}</p>
-          </div>
+          </span>
         </div>
       </div>
     </div>

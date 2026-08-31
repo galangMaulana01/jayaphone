@@ -123,6 +123,7 @@ const kasirNavigation: NavigationEntry[] = [
     label: "COD", iconName: "moneySvg",
     children: [
       { key: "cod-beli",     label: "COD Beli",     href: "/cod-beli" },
+      { key: "cod-monitoring", label: "Monitoring COD", href: "/cod-monitoring" },
       { key: "cod-jual",     label: "COD Jual",     href: "/cod-jual" },
       { key: "cod-delivery", label: "Delivery",     href: "/cod-delivery" },
     ],
@@ -220,6 +221,7 @@ export const pageMetadataByKey: Record<string, PageMetadata> = {
   "tambah-unit":          { title: "Tambah Unit" },
   "customers":            { title: "Data Customer" },
   "cod-beli":             { title: "COD Beli" },
+  "cod-monitoring":       { title: "Monitoring COD" },
   "cod-jual":             { title: "COD Jual" },
   "cod-delivery":         { title: "Delivery" },
   "service-list":         { title: "Data Service" },

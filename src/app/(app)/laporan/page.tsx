@@ -50,7 +50,7 @@ function LaporanPageInner(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const params = useMemo(() => ({ ...toApiQueryParams(filter), cabang: branch || undefined }), [filter, branch]);
+  const params = useMemo(() => ({ ...toApiQueryParams(filter), cabang: branch || (user?.role === "kepala_cabang" ? user.cabang : undefined) }), [filter, branch, user?.role, user?.cabang]);
 
   const load = useCallback(async () => {
     setLoading(true);

@@ -24,7 +24,7 @@ export default function TransaksiPage(): JSX.Element {
   const [branch, setBranch] = useState("");
   const [branches, setBranches] = useState<Cabang[]>([]);
   const [selected, setSelected] = useState<Transaksi | null>(null);
-  const params = useMemo(() => ({ ...toApiQueryParams(filter), ...(branch ? { cabang: branch } : {}) }), [filter, branch]);
+  const params = useMemo(() => ({ ...toApiQueryParams(filter), cabang: branch || (user?.role === "kepala_cabang" ? user.cabang : undefined) }), [filter, branch, user?.role, user?.cabang]);
 
   const { items, loading, error, reload: load } = useApiList<Transaksi>(
     () => Api.transaksi.list(params).then((r) => r.data ?? []),

@@ -32,7 +32,7 @@ function ServicePageInner(): JSX.Element {
   // query param IS the state, so it can't disagree with the sidebar.
   const [status, setStatus] = useUrlParam("status", SERVICE_STATUS_FILTERS, "");
   const [branches, setBranches] = useState<Cabang[]>([]); const [detail, setDetail] = useState<(ServiceTicket & { timeline?: { event: string; waktu: string }[] }) | null>(null); const [approveUnit, setApproveUnit] = useState<string | null>(null); const [salePrice, setSalePrice] = useState("");
-  const params = useMemo(() => ({ limit: 50, ...toApiQueryParams(filter), ...(branch ? { cabang: branch } : {}), ...(status ? { status } : {}) }), [filter, branch, status]);
+  const params = useMemo(() => ({ limit: 50, ...toApiQueryParams(filter), cabang: branch || (user?.role === "kepala_cabang" ? user.cabang : undefined), ...(status ? { status } : {}) }), [filter, branch, status, user?.role, user?.cabang]);
   const { items, loading, error, reload: load } = useApiList<ServiceTicket>(() => Api.service.list(params).then((r) => r.data ?? []), [params], "Gagal memuat service");
   useEffect(() => { if (user?.role === "owner") void Api.cabang.list().then((r) => setBranches(r.data ?? [])).catch(() => undefined); }, [user?.role]);
   const pendingRepairApprovalCount = usePendingRepairApprovalCount();

@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useApiList } from "@/hooks/useApiList";
 import { useUrlParam } from "@/hooks/useUrlParam";
+import { CabangFilter } from "@/components/ui/CabangFilter";
 import { formatRupiah, formatDateTimeShort, NOT_SET } from "@/lib/utils/formatters";
 import { useCabangTimezones, resolveCabangTimezone } from "@/contexts/CabangTzContext";
 import type { RequestSparepart, RequestSparepartJenis, Sparepart, SparepartInUseItem, SparepartJenis, ServiceTicket } from "@/lib/types";
@@ -55,6 +56,7 @@ function SparepartPageInner(): JSX.Element {
   const [tab, setTab] = useUrlParam<SparepartTab>("tab", SPAREPART_TABS, "tersedia");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
+  const [selectedCabang, setSelectedCabang] = useState(user?.role === "owner" ? "" : user?.cabang || "");
   const [formOpen, setFormOpen] = useState(false);
   const [stockItem, setStockItem] = useState<Sparepart | null>(null);
   const [useItem, setUseItem] = useState<Sparepart | null>(null);
@@ -112,20 +114,20 @@ function SparepartPageInner(): JSX.Element {
   const canSeeRequestTab = canManage || isTeknisi;
 
   const { items: tersedia, loading: tersediaLoading, error: tersediaError, reload: reloadTersedia } =
-    useApiList<Sparepart>(() => Api.sparepart.list({ kategori: category || undefined, jenis: "repair" }).then((r) => r.data ?? []), [category], "Gagal memuat sparepart tersedia");
+    useApiList<Sparepart>(() => Api.sparepart.list({ cabang: selectedCabang || undefined, kategori: category || undefined, jenis: "repair" }).then((r) => r.data ?? []), [category, selectedCabang], "Gagal memuat sparepart tersedia");
   const { items: dijual, loading: dijualLoading, error: dijualError, reload: reloadDijual } =
-    useApiList<Sparepart>(() => Api.sparepart.list({ kategori: category || undefined, jenis: "dijual" }).then((r) => r.data ?? []), [category], "Gagal memuat sparepart untuk dijual");
+    useApiList<Sparepart>(() => Api.sparepart.list({ cabang: selectedCabang || undefined, kategori: category || undefined, jenis: "dijual" }).then((r) => r.data ?? []), [category, selectedCabang], "Gagal memuat sparepart untuk dijual");
   const { items: sedangDipakai, loading: dipakaiLoading, error: dipakaiError, reload: reloadDipakai } =
-    useApiList<SparepartInUseItem>(() => Api.sparepart.inUse().then((r) => r.data ?? []), [], "Gagal memuat sparepart sedang dipakai");
+    useApiList<SparepartInUseItem>(() => Api.sparepart.inUse({ cabang: selectedCabang || undefined }).then((r) => r.data ?? []), [selectedCabang], "Gagal memuat sparepart sedang dipakai");
   // Transien: cuma tampil beberapa jam setelah tiketnya Selesai (lihat
   // RIWAYAT_WINDOW_HOURS di backend), lalu menghilang dari sini walau
   // datanya tetap ada di tiket.
   const { items: riwayat, loading: riwayatLoading, error: riwayatError, reload: reloadRiwayat } =
-    useApiList<SparepartInUseItem>(() => Api.sparepart.riwayat().then((r) => r.data ?? []), [], "Gagal memuat riwayat pemakaian sparepart");
+    useApiList<SparepartInUseItem>(() => Api.sparepart.riwayat({ cabang: selectedCabang || undefined }).then((r) => r.data ?? []), [selectedCabang], "Gagal memuat riwayat pemakaian sparepart");
   const { items: requests, loading: requestsLoading, error: requestsError, reload: reloadRequests } =
     useApiList<RequestSparepart>(
-      () => (canSeeRequestTab ? Api.requestSparepart.list({ status: reqStatusFilter || undefined }).then((r) => r.data ?? []) : Promise.resolve([])),
-      [canSeeRequestTab, reqStatusFilter], "Gagal memuat request sparepart",
+      () => (canSeeRequestTab ? Api.requestSparepart.list({ status: reqStatusFilter || undefined }).then((r) => (r.data ?? []).filter((request) => user?.role !== "kepala_cabang" || request.cabang === user.cabang)) : Promise.resolve([])),
+      [canSeeRequestTab, reqStatusFilter, user?.role, user?.cabang], "Gagal memuat request sparepart",
     );
   // Kasir-only continuation of the same request_sparepart lifecycle above.
   const { items: menungguPembelian, loading: menungguPembelianLoading, error: menungguPembelianError, reload: reloadMenungguPembelian } =
@@ -161,7 +163,8 @@ function SparepartPageInner(): JSX.Element {
   const create = async () => {
     if (!name.trim() || Number(sell) <= 0) { showToast("Nama dan harga jual wajib diisi", "error"); return; }
     try {
-      await Api.sparepart.create({ nama: name.trim(), kategori: cat, jenis, satuan: "pcs", harga_beli: Number(buy) || 0, harga_jual: Number(sell), stok: Number(stock) || 0, cabang: user?.cabang || "JYP" });
+      if (!selectedCabang) { showToast("Pilih cabang tujuan sparepart", "error"); return; }
+      await Api.sparepart.create({ nama: name.trim(), kategori: cat, jenis, satuan: "pcs", harga_beli: Number(buy) || 0, harga_jual: Number(sell), stok: Number(stock) || 0, cabang: selectedCabang });
       showToast("Sparepart berhasil ditambahkan"); setFormOpen(false); await reloadAll();
     } catch (e) { showToast(e instanceof Error ? e.message : "Gagal menambah sparepart", "error"); }
   };
@@ -302,6 +305,7 @@ function SparepartPageInner(): JSX.Element {
         <div className="jp-toolbar">
           <input className="field-control w-full sm:max-w-md" placeholder="Cari sparepart..." value={query} onChange={(e) => setQuery(e.target.value)} />
           <input className="field-control w-full sm:w-auto" placeholder="Kategori" value={category} onChange={(e) => setCategory(e.target.value)} />
+          {user?.role === "owner" && <CabangFilter value={selectedCabang} onChange={setSelectedCabang} label="Filter Cabang" />}
         </div>
       )}
 
@@ -364,7 +368,7 @@ function SparepartPageInner(): JSX.Element {
                     <p className="mt-1 text-jp-muted dark:text-jp-muted-dark">Mulai Digunakan</p>
                     <p>{it.mulai_pakai ? formatDateTimeShort(it.mulai_pakai, resolveCabangTimezone(cabangTz, it.cabang)) : NOT_SET}</p>
                   </div>
-                  <button type="button" className="btn-success w-full" onClick={() => router.push("/service-list")}>Selesaikan Pemakaian</button>
+                  <button type="button" className="btn-success w-full" onClick={() => router.push(`/service?status=Proses&service_id=${encodeURIComponent(it.service_id)}`)}>Buka Workflow Service</button>
                 </div>
               ))}
             </div>
@@ -520,6 +524,7 @@ function SparepartPageInner(): JSX.Element {
           <div className="space-y-3">
             <LabelledInput label="Nama" value={name} onChange={(e) => setName(e.target.value)} />
             <LabelledInput label="Kategori" value={cat} onChange={(e) => setCat(e.target.value)} />
+            {user?.role === "owner" && <CabangFilter label="Cabang" value={selectedCabang} onChange={setSelectedCabang} />}
             <LabelledSelect label="Jenis" value={jenis} onChange={(e) => setJenis(e.target.value as SparepartJenis)}>
               {JENIS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </LabelledSelect>

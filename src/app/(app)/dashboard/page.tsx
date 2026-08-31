@@ -66,8 +66,8 @@ export default function DashboardPage(): JSX.Element {
   const [selectedCabangFilter, setSelectedCabangFilter] = useState("");
   const isOwner = currentUser?.role === "owner";
   const filterQueryParams = useMemo(
-    () => ({ ...toApiQueryParams(dateFilterState), cabang: isOwner && selectedCabangFilter ? selectedCabangFilter : undefined }),
-    [dateFilterState, isOwner, selectedCabangFilter],
+    () => ({ ...toApiQueryParams(dateFilterState), cabang: isOwner ? selectedCabangFilter || undefined : currentUser?.role === "kepala_cabang" ? currentUser.cabang : undefined }),
+    [dateFilterState, isOwner, selectedCabangFilter, currentUser?.role, currentUser?.cabang],
   );
 
   const loadDashboardData = useCallback(async (): Promise<void> => {
